@@ -1,6 +1,8 @@
 import Pocketbase from 'pocketbase';
 
-const POCKETBASE_API_URL = '/hcgi/platform';
+// PocketBase JS client already appends /api internally.
+// Use root base URL so requests go to /api/... instead of /api/api/...
+const POCKETBASE_API_URL = '/';
 
 const pocketbaseClient = new Pocketbase(POCKETBASE_API_URL);
 

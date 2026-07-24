@@ -1,34 +1,57 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
+import { useLocation, useNavigate } from 'react-router-dom';
 import SearchEngine from '@/components/SearchEngine.jsx';
 import SearchModifier from '@/components/SearchModifier.jsx';
 import SearchResults from '@/components/SearchResults.jsx';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const SearchPage = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [searchCriteria, setSearchCriteria] = useState(null);
   const [isEditing, setIsEditing] = useState(true);
 
   useEffect(() => {
-    // Load saved search from localStorage on mount
-    const saved = localStorage.getItem('takeon_search');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed.where || parsed.checkIn || parsed.checkOut || parsed.guests) {
-          setSearchCriteria(parsed);
-          setIsEditing(false); // If we have saved data, show results immediately
+    const params = new URLSearchParams(location.search);
+    const criteria = {
+      where: params.get('location') || '',
+      checkIn: params.get('checkIn') || '',
+      checkOut: params.get('checkOut') || '',
+      guests: params.get('guests') || '1',
+    };
+
+    if (criteria.where || criteria.checkIn || criteria.checkOut || location.search.includes('guests')) {
+      setSearchCriteria(criteria);
+      setIsEditing(false);
+      localStorage.setItem('takeon_search', JSON.stringify(criteria));
+    } else {
+      const saved = localStorage.getItem('takeon_search');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed.where || parsed.checkIn || parsed.checkOut || parsed.guests) {
+            setSearchCriteria(parsed);
+            setIsEditing(false);
+          }
+        } catch (e) {
+          console.error('Error parsing saved search', e);
         }
-      } catch (e) {
-        console.error('Error parsing saved search', e);
       }
     }
-  }, []);
+  }, [location.search]);
 
   const handleSearch = (criteria) => {
     setSearchCriteria(criteria);
     setIsEditing(false);
     localStorage.setItem('takeon_search', JSON.stringify(criteria));
+
+    const params = new URLSearchParams();
+    if (criteria.where) params.set('location', criteria.where);
+    if (criteria.checkIn) params.set('checkIn', criteria.checkIn);
+    if (criteria.checkOut) params.set('checkOut', criteria.checkOut);
+    if (criteria.guests) params.set('guests', criteria.guests);
+    navigate({ pathname: '/search', search: params.toString() }, { replace: true });
     
     // Scroll slightly to results
     window.scrollTo({ top: 0, behavior: 'smooth' });

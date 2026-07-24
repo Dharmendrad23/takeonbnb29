@@ -15,8 +15,10 @@ const HostPhoneLoginPage = () => {
   const [otpCode, setOtpCode] = useState('');
   const [step, setStep] = useState('request'); // 'request' | 'verify'
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [otpId, setOtpId] = useState(null);
+  const [sentPhone, setSentPhone] = useState('');
   
-  const { requestPhoneOTP, verifyPhoneOTP, otpId, pendingPhone } = useAuth();
+  const { requestPhoneOTP, verifyPhoneOTP } = useAuth();
   const navigate = useNavigate();
 
   const handleSendOTP = async (e) => {
@@ -29,7 +31,9 @@ const HostPhoneLoginPage = () => {
     setIsSubmitting(true);
     try {
       const fullPhone = `${countryCode}${phone}`;
-      await requestPhoneOTP(fullPhone);
+      const id = await requestPhoneOTP(fullPhone);
+      setOtpId(id);
+      setSentPhone(fullPhone);
       setStep('verify');
       toast.success('OTP sent successfully!');
     } catch (error) {
@@ -42,8 +46,10 @@ const HostPhoneLoginPage = () => {
   const handleResendOTP = async () => {
     setIsSubmitting(true);
     try {
-      const fullPhone = pendingPhone || `${countryCode}${phone}`;
-      await requestPhoneOTP(fullPhone);
+      const fullPhone = sentPhone || `${countryCode}${phone}`;
+      const id = await requestPhoneOTP(fullPhone);
+      setOtpId(id);
+      setSentPhone(fullPhone);
       toast.success('A new OTP has been sent.');
       setOtpCode('');
     } catch (error) {
@@ -67,7 +73,7 @@ const HostPhoneLoginPage = () => {
         toast.error('Logged in successfully, but this account is not registered as a host.');
       } else {
         toast.success('Welcome back!');
-        navigate('/host-dashboard');
+        navigate('/host/dashboard');
       }
     } catch (error) {
       toast.error('Invalid or expired OTP code. Please try again.');
@@ -163,7 +169,7 @@ const HostPhoneLoginPage = () => {
               <div className="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-xl border border-emerald-200 dark:border-emerald-900/30 flex items-start gap-3 mb-2">
                 <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                 <p className="text-sm text-emerald-800 dark:text-emerald-300 font-medium leading-relaxed">
-                  We've sent an 8-digit verification code to <span className="font-bold">{pendingPhone || `${countryCode}${phone}`}</span>
+                  We've sent an 8-digit verification code to <span className="font-bold">{sentPhone || `${countryCode}${phone}`}</span>
                 </p>
               </div>
 

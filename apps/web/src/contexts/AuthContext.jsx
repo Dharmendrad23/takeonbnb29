@@ -63,19 +63,21 @@ export const AuthProvider = ({ children }) => {
   };
 
   // --- OTP Flow ---
-  
-  const requestOTP = async (phone) => {
+  const [pendingOtpId, setPendingOtpId] = useState(null);
+  const [pendingOTPIdentifier, setPendingOTPIdentifier] = useState(null);
+  const [pendingPhone, setPendingPhone] = useState(null);
+
+  const requestOTPCode = async (identifier) => {
     try {
       const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date(Date.now() + 5 * 60000).toISOString();
       const record = await pb.collection('otp_sessions').create({
-        phone,
+        phone: identifier,
         otpCode,
         expiresAt,
         attempts: 0,
         isVerified: false
       }, { $autoCancel: false });
-      
       return record.id;
     } catch (error) {
       console.error('OTP request error:', error);
@@ -83,25 +85,118 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const verifyOTP = async (otpId, code) => {
+  const verifyOTPCode = async (otpId, code) => {
     try {
       const record = await pb.collection('otp_sessions').getOne(otpId, { $autoCancel: false });
-      
       if (new Date() > new Date(record.expiresAt)) {
         throw new Error('OTP has expired. Please request a new one.');
       }
-      
       if (record.otpCode !== code) {
         await pb.collection('otp_sessions').update(otpId, { attempts: record.attempts + 1 }, { $autoCancel: false });
         throw new Error('Invalid OTP code.');
       }
-      
       await pb.collection('otp_sessions').update(otpId, { isVerified: true }, { $autoCancel: false });
       return record;
     } catch (error) {
       console.error('OTP verify error:', error);
       throw error;
     }
+  };
+
+  const requestOTP = async (identifier) => {
+    return await requestOTPCode(identifier);
+  };
+
+  const requestPhoneOTP = async (phone) => {
+    const otpId = await requestOTPCode(phone);
+    setPendingOtpId(otpId);
+    setPendingOTPIdentifier(phone);
+    setPendingPhone(phone);
+    return otpId;
+  };
+
+  const loginWithEmail = async (email, password) => {
+    return await login(email, password);
+  };
+
+  const loginWithOTP = async (...args) => {
+    if (args.length === 1) {
+      const [identifier] = args;
+      const otpId = await requestOTPCode(identifier);
+      setPendingOtpId(otpId);
+      setPendingOTPIdentifier(identifier);
+      if (!identifier.includes('@')) setPendingPhone(identifier);
+      return { otpId };
+    }
+
+    if (args.length === 3) {
+      const [identifier, otpId, code] = args;
+      await verifyOTPCode(otpId, code);
+      const filter = identifier.includes('@') ? `email="${identifier}"` : `phone="${identifier}"`;
+      const users = await pb.collection('users').getList(1, 1, { filter, $autoCancel: false });
+      if (users.totalItems === 0) {
+        throw new Error('No account found with this identifier.');
+      }
+      const user = users.items[0];
+      pb.authStore.save('phone_auth_token_' + Date.now(), user);
+      setCurrentUser(user);
+      return user;
+    }
+
+    throw new Error('Invalid loginWithOTP call');
+  };
+
+  const loginWithOAuth2 = async (provider, options = {}) => {
+    try {
+      const authData = await pb.collection('users').authWithOAuth2({
+        provider,
+        scopes: options.scopes || ['email', 'name'],
+        createData: options.createData || {},
+      });
+      setCurrentUser(authData.record);
+      return authData;
+    } catch (error) {
+      console.error('OAuth login error:', error);
+      throw new Error(error.message || 'OAuth login failed');
+    }
+  };
+
+  const verifyOTP = async (otpIdOrCode, code) => {
+    if (code === undefined) {
+      if (!pendingOtpId || !pendingOTPIdentifier) {
+        throw new Error('OTP session missing. Please request a new OTP.');
+      }
+      const record = await verifyOTPCode(pendingOtpId, otpIdOrCode);
+      const filter = pendingOTPIdentifier.includes('@') ? `email="${pendingOTPIdentifier}"` : `phone="${pendingOTPIdentifier}"`;
+      const users = await pb.collection('users').getList(1, 1, { filter, $autoCancel: false });
+      if (users.totalItems === 0) {
+        throw new Error('No account found with this identifier.');
+      }
+      const user = users.items[0];
+      pb.authStore.save('phone_auth_token_' + Date.now(), user);
+      setCurrentUser(user);
+      return user;
+    }
+    return await verifyOTPCode(otpIdOrCode, code);
+  };
+
+  const authWithOTP = async (otpId, code) => {
+    const record = await verifyOTPCode(otpId, code);
+    const identifier = pendingOTPIdentifier || record.phone;
+    const filter = identifier.includes('@') ? `email="${identifier}"` : `phone="${identifier}"`;
+    const users = await pb.collection('users').getList(1, 1, { filter, $autoCancel: false });
+    if (users.totalItems === 0) {
+      throw new Error('No account found with this identifier.');
+    }
+    const user = users.items[0];
+    pb.authStore.save('phone_auth_token_' + Date.now(), user);
+    setCurrentUser(user);
+    return { record: user };
+  };
+
+  const verifyPhoneOTP = async (otpId, code) => {
+    const user = await loginWithOTP(pendingPhone || '', otpId, code);
+    return { record: user };
   };
 
   const signupWithOTP = async (phone, password, userType, name = '', email = '') => {
@@ -136,27 +231,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const loginWithOTP = async (phone, otpId, code) => {
-    try {
-      await verifyOTP(otpId, code);
-      
-      const users = await pb.collection('users').getList(1, 1, { filter: `phone="${phone}"`, $autoCancel: false });
-      if (users.totalItems === 0) {
-        throw new Error('No account found with this phone number.');
-      }
-      
-      const user = users.items[0];
-      
-      // NOTE: Client-side pure OTP auth hack for frontend-only setup
-      pb.authStore.save('phone_auth_token_' + Date.now(), user);
-      setCurrentUser(user);
-      return user;
-    } catch (error) {
-      console.error('OTP login error:', error);
-      throw error;
-    }
-  };
-
   const logout = () => {
     pb.authStore.clear();
     setCurrentUser(null);
@@ -179,8 +253,13 @@ export const AuthProvider = ({ children }) => {
       isAuthenticated,
       login,
       signup,
+      loginWithEmail,
+      loginWithOAuth2,
       requestOTP,
+      requestPhoneOTP,
       verifyOTP,
+      authWithOTP,
+      verifyPhoneOTP,
       signupWithOTP,
       loginWithOTP,
       logout 

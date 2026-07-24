@@ -297,6 +297,25 @@ export default defineConfig({
 	server: {
 		port: 3000,
 		cors: true,
+		proxy: {
+			'/api': {
+				target: 'http://localhost:8091',
+				changeOrigin: true,
+				secure: false,
+			},
+			'/hcgi/platform': {
+				target: 'http://localhost:8091',
+				changeOrigin: true,
+				secure: false,
+				rewrite: (path) => path.replace(/^\/hcgi\/platform/, '/api'),
+			},
+			'/hcgi/api': {
+				target: 'http://localhost:8091',
+				changeOrigin: true,
+				secure: false,
+				rewrite: (path) => path.replace(/^\/hcgi\/api/, '/api'),
+			},
+		},
 		headers: {
 			'Cross-Origin-Embedder-Policy': 'credentialless',
 		},

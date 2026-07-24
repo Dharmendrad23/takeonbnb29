@@ -26,11 +26,15 @@ import DestinationPage from '@/pages/DestinationPage.jsx';
 
 // Advanced Search
 import SearchPage from '@/pages/SearchPage.jsx';
-import SearchResultsPage from '@/pages/SearchResultsPage.jsx';
 
 // Static / Info Pages
 import AboutUsPage from '@/pages/AboutUsPage.jsx';
 import ContactPage from '@/pages/ContactPage.jsx';
+import ExplorePage from '@/pages/ExplorePage.jsx';
+import BlogPage from '@/pages/BlogPage.jsx';
+import HelpCenterPage from '@/pages/HelpCenterPage.jsx';
+import SafetyPage from '@/pages/SafetyPage.jsx';
+import FAQPage from '@/pages/FAQPage.jsx';
 import NotFoundPage from '@/pages/NotFoundPage.jsx';
 
 // Guest Dashboards
@@ -94,7 +98,7 @@ function App() {
                 {/* Public Routes */}
                 <Route path="/" element={<AppLayout><HomePage /></AppLayout>} />
                 <Route path="/properties" element={<AppLayout><PropertyList /></AppLayout>} />
-                <Route path="/search" element={<AppLayout><SearchResultsPage /></AppLayout>} />
+                <Route path="/search" element={<AppLayout><SearchPage /></AppLayout>} />
                 <Route path="/property/:id" element={<AppLayout><PropertyDetailPage /></AppLayout>} />
                 <Route path="/destination/:location" element={<AppLayout><DestinationPage /></AppLayout>} />
                 <Route path="/login" element={<AppLayout><LoginPage /></AppLayout>} />
@@ -103,6 +107,11 @@ function App() {
                 
                 {/* Static Pages */}
                 <Route path="/about" element={<AppLayout><AboutUsPage /></AppLayout>} />
+                <Route path="/explore" element={<AppLayout><ExplorePage /></AppLayout>} />
+                <Route path="/blog" element={<AppLayout><BlogPage /></AppLayout>} />
+                <Route path="/help-center" element={<AppLayout><HelpCenterPage /></AppLayout>} />
+                <Route path="/faq" element={<AppLayout><FAQPage /></AppLayout>} />
+                <Route path="/safety" element={<AppLayout><SafetyPage /></AppLayout>} />
                 <Route path="/contact" element={<AppLayout><ContactPage /></AppLayout>} />
 
                 {/* Guest Protected Routes */}
