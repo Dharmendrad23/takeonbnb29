@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils.js';
 
 const SIDEBAR_LINKS = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/host/dashboard' },
+  { icon: Home, label: 'Properties', path: '/host/properties' },
   { icon: PlusCircle, label: 'Add Property', path: '/host/property/new' },
 ];
 

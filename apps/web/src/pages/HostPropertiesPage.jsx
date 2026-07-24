@@ -28,7 +28,7 @@ const HostPropertiesPage = () => {
       
       const newStats = { total: records.length, draft: 0, pending: 0, approved: 0, live: 0 };
       records.forEach(p => {
-        const status = p.status?.toLowerCase();
+        const status = (p.status || p.approvalStatus || '').toString().toLowerCase();
         if (status === 'draft') newStats.draft++;
         else if (status === 'submitted' || status === 'pending') newStats.pending++;
         else if (status === 'approved') newStats.approved++;
@@ -126,15 +126,21 @@ const HostPropertiesPage = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {properties.map((p, idx) => (
-            <PropertyCard 
-              key={p.id} 
-              property={p} 
-              index={idx}
-              isHostView={true} 
-              onAction={handleAction}
-            />
-          ))}
+          {properties.map((p, idx) => {
+            const normalizedProperty = {
+              ...p,
+              status: p.status || p.approvalStatus || 'Draft',
+            };
+            return (
+              <PropertyCard 
+                key={p.id} 
+                property={normalizedProperty} 
+                index={idx}
+                isHostView={true} 
+                onAction={handleAction}
+              />
+            );
+          })}
         </div>
       )}
     </HostDashboardLayout>

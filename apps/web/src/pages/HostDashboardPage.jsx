@@ -72,12 +72,20 @@ const HostDashboardPage = () => {
             <h1 className="text-3xl font-bold font-heading text-foreground">Welcome back, {currentUser?.name || 'Host'}</h1>
             <p className="text-muted-foreground mt-1">Here's an overview of your hosting performance.</p>
           </div>
-          <Button asChild className="rounded-xl shadow-brand font-bold gap-2">
-            <Link to="/host/property/new">
-              <PlusCircle className="w-5 h-5" />
-              Add New Property
-            </Link>
-          </Button>
+          <div className="flex flex-wrap gap-3">
+            <Button asChild className="rounded-xl shadow-brand font-bold gap-2">
+              <Link to="/host/property/new">
+                <PlusCircle className="w-5 h-5" />
+                Add New Property
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="rounded-xl font-bold gap-2">
+              <Link to="/host/properties">
+                <Home className="w-5 h-5" />
+                View Properties
+              </Link>
+            </Button>
+          </div>
         </div>
 
         {/* Stats Grid */}

@@ -67,6 +67,29 @@ export const AuthProvider = ({ children }) => {
   const [pendingOTPIdentifier, setPendingOTPIdentifier] = useState(null);
   const [pendingPhone, setPendingPhone] = useState(null);
 
+  const sendOtpSms = async (phone, otpCode) => {
+    const trimmedPhone = phone.trim();
+    const digitsOnlyPhone = trimmedPhone.replace(/\D/g, '');
+    const recipientPhone = trimmedPhone.startsWith('+') ? trimmedPhone : `+91${digitsOnlyPhone}`;
+    const messageBody = `Your TakeOnBnB verification code is ${otpCode}. It expires in 5 minutes. Do not share this code with anyone.`;
+    const apiHost = `${window.location.protocol}//${window.location.hostname}:3001`;
+
+    const response = await fetch(`${apiHost}/notifications/send-sms`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ recipientPhone, messageBody }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => response.statusText);
+      throw new Error(`Unable to send OTP SMS: ${errorText || response.statusText}`);
+    }
+
+    return response.json();
+  };
+
   const requestOTPCode = async (identifier) => {
     try {
       const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
@@ -78,10 +101,12 @@ export const AuthProvider = ({ children }) => {
         attempts: 0,
         isVerified: false
       }, { $autoCancel: false });
+
+      await sendOtpSms(identifier, otpCode);
       return record.id;
     } catch (error) {
       console.error('OTP request error:', error);
-      throw new Error('Failed to request OTP. Please try again.');
+      throw new Error(error.message || 'Failed to request OTP. Please try again.');
     }
   };
 
@@ -199,8 +224,14 @@ export const AuthProvider = ({ children }) => {
     return { record: user };
   };
 
-  const signupWithOTP = async (phone, password, userType, name = '', email = '') => {
+  const signupWithOTP = async (phone, password, userType, name = '', email = '', otpId, otpCode) => {
     try {
+      if (!otpId || !otpCode) {
+        throw new Error('OTP verification is required. Please request a new code.');
+      }
+
+      await verifyOTPCode(otpId, otpCode);
+
       const existing = await pb.collection('users').getList(1, 1, { filter: `phone="${phone}"`, $autoCancel: false });
       if (existing.totalItems > 0) throw new Error('Phone number already registered');
 

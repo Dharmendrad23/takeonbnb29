@@ -52,6 +52,7 @@ app.use(express.urlencoded({
 	limit: BodyLimit,
 }));
 
+app.use('/hcgi/api', routes());
 app.use('/', routes());
 
 app.use(errorMiddleware);

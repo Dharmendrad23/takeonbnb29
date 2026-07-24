@@ -45,6 +45,7 @@ import GuestWishlistPage from '@/pages/GuestWishlistPage.jsx';
 // Host Pages
 import HostDashboardPage from '@/pages/HostDashboardPage.jsx';
 import HostPropertyListingForm from '@/pages/HostPropertyListingForm.jsx';
+import HostPropertiesPage from '@/pages/HostPropertiesPage.jsx';
 
 // Admin Pages
 import AdminLoginPage from '@/pages/admin/AdminLoginPage.jsx';
@@ -121,6 +122,7 @@ function App() {
                 
                 {/* Host Protected Routes */}
                 <Route path="/host/dashboard" element={<ProtectedRoute requireHost><AppLayout><HostDashboardPage /></AppLayout></ProtectedRoute>} />
+                <Route path="/host/properties" element={<ProtectedRoute requireHost><AppLayout><HostPropertiesPage /></AppLayout></ProtectedRoute>} />
                 <Route path="/host/property/new" element={<ProtectedRoute requireHost><AppLayout><HostPropertyListingForm /></AppLayout></ProtectedRoute>} />
 
                 {/* Admin Routes */}

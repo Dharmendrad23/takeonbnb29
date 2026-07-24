@@ -5,6 +5,7 @@ import { Helmet } from 'react-helmet';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { toast } from 'sonner';
@@ -214,14 +215,26 @@ const LoginPage = () => {
                 </p>
               </div>
 
-              <Input
-                required
-                type="text"
+              <InputOTP
                 maxLength={6}
                 value={otpCode}
-                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                onChange={setOtpCode}
+                inputMode="numeric"
+                pattern="[0-9]*"
+                autoFocus
                 className="h-14 text-center text-2xl font-bold tracking-[0.5em]"
-                placeholder="------"
+                containerClassName="justify-center"
+                render={({ slots }) => (
+                  <InputOTPGroup className="justify-center gap-2">
+                    {slots.map((slot, index) => (
+                      <InputOTPSlot
+                        key={index}
+                        index={index}
+                        className="h-14 w-12 text-2xl font-bold"
+                      />
+                    ))}
+                  </InputOTPGroup>
+                )}
               />
 
               <Button 
