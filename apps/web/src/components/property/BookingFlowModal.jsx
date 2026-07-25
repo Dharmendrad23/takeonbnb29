@@ -13,6 +13,7 @@ import PaymentVerificationForm from '@/components/PaymentVerificationForm.jsx';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { toast } from 'sonner';
 import pb from '@/lib/pocketbaseClient.js';
+import apiServerClient from '@/lib/apiServerClient.js';
 import { formatCurrency } from '@/lib/bookingUtils.js';
 
 const BookingFlowModal = ({ isOpen, onClose, property, initialDates, initialGuests }) => {
@@ -64,17 +65,13 @@ const BookingFlowModal = ({ isOpen, onClose, property, initialDates, initialGues
   const handleBack = () => setStep(prev => Math.max(prev - 1, 1));
 
   const handlePaymentSubmit = async (verificationData) => {
-    if (!currentUser) {
-      toast.error('Please log in to confirm your booking.');
-      navigate('/login');
-      return;
-    }
-
     setLoading(true);
     try {
       const formData = new FormData();
       formData.append('propertyId', property.id);
-      formData.append('guestId', currentUser.id);
+      if (currentUser?.id) {
+        formData.append('guestId', currentUser.id);
+      }
       formData.append('guestFullName', verificationData.guestName);
       formData.append('guestEmail', guestDetails.email);
       formData.append('guestMobileNumber', verificationData.phone);
@@ -108,6 +105,18 @@ const BookingFlowModal = ({ isOpen, onClose, property, initialDates, initialGues
 
       const record = await pb.collection('bookings').create(formData, { $autoCancel: false });
       setBookingId(record.id);
+
+      try {
+        await apiServerClient.fetch('/bookings/send-booking-confirmation-message', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bookingId: record.id })
+        });
+        toast.success('Booking submitted successfully. A confirmation message has been sent.');
+      } catch (messageError) {
+        console.error('Failed to send booking confirmation message:', messageError);
+        toast.success('Booking submitted successfully. We will follow up with confirmation shortly.');
+      }
       
       setStep(4); // Success step
     } catch (error) {

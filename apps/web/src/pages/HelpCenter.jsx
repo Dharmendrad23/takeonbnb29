@@ -197,4 +197,4 @@ const HelpCenter = () => {
 };
 
 
-export default HelpCenterPage;
+export default HelpCenter;

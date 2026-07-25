@@ -11,7 +11,7 @@
  * - Collection: bookings
  * - Event: Update
  * - Hook Type: Before save (or After save)
- * - URL: http://localhost:3001/hcgi/api/bookings/send-booking-confirmation-email
+ * - URL: https://takeonbnb.com/hcgi/api/bookings/send-booking-confirmation-email
  */
 
 export default async (e) => {
@@ -27,7 +27,7 @@ export default async (e) => {
 
       // 2. Send booking confirmation email
       try {
-        const emailResponse = await fetch('http://localhost:3001/hcgi/api/bookings/send-booking-confirmation-email', {
+        const emailResponse = await fetch('https://takeonbnb.com/hcgi/api/bookings/send-booking-confirmation-email', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -48,7 +48,7 @@ export default async (e) => {
 
       // 3. Send booking WhatsApp notification
       try {
-        const whatsappResponse = await fetch('http://localhost:3001/hcgi/api/bookings/send-booking-whatsapp', {
+        const whatsappResponse = await fetch('https://takeonbnb.com/hcgi/api/bookings/send-booking-whatsapp', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

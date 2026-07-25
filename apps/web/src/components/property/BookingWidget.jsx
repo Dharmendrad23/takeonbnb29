@@ -5,11 +5,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Star, ChevronDown } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
-import { useAuth } from '@/contexts/AuthContext.jsx';
 
 export const BookingWidget = ({ property }) => {
   const navigate = useNavigate();
-  const { currentUser } = useAuth();
   
   // Local state for dates since we don't want to overcomplicate with full calendar logic here yet
   const [checkIn, setCheckIn] = useState('');
@@ -34,10 +32,6 @@ export const BookingWidget = ({ property }) => {
   const total = basePrice + cleaningFee + serviceFee;
 
   const handleReserve = () => {
-    if (!currentUser) {
-      navigate('/login');
-      return;
-    }
     if (!checkIn || !checkOut || nights <= 0) {
       alert("Please select valid dates");
       return;

@@ -132,12 +132,6 @@ export const BookingForm = ({ propertyId, initialPrice = 0 }) => {
       return;
     }
 
-    if (!currentUser) {
-      toast.error('Please log in to make a booking');
-      navigate('/login', { state: { from: window.location.pathname } });
-      return;
-    }
-
     setLoading(true);
 
     try {
@@ -146,7 +140,7 @@ export const BookingForm = ({ propertyId, initialPrice = 0 }) => {
 
       const bookingData = {
         propertyId: formData.propertyId,
-        guestId: currentUser.id,
+        guestId: currentUser?.id || '',
         guestFullName: formData.guestFullName,
         guestEmail: formData.guestEmail,
         guestMobileNumber: formData.guestMobileNumber,

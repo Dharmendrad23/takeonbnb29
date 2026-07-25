@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { Helmet } from 'react-helmet';
 import CheckoutButton from '@/components/CheckoutButton.jsx';
-import { ShieldCheck, MapPin, Calendar, Users } from 'lucide-react';
+import { ShieldCheck, MapPin, Calendar, Users, Landmark, Copy, CheckCircle2, CreditCard } from 'lucide-react';
 
 const CheckoutPage = () => {
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('stripe');
+  const [isCopied, setIsCopied] = useState(false);
+
   // Mock data for demonstration of the booking flow checkout
   const [bookingData] = useState({
     property: {
@@ -25,6 +28,27 @@ const CheckoutPage = () => {
   });
 
   const totalAmount = (bookingData.pricing.pricePerNight * bookingData.pricing.nights) + bookingData.pricing.cleaningFee + bookingData.pricing.serviceFee;
+  const bankDetails = [
+    { label: 'Bank Name', value: 'KKBK' },
+    { label: 'Account Holder', value: 'TakeOn BnB' },
+    { label: 'Account Number', value: '9749885381' },
+    { label: 'IFSC Code', value: 'KKBK00051175' },
+    { label: 'UPI ID', value: 'takeonbnb@upi' }
+  ];
+
+  const paymentDetailsText = bankDetails.map(({ label, value }) => `${label}: ${value}`).join('\n');
+
+  const handleCopyPaymentDetails = async () => {
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(paymentDetailsText);
+      }
+      setIsCopied(true);
+      window.setTimeout(() => setIsCopied(false), 2000);
+    } catch (error) {
+      console.error('Failed to copy payment details:', error);
+    }
+  };
 
   return (
     <div className="min-h-[85vh] bg-muted/20 py-12 px-4">
@@ -53,19 +77,73 @@ const CheckoutPage = () => {
             </div>
 
             <div className="bg-card rounded-3xl p-6 border border-border shadow-sm">
-              <h2 className="text-xl font-bold text-foreground mb-4">Pay with Stripe</h2>
-              <p className="text-muted-foreground mb-6 text-sm">
-                You will be redirected to Stripe's secure checkout page to complete your payment.
-              </p>
-              
-              <CheckoutButton 
-                amount={totalAmount} 
-                productName={`Booking: ${bookingData.property.name}`} 
-              />
-              
-              <div className="mt-4 flex items-center justify-center gap-2 text-sm font-medium text-emerald-600 dark:text-emerald-400">
-                <ShieldCheck className="w-4 h-4" /> SSL Secured Payment
+              <h2 className="text-xl font-bold text-foreground mb-4">Payment method</h2>
+              <div className="grid gap-3 md:grid-cols-2 mb-6">
+                <button
+                  type="button"
+                  onClick={() => setSelectedPaymentMethod('stripe')}
+                  className={`rounded-2xl border p-4 text-left transition-all ${selectedPaymentMethod === 'stripe' ? 'border-primary bg-primary/5 shadow-sm' : 'border-border hover:border-primary/60'}`}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <CreditCard className="w-4 h-4 text-primary" />
+                    <span className="font-semibold text-foreground">Pay with Stripe</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">Cards, UPI, and net banking through a secure checkout.</p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedPaymentMethod('bank')}
+                  className={`rounded-2xl border p-4 text-left transition-all ${selectedPaymentMethod === 'bank' ? 'border-primary bg-primary/5 shadow-sm' : 'border-border hover:border-primary/60'}`}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <Landmark className="w-4 h-4 text-primary" />
+                    <span className="font-semibold text-foreground">Bank transfer</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">Transfer to our account and share the proof for confirmation.</p>
+                </button>
               </div>
+
+              {selectedPaymentMethod === 'stripe' ? (
+                <>
+                  <p className="text-muted-foreground mb-6 text-sm">
+                    You will be redirected to Stripe's secure checkout page to complete your payment.
+                  </p>
+
+                  <CheckoutButton
+                    amount={totalAmount}
+                    productName={`Booking: ${bookingData.property.name}`}
+                  />
+
+                  <div className="mt-4 flex items-center justify-center gap-2 text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                    <ShieldCheck className="w-4 h-4" /> SSL Secured Payment
+                  </div>
+                </>
+              ) : (
+                <div className="rounded-2xl border border-border bg-muted/30 p-4 space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Transfer the booking amount to the account below and send the payment screenshot for confirmation. We will verify and confirm your booking shortly.
+                  </p>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {bankDetails.map((detail) => (
+                      <div key={detail.label} className="rounded-xl border border-border bg-background/80 p-3">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{detail.label}</p>
+                        <p className="mt-1 font-medium text-foreground">{detail.value}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleCopyPaymentDetails}
+                    className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-sm font-semibold text-foreground transition hover:border-primary hover:text-primary"
+                  >
+                    {isCopied ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    {isCopied ? 'Copied' : 'Copy payment details'}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
