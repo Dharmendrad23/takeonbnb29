@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import pb from '@/lib/pocketbaseClient.js';
-import { useAuth } from '@/contexts/AuthContext.jsx';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,7 +12,6 @@ const BookingPage = () => {
   const { id } = useParams(); // propertyId
   const location = useLocation();
   const navigate = useNavigate();
-  const { currentUser } = useAuth();
   
   const stateData = location.state || {};
   const initialDates = stateData.dates || { checkIn: '', checkOut: '' };
@@ -23,8 +21,8 @@ const BookingPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   
   const [formData, setFormData] = useState({
-    name: currentUser?.name || '',
-    email: currentUser?.email || '',
+    name: '',
+    email: '',
     phone: '',
     specialRequests: ''
   });
@@ -68,12 +66,6 @@ const BookingPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if(!currentUser) {
-      toast.error("Please login first");
-      navigate('/login');
-      return;
-    }
-
     if (!initialDates.checkIn || !initialDates.checkOut) {
       toast.error("Please select valid dates.");
       return;
@@ -88,7 +80,7 @@ const BookingPage = () => {
     try {
       const bookingData = {
         propertyId: property.id,
-        guestId: currentUser.id,
+        guestId: '',
         checkInDate: `${initialDates.checkIn} 14:00:00.000Z`,
         checkOutDate: `${initialDates.checkOut} 11:00:00.000Z`,
         guestCount: stateData.guests || 1,

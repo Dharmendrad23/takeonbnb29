@@ -24,6 +24,7 @@ const HostPropertyListingForm = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [cities, setCities] = useState([]);
   
   // Step 1 State
   const [formData, setFormData] = useState({
@@ -49,6 +50,30 @@ const HostPropertyListingForm = () => {
       }
     };
     fetchAmenities();
+  }, []);
+
+  useEffect(() => {
+    const fetchCities = async () => {
+      try {
+        const records = await pb.collection('properties').getFullList({
+          filter: 'status="Live"',
+          fields: 'location',
+          $autoCancel: false
+        });
+
+        const uniqueCities = Array.from(new Set(
+          records
+            .map(record => record.location?.trim())
+            .filter(Boolean)
+        )).sort((a, b) => a.localeCompare(b));
+
+        setCities(uniqueCities);
+      } catch (err) {
+        console.error('Failed to load city suggestions:', err);
+      }
+    };
+
+    fetchCities();
   }, []);
 
   const handleInputChange = (e) => {
@@ -144,7 +169,7 @@ const HostPropertyListingForm = () => {
       await pb.collection('properties').create(data, { $autoCancel: false });
       
       toast.success('Property submitted successfully!');
-      navigate('/host-dashboard');
+      navigate('/host/dashboard');
     } catch (error) {
       console.error('Submit error:', error);
       toast.error('Failed to submit property. Please try again.');
@@ -213,7 +238,19 @@ const HostPropertyListingForm = () => {
                     <Label className="text-foreground">Location <span className="text-destructive">*</span></Label>
                     <div className="relative">
                       <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input name="location" value={formData.location} onChange={handleInputChange} placeholder="Goa, India" className="pl-9 h-12 bg-background border-border" />
+                      <Input
+                        name="location"
+                        value={formData.location}
+                        onChange={handleInputChange}
+                        placeholder="Goa, India"
+                        className="pl-9 h-12 bg-background border-border"
+                        list="property-cities"
+                      />
+                      <datalist id="property-cities">
+                        {cities.map((city) => (
+                          <option key={city} value={city} />
+                        ))}
+                      </datalist>
                     </div>
                   </div>
                 </div>

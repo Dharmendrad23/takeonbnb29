@@ -46,7 +46,7 @@ const UPIPaymentSection = ({ amount }) => {
 
       <Button 
         onClick={handleOpenApp} 
-        className="w-full h-14 text-lg font-bold rounded-xl shadow-lg bg-gradient-pink text-white hover:opacity-90 hover:-translate-y-1 transition-all duration-300"
+        className="w-full h-14 text-lg font-bold rounded-xl shadow-lg bg-gradient-to-r from-primary to-orange-500 text-white hover:opacity-90 hover:-translate-y-1 transition-all duration-300"
       >
         <ExternalLink className="w-5 h-5 mr-2" /> Open UPI App
       </Button>

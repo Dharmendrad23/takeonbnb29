@@ -4,71 +4,78 @@ import { Link } from 'react-router-dom';
 import pb from '@/lib/pocketbaseClient.js';
 import { MapPin, Star, BedDouble, Bath, Users, SearchX } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 
 const SearchResults = ({ criteria }) => {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+
+  const fetchResults = async (pageNum = 1, append = false) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const guests = parseInt(criteria.guests, 10) || 1;
+      const location = criteria.where ? criteria.where.toLowerCase() : '';
+
+      let filterStr = `status = 'Live' && guestCapacity >= ${guests}`;
+      if (location) {
+        filterStr += ` && (location ~ "${location}" || title ~ "${location}")`;
+      }
+
+      if (criteria.checkIn && criteria.checkOut) {
+        const inDate = new Date(criteria.checkIn);
+        const outDate = new Date(criteria.checkOut);
+
+        if (inDate < outDate) {
+          const inStr = inDate.toISOString().split('T')[0];
+          const outStr = outDate.toISOString().split('T')[0];
+
+          const records = await pb.collection('properties').getFullList({
+            filter: filterStr,
+            sort: '-created',
+            $autoCancel: false
+          });
+
+          const bookings = await pb.collection('bookings').getFullList({
+            filter: `status != 'cancelled' && checkInDate < "${outStr} 23:59:59" && checkOutDate > "${inStr} 00:00:00"`,
+            $autoCancel: false
+          });
+
+          const bookedPropertyIds = new Set(bookings.map(b => b.propertyId));
+          const filteredRecords = records.filter(r => !bookedPropertyIds.has(r.id));
+
+          setProperties(filteredRecords);
+          setHasMore(false);
+          return;
+        }
+      }
+
+      const records = await pb.collection('properties').getList(pageNum, 24, {
+        filter: filterStr,
+        sort: '-created',
+        $autoCancel: false
+      });
+
+      setProperties(prev => append ? [...prev, ...records.items] : records.items);
+      setHasMore(records.page < records.totalPages);
+    } catch (err) {
+      console.error('Search error:', err);
+      setError('Failed to fetch search results. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchResults = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const guests = parseInt(criteria.guests, 10) || 1;
-        const location = criteria.where ? criteria.where.toLowerCase() : '';
-        
-        let filterStr = `status = 'Live' && guestCapacity >= ${guests}`;
-        
-        // Fetch base properties first
-        const records = await pb.collection('properties').getFullList({
-          filter: filterStr,
-          sort: '-created',
-          $autoCancel: false
-        });
-
-        // Soft filter by location (case-insensitive include)
-        let filteredRecords = records;
-        if (location) {
-          filteredRecords = records.filter(r => 
-            (r.location || '').toLowerCase().includes(location) ||
-            (r.title || '').toLowerCase().includes(location)
-          );
-        }
-
-        // Filter out booked properties if dates are provided
-        if (criteria.checkIn && criteria.checkOut) {
-          const inDate = new Date(criteria.checkIn);
-          const outDate = new Date(criteria.checkOut);
-          
-          if (inDate < outDate) {
-            const inStr = inDate.toISOString().split('T')[0];
-            const outStr = outDate.toISOString().split('T')[0];
-            
-            // Check overlapping bookings:
-            // A booking overlaps if it starts before requested out AND ends after requested in
-            const bookings = await pb.collection('bookings').getFullList({
-              filter: `status != 'cancelled' && checkInDate < "${outStr} 23:59:59" && checkOutDate > "${inStr} 00:00:00"`,
-              $autoCancel: false
-            });
-            
-            const bookedPropertyIds = new Set(bookings.map(b => b.propertyId));
-            filteredRecords = filteredRecords.filter(r => !bookedPropertyIds.has(r.id));
-          }
-        }
-
-        setProperties(filteredRecords);
-      } catch (err) {
-        console.error('Search error:', err);
-        setError('Failed to fetch search results. Please try again.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (criteria) {
-      fetchResults();
-    }
+    if (!criteria) return;
+    setPage(1);
+    setProperties([]);
+    setHasMore(false);
+    fetchResults(1, false);
   }, [criteria]);
 
   if (!criteria) return null;
@@ -109,6 +116,12 @@ const SearchResults = ({ criteria }) => {
       </div>
     );
   }
+
+  const handleLoadMore = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchResults(nextPage, true);
+  };
 
   return (
     <div className="mt-10">
@@ -164,6 +177,14 @@ const SearchResults = ({ criteria }) => {
           </motion.div>
         ))}
       </div>
+
+      {hasMore && (
+        <div className="mt-10 flex justify-center">
+          <Button onClick={handleLoadMore} disabled={loading} variant="outline" className="rounded-full px-8 py-4 text-lg">
+            {loading ? 'Loading...' : 'Load More'}
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

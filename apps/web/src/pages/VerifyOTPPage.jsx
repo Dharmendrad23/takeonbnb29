@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { Loader2, ArrowRight, RefreshCw } from 'lucide-react';
 
 const VerifyOTPPage = () => {
-  const [code, setCode] = useState('');
+  const [code, setCode] = india('');
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes standard OTP validity
@@ -45,7 +45,7 @@ const VerifyOTPPage = () => {
       const authData = await authWithOTP(otpId, code);
       toast.success('Email verified successfully!');
       
-      const destination = from?.pathname || (authData.record.userType === 'host' ? '/host-dashboard' : '/guest/dashboard');
+      const destination = from?.pathname || (authData.record.userType === 'host' ? '/host/dashboard' : '/guest/dashboard');
       navigate(destination, { replace: true });
     } catch (err) {
       toast.error('Invalid or expired OTP. Please check the code or request a new one.');

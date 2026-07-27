@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Phone, Lock, User, ArrowRight, Loader2, KeyRound, Mail } from 'lucide-react';
@@ -69,7 +70,7 @@ const SignupPage = () => {
 
     setLoading(true);
     try {
-      await signupWithOTP(phone, password, 'guest', name, email);
+      await signupWithOTP(phone, password, 'guest', name, email, otpId, otpCode);
       toast.success('Account created successfully!');
       navigate('/login');
     } catch (error) {
@@ -206,14 +207,26 @@ const SignupPage = () => {
               </div>
 
               <div className="space-y-2">
-                <Input
-                  required
-                  type="text"
+                <InputOTP
                   maxLength={6}
                   value={otpCode}
-                  onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                  onChange={setOtpCode}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  autoFocus
                   className="h-14 text-center text-2xl font-bold tracking-[0.5em]"
-                  placeholder="------"
+                  containerClassName="justify-center"
+                  render={({ slots }) => (
+                    <InputOTPGroup className="justify-center gap-2">
+                      {slots.map((slot, index) => (
+                        <InputOTPSlot
+                          key={index}
+                          index={index}
+                          className="h-14 w-12 text-2xl font-bold"
+                        />
+                      ))}
+                    </InputOTPGroup>
+                  )}
                 />
               </div>
 

@@ -5,10 +5,11 @@ import { Helmet } from 'react-helmet';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Mail, Lock, Phone, Loader2, KeyRound } from 'lucide-react';
+import { Mail, Lock, Phone, Loader2, KeyRound, Apple } from 'lucide-react';
 
 const LoginPage = () => {
   const [method, setMethod] = useState('email'); // 'email' or 'phone'
@@ -22,7 +23,7 @@ const LoginPage = () => {
   const [otpId, setOtpId] = useState(null);
   const [otpCode, setOtpCode] = useState('');
 
-  const { login, requestOTP, loginWithOTP } = useAuth();
+  const { login, requestOTP, loginWithOTP, loginWithOAuth2 } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -68,6 +69,19 @@ const LoginPage = () => {
     }
   };
 
+  const handleAppleLogin = async () => {
+    setLoading(true);
+    try {
+      const authData = await loginWithOAuth2('apple');
+      handleSuccess(authData.record);
+    } catch (error) {
+      console.error('Apple login failed:', error);
+      toast.error(error.message || 'Apple login failed. Check backend OAuth configuration.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handlePhoneOTPVerify = async (e) => {
     e.preventDefault();
     if (otpCode.length !== 6) return;
@@ -104,6 +118,22 @@ const LoginPage = () => {
               </TabsList>
 
               <TabsContent value="email" className="animate-in fade-in">
+                <div className="space-y-4 mb-6">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full h-12 text-base font-bold rounded-xl border-border text-foreground hover:bg-muted"
+                    onClick={handleAppleLogin}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                    ) : (
+                      <Apple className="w-5 h-5 mr-2" />
+                    )}
+                    Continue with Apple
+                  </Button>
+                </div>
                 <form onSubmit={handleEmailLogin} className="space-y-5">
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-foreground">Email Address</label>
@@ -185,14 +215,26 @@ const LoginPage = () => {
                 </p>
               </div>
 
-              <Input
-                required
-                type="text"
+              <InputOTP
                 maxLength={6}
                 value={otpCode}
-                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                onChange={setOtpCode}
+                inputMode="numeric"
+                pattern="[0-9]*"
+                autoFocus
                 className="h-14 text-center text-2xl font-bold tracking-[0.5em]"
-                placeholder="------"
+                containerClassName="justify-center"
+                render={({ slots }) => (
+                  <InputOTPGroup className="justify-center gap-2">
+                    {slots.map((slot, index) => (
+                      <InputOTPSlot
+                        key={index}
+                        index={index}
+                        className="h-14 w-12 text-2xl font-bold"
+                      />
+                    ))}
+                  </InputOTPGroup>
+                )}
               />
 
               <Button 

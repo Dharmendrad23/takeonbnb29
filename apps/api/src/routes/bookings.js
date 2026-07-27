@@ -5,6 +5,15 @@ import logger from '../utils/logger.js';
 
 const router = express.Router();
 
+const normalizePhoneNumber = (phone) => {
+  if (!phone) return null;
+  const cleaned = `${phone}`.replace(/[^\d+]/g, '');
+  if (!cleaned) return null;
+  if (cleaned.startsWith('+')) return cleaned;
+  if (cleaned.length === 10) return `+91${cleaned}`;
+  return cleaned;
+};
+
 // Initialize Twilio client
 let twilioClient = null;
 let isTwilioConfigured = false;
@@ -84,7 +93,6 @@ router.post('/create', async (req, res) => {
   // Validate all required fields
   const requiredFields = [
     'propertyId',
-    'guestId',
     'guestFullName',
     'guestMobileNumber',
     'guestEmail',
@@ -114,7 +122,7 @@ router.post('/create', async (req, res) => {
   // Create booking record
   const booking = await pb.collection('bookings').create({
     propertyId,
-    guestId,
+    guestId: guestId || null,
     guestFullName,
     guestMobileNumber,
     guestEmail,
@@ -201,6 +209,61 @@ router.patch('/:bookingId/payment', async (req, res) => {
 
   logger.info(`Booking ${bookingId} payment status updated to ${paymentStatus}`);
   res.json(booking);
+});
+
+// POST /bookings/send-booking-confirmation-message - Send booking confirmation message to the guest
+router.post('/send-booking-confirmation-message', async (req, res) => {
+  const { bookingId } = req.body;
+
+  if (!bookingId) {
+    return res.status(400).json({ error: 'bookingId is required' });
+  }
+
+  const booking = await pb.collection('bookings').getOne(bookingId, {
+    expand: 'propertyId,guestId',
+  });
+
+  if (!booking) {
+    return res.status(404).json({ error: 'Booking not found' });
+  }
+
+  const sentChannels = [];
+  const confirmationText = `Hello ${booking.guestFullName || 'guest'}, your booking request for ${booking.propertyName || 'TakeOnBnB'} has been received. We will verify the payment and confirm your stay shortly. Booking ID: ${booking.id}`;
+
+  if (booking.guestEmail) {
+    try {
+      await pb.sendMail({
+        to: booking.guestEmail,
+        subject: `Booking Received - ${booking.propertyName || 'TakeOnBnB'}`,
+        html: `<p>Hello ${booking.guestFullName || 'guest'},</p><p>Your booking request has been received and is being processed.</p><p>Booking ID: ${booking.id}</p><p>Thank you for choosing TakeOnBnB.</p>`,
+      });
+      sentChannels.push('email');
+    } catch (emailError) {
+      logger.warn(`Failed to send confirmation email to ${booking.guestEmail}:`, emailError.message);
+    }
+  }
+
+  if (booking.guestMobileNumber && isTwilioConfigured) {
+    const normalizedPhone = normalizePhoneNumber(booking.guestMobileNumber);
+    if (normalizedPhone) {
+      try {
+        await twilioClient.messages.create({
+          from: process.env.TWILIO_PHONE_NUMBER,
+          to: normalizedPhone,
+          body: confirmationText,
+        });
+        sentChannels.push('sms');
+      } catch (smsError) {
+        logger.warn(`Failed to send confirmation SMS to ${booking.guestMobileNumber}:`, smsError.message);
+      }
+    }
+  }
+
+  res.json({
+    success: true,
+    sentChannels,
+    message: sentChannels.length > 0 ? 'Confirmation message sent' : 'No confirmation channels were available',
+  });
 });
 
 // POST /bookings/send-booking-confirmation-email - Send booking confirmation email

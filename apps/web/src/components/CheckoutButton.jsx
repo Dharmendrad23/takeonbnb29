@@ -18,8 +18,8 @@ const CheckoutButton = ({ amount, productName, className = '' }) => {
           amount: parseFloat(amount),
           productName,
           currency: 'INR',
-          successUrl: `${window.location.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
-          cancelUrl: `${window.location.origin}/cancel`
+          successUrl: `https://takeonbnb.com/success?session_id={CHECKOUT_SESSION_ID}`,
+          cancelUrl: `https://takeonbnb.com/cancel`
         })
       });
 
