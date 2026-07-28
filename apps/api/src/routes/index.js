@@ -1,5 +1,6 @@
 import { Router } from "express";
 
+import authRouter from "./auth.js";
 import healthCheck from "./health-check.js";
 import bookingsRouter from "./bookingsMongo.js";
 import propertyRouter from "./propertyRoutes.js";
@@ -15,6 +16,7 @@ export default () => {
   appRouter.get("/health", healthCheck);
 
   // API Routes
+  appRouter.use("/auth", authRouter);
   appRouter.use("/bookings", bookingsRouter);
   appRouter.use("/properties", propertyRouter);
   appRouter.use("/admin", adminRouter);

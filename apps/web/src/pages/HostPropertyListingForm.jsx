@@ -54,8 +54,6 @@ const records = data;
   }, []);
 
   useEffect(() => {
-    const fetchCities = async () => {
-  useEffect(() => {
   const fetchCities = async () => {
     try {
       const { data } = await axios.get("http://localhost:3001/properties");
@@ -63,10 +61,10 @@ const records = data;
       const uniqueCities = Array.from(
         new Set(
           data
-            .map((item) => item.location)
+            .map(item => item.location?.trim())
             .filter(Boolean)
         )
-      );
+      ).sort((a, b) => a.localeCompare(b));
 
       setCities(uniqueCities);
     } catch (err) {
@@ -76,42 +74,6 @@ const records = data;
 
   fetchCities();
 }, []);
-const { data } = await axios.get("http://localhost:3001/properties");
-
-const uniqueCities = Array.from(
-  new Set(
-    data
-      .map((item) => item.location?.trim())
-     const { data } = await axios.get("http://localhost:3001/properties");
-
-const uniqueCities = Array.from(
-  new Set(
-    data
-      .map(item => item.location?.trim())
-      .filter(Boolean)
-  )
-).sort((a, b) => a.localeCompare(b));
-
-setCities(uniqueCities);
-          filter: 'status="Live"',
-          fields: 'location',
-          $autoCancel: false
-        });
-
-        const uniqueCities = Array.from(new Set(
-          records
-            .map(record => record.location?.trim())
-            .filter(Boolean)
-        )).sort((a, b) => a.localeCompare(b));
-
-        setCities(uniqueCities);
-      } catch (err) {
-        console.error('Failed to load city suggestions:', err);
-      }
-    };
-
-    fetchCities();
-  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
