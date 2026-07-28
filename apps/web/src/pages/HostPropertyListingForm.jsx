@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import pb from '@/lib/pocketbaseClient.js';
+import axios from "axios";
 import { useAuth } from '@/contexts/AuthContext.jsx';
 
 const STEPS = [
@@ -43,7 +43,8 @@ const HostPropertyListingForm = () => {
   useEffect(() => {
     const fetchAmenities = async () => {
       try {
-        const records = await pb.collection('amenities').getFullList({ sort: 'name', $autoCancel: false });
+        const { data } = await axios.get("http://localhost:3001/amenities");
+const records = data;
         setAvailableAmenities(records);
       } catch (err) {
         console.error("Failed to fetch amenities", err);
@@ -54,8 +55,44 @@ const HostPropertyListingForm = () => {
 
   useEffect(() => {
     const fetchCities = async () => {
-      try {
-        const records = await pb.collection('properties').getFullList({
+  useEffect(() => {
+  const fetchCities = async () => {
+    try {
+      const { data } = await axios.get("http://localhost:3001/properties");
+
+      const uniqueCities = Array.from(
+        new Set(
+          data
+            .map((item) => item.location)
+            .filter(Boolean)
+        )
+      );
+
+      setCities(uniqueCities);
+    } catch (err) {
+      console.error("Failed to load city suggestions:", err);
+    }
+  };
+
+  fetchCities();
+}, []);
+const { data } = await axios.get("http://localhost:3001/properties");
+
+const uniqueCities = Array.from(
+  new Set(
+    data
+      .map((item) => item.location?.trim())
+     const { data } = await axios.get("http://localhost:3001/properties");
+
+const uniqueCities = Array.from(
+  new Set(
+    data
+      .map(item => item.location?.trim())
+      .filter(Boolean)
+  )
+).sort((a, b) => a.localeCompare(b));
+
+setCities(uniqueCities);
           filter: 'status="Live"',
           fields: 'location',
           $autoCancel: false
@@ -165,8 +202,19 @@ const HostPropertyListingForm = () => {
 
       selectedAmenities.forEach(id => data.append('amenities', id));
       photos.forEach(photo => data.append('photos', photo.file));
-
-      await pb.collection('properties').create(data, { $autoCancel: false });
+await axios.post("http://localhost:3001/properties", {
+  hostId: currentUser.id,
+  title: formData.title,
+  description: formData.description,
+  location: formData.location,
+  propertyType: formData.propertyType,
+  pricePerNight: Number(formData.pricePerNight),
+  bedrooms: Number(formData.bedrooms),
+  bathrooms: Number(formData.bathrooms),
+  guestCapacity: Number(formData.guestCapacity),
+  amenities: selectedAmenities,
+  photos: photos.map(photo => photo.preview || "")
+});
       
       toast.success('Property submitted successfully!');
       navigate('/host/dashboard');
