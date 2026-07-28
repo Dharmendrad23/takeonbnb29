@@ -299,18 +299,18 @@ export default defineConfig({
 		cors: true,
 		proxy: {
 			'/api': {
-				target: 'http://localhost:8091',
+				target: 'http://localhost:8090',
 				changeOrigin: true,
 				secure: false,
 			},
 			'/hcgi/platform': {
-				target: 'http://localhost:8091',
+				target: 'http://localhost:8090',
 				changeOrigin: true,
 				secure: false,
 				rewrite: (path) => path.replace(/^\/hcgi\/platform/, '/api'),
 			},
 			'/hcgi/api': {
-				target: 'http://localhost:8091',
+				target: 'http://localhost:8090',
 				changeOrigin: true,
 				secure: false,
 				rewrite: (path) => path.replace(/^\/hcgi\/api/, '/api'),
