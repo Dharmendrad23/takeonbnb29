@@ -22,8 +22,6 @@ const LoginPage = () => {
   const [phone, setPhone] = useState('');
   const [otpId, setOtpId] = useState(null);
   const [otpCode, setOtpCode] = useState('');
-
-  const { login, requestOTP, loginWithOTP, loginWithOAuth2 } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -95,7 +93,6 @@ const LoginPage = () => {
 
     setLoading(true);
     try {
-      const user = await loginWithOTP(phone, otpId, otpCode);
       handleSuccess(user);
     } catch (error) {
       toast.error(error.message);
@@ -121,7 +118,7 @@ const LoginPage = () => {
             <Tabs value={method} onValueChange={setMethod} className="w-full">
               <TabsList className="grid w-full grid-cols-2 p-1 bg-muted rounded-xl h-12 mb-6">
                 <TabsTrigger value="email" className="rounded-lg font-bold text-sm">Email & Password</TabsTrigger>
-                <TabsTrigger value="phone" className="rounded-lg font-bold text-sm">Mobile & OTP</TabsTrigger>
+          
               </TabsList>
 
               <TabsContent value="email" className="animate-in fade-in">
@@ -211,7 +208,7 @@ const LoginPage = () => {
               </TabsContent>
             </Tabs>
           ) : (
-            <form onSubmit={handlePhoneOTPVerify} className="space-y-5 animate-in slide-in-from-right-4">
+           <form onSubmit={handleEmailLogin} className="space-y-5">
               <div className="text-center mb-6">
                 <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-4">
                   <KeyRound className="w-8 h-8" />

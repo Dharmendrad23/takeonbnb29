@@ -146,9 +146,7 @@ const signup = async (email, password, name, userType = "guest") => {
     });
 console.log("OTP Response:", data);
 
-return data.otpId;
-    return data;
-
+return data;
   } catch (error) {
     console.error("OTP verify error:", error);
 
