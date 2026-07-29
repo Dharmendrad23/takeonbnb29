@@ -108,9 +108,13 @@ import OtpSession from "../models/OtpSession.js";
 // Request OTP
 export const requestOTP = async (req, res) => {
   try {
+    console.log("OTP REQUEST START", req.body);
+
     const { phone } = req.body;
 
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+    console.log("OTP GENERATED", otpCode);
 
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
@@ -122,6 +126,8 @@ export const requestOTP = async (req, res) => {
       isVerified: false,
     });
 
+    console.log("OTP SAVED", otp._id);
+
     res.json({
       success: true,
       otpId: otp._id,
@@ -129,55 +135,8 @@ export const requestOTP = async (req, res) => {
     });
 
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
+    console.error("OTP ERROR", error);
 
-
-// Verify OTP
-export const verifyOTP = async (req, res) => {
-  try {
-    const { otpId, otpCode } = req.body;
-
-    const otp = await OtpSession.findById(otpId);
-
-    if (!otp) {
-      return res.status(200).json({
-  success: true,
-  otpId: otp._id,
-  message: "OTP generated successfully",
-});
-    }
-
-    if (new Date() > otp.expiresAt) {
-      return res.status(400).json({
-        success: false,
-        message: "OTP expired",
-      });
-    }
-
-    if (otp.otpCode !== otpCode) {
-      otp.attempts += 1;
-      await otp.save();
-
-      return res.status(400).json({
-        success: false,
-        message: "Invalid OTP",
-      });
-    }
-
-    otp.isVerified = true;
-    await otp.save();
-
-    res.json({
-      success: true,
-      message: "OTP verified",
-    });
-
-  } catch (error) {
     res.status(500).json({
       success: false,
       message: error.message,
