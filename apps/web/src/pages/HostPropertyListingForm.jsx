@@ -43,7 +43,7 @@ const HostPropertyListingForm = () => {
   useEffect(() => {
     const fetchAmenities = async () => {
       try {
-        const { data } = await axios.get("http://localhost:3001/amenities");
+        const { data } = await axios.api.get("/amenities")
 const records = data;
         setAvailableAmenities(records);
       } catch (err) {
@@ -56,15 +56,15 @@ const records = data;
   useEffect(() => {
   const fetchCities = async () => {
     try {
-      const { data } = await axios.get("http://localhost:3001/properties");
+      const { data } = await api.get("/properties")
 
       const uniqueCities = Array.from(
-        new Set(
-          data
-            .map(item => item.location?.trim())
-            .filter(Boolean)
-        )
-      ).sort((a, b) => a.localeCompare(b));
+  new Set(
+    (data.properties || [])
+      .map(item => item.location?.trim())
+      .filter(Boolean)
+  )
+).sort((a, b) => a.localeCompare(b));
 
       setCities(uniqueCities);
     } catch (err) {
@@ -164,8 +164,8 @@ const records = data;
 
       selectedAmenities.forEach(id => data.append('amenities', id));
       photos.forEach(photo => data.append('photos', photo.file));
-await axios.post("http://localhost:3001/properties", {
-  hostId: currentUser.id,
+await api.post("/properties", {
+  hostId: currentUser?._id || currentUser?.id,
   title: formData.title,
   description: formData.description,
   location: formData.location,
@@ -173,9 +173,10 @@ await axios.post("http://localhost:3001/properties", {
   pricePerNight: Number(formData.pricePerNight),
   bedrooms: Number(formData.bedrooms),
   bathrooms: Number(formData.bathrooms),
-  guestCapacity: Number(formData.guestCapacity),
+  guests: Number(formData.guestCapacity),
   amenities: selectedAmenities,
-  photos: photos.map(photo => photo.preview || "")
+ photos: photos.map(photo => photo.preview || ""),
+  approvalStatus: "approved",
 });
       
       toast.success('Property submitted successfully!');

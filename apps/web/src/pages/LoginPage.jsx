@@ -29,8 +29,15 @@ const LoginPage = () => {
 
   const handleSuccess = (user) => {
     toast.success('Logged in successfully');
-    const destination = location.state?.from?.pathname || 
-      (user.userType === 'host' ? '/host/dashboard' : '/guest/dashboard');
+    const destination =
+  location.state?.from?.pathname ||
+  (
+    user.role === 'admin'
+      ? '/admin'
+      : user.role === 'host'
+      ? '/host/dashboard'
+      : '/guest/dashboard'
+  );
     navigate(destination, { replace: true });
   };
 

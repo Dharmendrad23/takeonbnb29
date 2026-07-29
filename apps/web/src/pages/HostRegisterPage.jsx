@@ -1,4 +1,4 @@
-
+import pb from '@/lib/pocketbaseClient.js';
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
@@ -253,7 +253,7 @@ const HostRegisterPage = () => {
           {step === 1 && (
             <div className="mt-6 text-center text-sm">
               <span className="text-muted-foreground">Already a host? </span>
-              <Link to="/login" className="text-primary hover:underline font-bold">
+              <Link to="/host/login" className="text-primary hover:underline font-bold">
                 Log in
               </Link>
             </div>

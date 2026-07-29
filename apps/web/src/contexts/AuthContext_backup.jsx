@@ -1,4 +1,4 @@
-import pb from '@/lib/pocketbaseClient.js';
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '@/lib/api.js';
@@ -61,37 +61,28 @@ export const AuthProvider = ({ children }) => {
     );
   }
 };
+  const signup = async (email, password, name, userType = 'guest') => {
+    try {
+      if (email) {
+        const existing = await pb.collection('users').getList(1, 1, { filter: `email="${email}"`, $autoCancel: false });
+        if (existing.totalItems > 0) throw new Error('Email already registered');
+      }
 
-const signup = async (email, password, name, userType = "guest") => {
-  try {
-    const { data } = await api.post("/auth/register", {
-      fullName: name,
-      email,
-      password,
-      role: userType,
-    });
+      await pb.collection('users').create({
+        email: email || undefined,
+        name,
+        userType,
+        password,
+        passwordConfirm: password,
+      }, { $autoCancel: false });
+      
+      return await login(email, password);
+    } catch (error) {
+      console.error('Signup error:', error);
+      throw new Error(error.message || 'Failed to create account.');
+    }
+  };
 
-    localStorage.setItem("token", data.token);
-    localStorage.setItem("user", JSON.stringify(data.user));
-
-    api.defaults.headers.common["Authorization"] =
-      `Bearer ${data.token}`;
-
-    setCurrentUser(data.user);
-
-    return {
-      record: data.user,
-    };
-
-  } catch (error) {
-    console.error("Signup error:", error);
-
-    throw new Error(
-      error?.response?.data?.message ||
-      "Failed to create account"
-    );
-  }
-};
   // --- OTP Flow ---
   const [pendingOtpId, setPendingOtpId] = useState(null);
   const [pendingOTPIdentifier, setPendingOTPIdentifier] = useState(null);
@@ -120,44 +111,43 @@ const signup = async (email, password, name, userType = "guest") => {
     return response.json();
   };
 
- const requestOTPCode = async (identifier) => {
-  try {
-    const { data } = await api.post("/auth/request-otp", {
-      phone: identifier,
-    });
+  const requestOTPCode = async (identifier) => {
+    try {
+      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 5 * 60000).toISOString();
+      const record = await pb.collection('otp_sessions').create({
+        phone: identifier,
+        otpCode,
+        expiresAt,
+        attempts: 0,
+        isVerified: false
+      }, { $autoCancel: false });
 
-    return data.otpId;
-
-  } catch (error) {
-    console.error("OTP request error:", error);
-
-    throw new Error(
-      error?.response?.data?.message ||
-      "Failed to request OTP"
-    );
-  }
-};
+      await sendOtpSms(identifier, otpCode);
+      return record.id;
+    } catch (error) {
+      console.error('OTP request error:', error);
+      throw new Error(error.message || 'Failed to request OTP. Please try again.');
+    }
+  };
 
   const verifyOTPCode = async (otpId, code) => {
-  try {
-    const { data } = await api.post("/auth/verify-otp", {
-      otpId,
-      otpCode: code,
-    });
-console.log("OTP Response:", data);
-
-return data.otpId;
-    return data;
-
-  } catch (error) {
-    console.error("OTP verify error:", error);
-
-    throw new Error(
-      error?.response?.data?.message ||
-      "Invalid OTP"
-    );
-  }
-};
+    try {
+      const record = await pb.collection('otp_sessions').getOne(otpId, { $autoCancel: false });
+      if (new Date() > new Date(record.expiresAt)) {
+        throw new Error('OTP has expired. Please request a new one.');
+      }
+      if (record.otpCode !== code) {
+        await pb.collection('otp_sessions').update(otpId, { attempts: record.attempts + 1 }, { $autoCancel: false });
+        throw new Error('Invalid OTP code.');
+      }
+      await pb.collection('otp_sessions').update(otpId, { isVerified: true }, { $autoCancel: false });
+      return record;
+    } catch (error) {
+      console.error('OTP verify error:', error);
+      throw error;
+    }
+  };
 
   const requestOTP = async (identifier) => {
     return await requestOTPCode(identifier);
@@ -255,53 +245,45 @@ return data.otpId;
     return { record: user };
   };
 
-const signupWithOTP = async (
-  phone,
-  password,
-  userType,
-  name = '',
-  email = '',
-  otpId,
-  otpCode
-) => {
-  try {
+  const signupWithOTP = async (phone, password, userType, name = '', email = '', otpId, otpCode) => {
+    try {
+      if (!otpId || !otpCode) {
+        throw new Error('OTP verification is required. Please request a new code.');
+      }
 
-    if (!otpId || !otpCode) {
-      throw new Error("OTP verification is required");
+      await verifyOTPCode(otpId, otpCode);
+
+      const existing = await pb.collection('users').getList(1, 1, { filter: `phone="${phone}"`, $autoCancel: false });
+      if (existing.totalItems > 0) throw new Error('Phone number already registered');
+
+      const userData = {
+        phone,
+        password,
+        passwordConfirm: password,
+        userType,
+        name
+      };
+      if (email) userData.email = email;
+
+      const user = await pb.collection('users').create(userData, { $autoCancel: false });
+      
+      // Auto login after signup
+      const authData = await pb.collection('users').authWithPassword(user.email || phone, password, { $autoCancel: false }).catch(async () => {
+         // Fallback if authWithPassword requires email strictly
+         pb.authStore.save('otp_temp_token', user);
+         setCurrentUser(user);
+         return { record: user };
+      });
+      
+      if(authData?.record) setCurrentUser(authData.record);
+      return user;
+    } catch (error) {
+      console.error('OTP signup error:', error);
+      throw error;
     }
+  };
 
-    // Verify OTP from MongoDB API
-    await verifyOTPCode(otpId, otpCode);
-
-    // Create user in MongoDB
-    const { data } = await api.post("/auth/register", {
-      fullName: name,
-      email,
-      phone,
-      password,
-      role: userType,
-    });
-
-    localStorage.setItem("token", data.token);
-    localStorage.setItem("user", JSON.stringify(data.user));
-
-    api.defaults.headers.common["Authorization"] =
-      `Bearer ${data.token}`;
-
-    setCurrentUser(data.user);
-
-    return data.user;
-
-  } catch (error) {
-    console.error("OTP signup error:", error);
-
-    throw new Error(
-      error?.response?.data?.message ||
-      error.message ||
-      "Signup failed"
-    );
-  }
-}; const logout = () => {
+ const logout = () => {
   localStorage.removeItem("token");
   localStorage.removeItem("user");
 
