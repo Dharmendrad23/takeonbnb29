@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
-import api from "@/lib/api.js";
-import { toast } from "sonner";
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import pb from '@/lib/pocketbaseClient.js';
+import { toast } from 'sonner';
 
 const AdminAuthContext = createContext();
 
@@ -11,69 +11,49 @@ export const AdminAuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem("adminToken");
-    const user = localStorage.getItem("adminUser");
-
-    if (token && user) {
-      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-      setAdminUser(JSON.parse(user));
-    }
-
-    setLoading(false);
+    const checkAuth = async () => {
+      if (pb.authStore.isValid && pb.authStore.model?.collectionName === 'admin_users') {
+        try {
+          const authData = await pb.collection('admin_users').authRefresh({ $autoCancel: false });
+          setAdminUser(authData.record);
+        } catch (error) {
+          console.error("Admin session expired:", error);
+          pb.authStore.clear();
+          setAdminUser(null);
+        }
+      }
+      setLoading(false);
+    };
+    checkAuth();
   }, []);
 
   const login = async (email, password) => {
     try {
-      const { data } = await api.post("/auth/login", {
-        email,
-        password,
-      });
-
-      if (data.user.role !== "admin") {
-        throw new Error("Access denied");
-      }
-
-      localStorage.setItem("adminToken", data.token);
-      localStorage.setItem("adminUser", JSON.stringify(data.user));
-
-      api.defaults.headers.common["Authorization"] = `Bearer ${data.token}`;
-
-      setAdminUser(data.user);
-
-      toast.success(`Welcome back, ${data.user.fullName}`);
-
-      return data;
+      const authData = await pb.collection('admin_users').authWithPassword(email, password, { $autoCancel: false });
+      setAdminUser(authData.record);
+      toast.success(`Welcome back, ${authData.record.name || 'Admin'}`);
+      return authData;
     } catch (error) {
       console.error("Admin login failed:", error);
-
-      throw new Error(
-        error?.response?.data?.message || "Invalid email or password"
-      );
+      throw error;
     }
   };
 
   const logoutAdmin = () => {
-    localStorage.removeItem("adminToken");
-    localStorage.removeItem("adminUser");
-
-    delete api.defaults.headers.common["Authorization"];
-
+    pb.authStore.clear();
     setAdminUser(null);
-
     toast.success("Successfully logged out");
   };
 
   return (
-    <AdminAuthContext.Provider
-      value={{
-        adminUser,
-        loading,
-        login,
-        logoutAdmin,
-        isAuthenticated: !!adminUser,
-        isAdmin: adminUser?.role === "admin",
-      }}
-    >
+    <AdminAuthContext.Provider value={{
+      adminUser,
+      loading,
+      login,
+      logoutAdmin,
+      isAuthenticated: !!adminUser,
+      isAdmin: adminUser?.role === 'admin' || adminUser?.role === 'manager'
+    }}>
       {children}
     </AdminAuthContext.Provider>
   );

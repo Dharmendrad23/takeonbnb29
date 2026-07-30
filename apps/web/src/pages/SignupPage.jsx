@@ -4,24 +4,26 @@ import { Helmet } from 'react-helmet';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Phone, Lock, User, ArrowRight, Loader2, Mail } from 'lucide-react';
+import { Phone, Lock, User, ArrowRight, Loader2, KeyRound, Mail } from 'lucide-react';
 
 const SignupPage = () => {
   const navigate = useNavigate();
-  const { signup } = useAuth();
+  const { requestOTP, signupWithOTP } = useAuth();
+  
+  const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
-const [step, setStep] = useState(1);
-const [otpId, setOtpId] = useState(null);
-const [otpCode, setOtpCode] = useState("");
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [otpId, setOtpId] = useState(null);
+  const [otpCode, setOtpCode] = useState('');
 
   useEffect(() => {
     if (resendTimer > 0) {
@@ -30,39 +32,72 @@ const [otpCode, setOtpCode] = useState("");
     }
   }, [resendTimer]);
 
- const handleSignup = async (e) => {
-  e.preventDefault();
+  const handleRequestOTP = async (e) => {
+    e.preventDefault();
+    if (phone.length !== 10) {
+      toast.error('Mobile number must be 10 digits');
+      return;
+    }
+    if (password.length <4) {
+      toast.error('Password must be at least 8 characters');
+      return;
+    }
+    if (password !== confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
 
-  if (!name || !email || !phone || !password || !confirmPassword) {
-    toast.error("Please fill all fields");
-    return;
-  }
+    setLoading(true);
+    try {
+      const id = await requestOTP(phone);
+      setOtpId(id);
+      setStep(2);
+      setResendTimer(30);
+      toast.success('OTP sent to your mobile number');
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  if (password !== confirmPassword) {
-    toast.error("Passwords do not match");
-    return;
-  }
+  const handleVerifyOTP = async (e) => {
+    e.preventDefault();
+    if (otpCode.length !== 6) {
+      toast.error('Please enter the 6-digit OTP');
+      return;
+    }
 
-  setLoading(true);
+    setLoading(true);
+    try {
+      await signupWithOTP(phone, password, 'guest', name, email, otpId, otpCode);
+      toast.success('Account created successfully!');
+      navigate('/login');
+    } catch (error) {
+      toast.error(error.message || 'Verification failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  try {
-    await signup(email, password, name, "guest");
-
-    toast.success("Account created successfully!");
-
-    navigate("/login");
-
-  } catch (error) {
-    toast.error(error.message || "Signup failed");
-
-  } finally {
-    setLoading(false);
-  }
-};
+  const handleResend = async () => {
+    if (resendTimer > 0) return;
+    setLoading(true);
+    try {
+      const id = await requestOTP(phone);
+      setOtpId(id);
+      setResendTimer(30);
+      toast.success('OTP resent successfully');
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4 py-12 pt-28">
-      <Helmet><title>Sign Up | Take On BnB</title></Helmet>
+      <Helmet><title>Sign Up | TakeOn BnB</title></Helmet>
       
       <Card className="w-full max-w-md shadow-xl border-border rounded-2xl overflow-hidden">
         <CardHeader className="text-center pb-6 bg-primary-gradient text-white">
@@ -74,7 +109,7 @@ const [otpCode, setOtpCode] = useState("");
         
         <CardContent className="pt-8">
           {step === 1 && (
-            <form onSubmit={handleSignup}className="space-y-5 animate-in fade-in">
+            <form onSubmit={handleRequestOTP} className="space-y-5 animate-in fade-in">
               <div className="space-y-2">
                 <label className="text-sm font-bold text-foreground">Full Name</label>
                 <div className="relative">
@@ -156,6 +191,73 @@ const [otpCode, setOtpCode] = useState("");
               >
                 {loading ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : 'Continue'}
               </Button>
+            </form>
+          )}
+
+          {step === 2 && (
+            <form onSubmit={handleVerifyOTP} className="space-y-5 animate-in slide-in-from-right-4">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-4">
+                  <KeyRound className="w-8 h-8" />
+                </div>
+                <h3 className="text-xl font-bold">Verify Mobile</h3>
+                <p className="text-muted-foreground text-sm mt-2">
+                  Enter the 6-digit code sent to +91 {phone}
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <InputOTP
+                  maxLength={6}
+                  value={otpCode}
+                  onChange={setOtpCode}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  autoFocus
+                  className="h-14 text-center text-2xl font-bold tracking-[0.5em]"
+                  containerClassName="justify-center"
+                  render={({ slots }) => (
+                    <InputOTPGroup className="justify-center gap-2">
+                      {slots.map((slot, index) => (
+                        <InputOTPSlot
+                          key={index}
+                          index={index}
+                          className="h-14 w-12 text-2xl font-bold"
+                        />
+                      ))}
+                    </InputOTPGroup>
+                  )}
+                />
+              </div>
+
+              <Button 
+                type="submit" 
+                className="w-full h-12 text-base font-bold rounded-xl mt-4"
+                disabled={loading || otpCode.length !== 6}
+              >
+                {loading ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : 'Verify & Create Account'}
+              </Button>
+
+              <div className="text-center mt-4">
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  disabled={resendTimer > 0 || loading}
+                  className="text-sm font-semibold text-primary disabled:text-muted-foreground hover:underline"
+                >
+                  {resendTimer > 0 ? `Resend code in ${resendTimer}s` : 'Resend Code'}
+                </button>
+              </div>
+              
+              <div className="text-center mt-2">
+                <button
+                  type="button"
+                  onClick={() => setStep(1)}
+                  className="text-xs text-muted-foreground hover:text-foreground underline"
+                >
+                  Change Mobile Number
+                </button>
+              </div>
             </form>
           )}
           

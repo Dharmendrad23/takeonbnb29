@@ -290,13 +290,13 @@ export default defineConfig({
 	},
 	customLogger: logger,
 	plugins: [
-  react(),
-],
+		...(isDev ? [inlineEditPlugin(), editModeDevPlugin(), selectionModePlugin(), iframeRouteRestorationPlugin(), pocketbaseAuthPlugin()] : []),
+		react(),
+		addTransformIndexHtml
+	],
 	server: {
-    host: "127.0.0.1",
-    port: 3000,
-    strictPort: true,
-    cors: true,
+		port: 3000,
+		cors: true,
 		proxy: {
 			'/api': {
 				target: 'http://localhost:8090',

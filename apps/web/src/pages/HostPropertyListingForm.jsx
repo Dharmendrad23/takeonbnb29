@@ -43,7 +43,7 @@ const HostPropertyListingForm = () => {
   useEffect(() => {
     const fetchAmenities = async () => {
       try {
-        const { data } = await axios.api.get("/amenities")
+        const { data } = await axios.get("http://localhost:3001/amenities");
 const records = data;
         setAvailableAmenities(records);
       } catch (err) {
@@ -54,17 +54,19 @@ const records = data;
   }, []);
 
   useEffect(() => {
+    const fetchCities = async () => {
+  useEffect(() => {
   const fetchCities = async () => {
     try {
-      const { data } = await api.get("/properties")
+      const { data } = await axios.get("http://localhost:3001/properties");
 
       const uniqueCities = Array.from(
-  new Set(
-    (data.properties || [])
-      .map(item => item.location?.trim())
-      .filter(Boolean)
-  )
-).sort((a, b) => a.localeCompare(b));
+        new Set(
+          data
+            .map((item) => item.location)
+            .filter(Boolean)
+        )
+      );
 
       setCities(uniqueCities);
     } catch (err) {
@@ -74,6 +76,42 @@ const records = data;
 
   fetchCities();
 }, []);
+const { data } = await axios.get("http://localhost:3001/properties");
+
+const uniqueCities = Array.from(
+  new Set(
+    data
+      .map((item) => item.location?.trim())
+     const { data } = await axios.get("http://localhost:3001/properties");
+
+const uniqueCities = Array.from(
+  new Set(
+    data
+      .map(item => item.location?.trim())
+      .filter(Boolean)
+  )
+).sort((a, b) => a.localeCompare(b));
+
+setCities(uniqueCities);
+          filter: 'status="Live"',
+          fields: 'location',
+          $autoCancel: false
+        });
+
+        const uniqueCities = Array.from(new Set(
+          records
+            .map(record => record.location?.trim())
+            .filter(Boolean)
+        )).sort((a, b) => a.localeCompare(b));
+
+        setCities(uniqueCities);
+      } catch (err) {
+        console.error('Failed to load city suggestions:', err);
+      }
+    };
+
+    fetchCities();
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -164,8 +202,8 @@ const records = data;
 
       selectedAmenities.forEach(id => data.append('amenities', id));
       photos.forEach(photo => data.append('photos', photo.file));
-await api.post("/properties", {
-  hostId: currentUser?._id || currentUser?.id,
+await axios.post("http://localhost:3001/properties", {
+  hostId: currentUser.id,
   title: formData.title,
   description: formData.description,
   location: formData.location,
@@ -173,10 +211,9 @@ await api.post("/properties", {
   pricePerNight: Number(formData.pricePerNight),
   bedrooms: Number(formData.bedrooms),
   bathrooms: Number(formData.bathrooms),
-  guests: Number(formData.guestCapacity),
+  guestCapacity: Number(formData.guestCapacity),
   amenities: selectedAmenities,
- photos: photos.map(photo => photo.preview || ""),
-  approvalStatus: "approved",
+  photos: photos.map(photo => photo.preview || "")
 });
       
       toast.success('Property submitted successfully!');

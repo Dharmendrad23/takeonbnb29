@@ -4,7 +4,7 @@ import { Heart, Star, MapPin, BedDouble, Bath, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useFavorites } from '@/hooks/useFavorites.js';
 import { Button } from '@/components/ui/button';
-
+import pb from '@/lib/pocketbaseClient.js';
 
 const PropertyCard = memo(({ property, isHostView = false }) => {
   const navigate = useNavigate();
@@ -35,10 +35,11 @@ const PropertyCard = memo(({ property, isHostView = false }) => {
     }).format(price);
   };
 
-  const imageUrl =
-  property.coverImage ||
-  property.photos?.[0] ||
-  "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80";
+  const imageUrl = property.coverImage 
+    ? pb.files.getUrl(property, property.coverImage)
+    : property.photos?.length > 0 
+      ? pb.files.getUrl(property, property.photos[0]) 
+      : 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80';
 
   return (
     <motion.div
