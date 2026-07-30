@@ -62,14 +62,14 @@ const HostRegisterPage = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4 py-12 pt-28">
       <Helmet>
-        <title>Become a Host | TakeOn BnB</title>
+        <title>Become a Host | Take On BnB</title>
       </Helmet>
 
       <Card className="w-full max-w-md shadow-xl rounded-2xl">
         <CardHeader className="text-center">
-          <CardTitle className="text-3xl font-bold">
-            Become a Host
-          </CardTitle>
+          <CardTitle className="text-3xl font-bold text-red-600">
+  TEST - HOST REGISTER NEW VERSION
+</CardTitle>
 
           <CardDescription>
             Create your host account
