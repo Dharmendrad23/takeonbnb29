@@ -1,8 +1,17 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
-
+import nodemailer from "nodemailer";
+import otpGenerator from "otp-generator";
+import OtpSession from "../models/OtpSession.js";
 const createToken = (user) => {
+  const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.SMTP_EMAIL,
+    pass: process.env.SMTP_PASSWORD,
+  },
+});
   return jwt.sign(
     {
       id: user._id,
@@ -103,43 +112,60 @@ export const me = async (req, res) => {
   res.json(user);
 
 };
-import OtpSession from "../models/OtpSession.js";
-
-// Request OTP
+// Request Email OTP
 export const requestOTP = async (req, res) => {
   try {
-    console.log("OTP REQUEST START", req.body);
+    const { email } = req.body;
 
-    const { phone } = req.body;
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
+      });
+    }
 
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpCode = otpGenerator.generate(6, {
+      upperCaseAlphabets: false,
+      lowerCaseAlphabets: false,
+      specialChars: false,
+      digits: true,
+    });
 
-    console.log("OTP GENERATED", otpCode);
+    await OtpSession.deleteMany({
+      email: email.toLowerCase(),
+    });
 
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
-
-    const otp = await OtpSession.create({
-      phone,
+    await OtpSession.create({
+      email: email.toLowerCase(),
       otpCode,
-      expiresAt,
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000),
       attempts: 0,
       isVerified: false,
     });
 
-    console.log("OTP SAVED", otp._id);
+    await transporter.sendMail({
+      from: process.env.SMTP_EMAIL,
+      to: email,
+      subject: "TakeOnBNB Email Verification OTP",
+      html: `
+        <h2>TakeOnBNB</h2>
+        <p>Your verification code is:</p>
+        <h1>${otpCode}</h1>
+        <p>This OTP is valid for 5 minutes.</p>
+      `,
+    });
 
     res.json({
       success: true,
-      otpId: otp._id,
-      message: "OTP generated successfully",
+      message: "OTP sent successfully.",
     });
 
-  } catch (error) {
-    console.error("OTP ERROR", error);
+  } catch (err) {
+    console.error(err);
 
     res.status(500).json({
       success: false,
-      message: error.message,
+      message: err.message,
     });
   }
 };
