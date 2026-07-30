@@ -1,11 +1,11 @@
-import Pocketbase from "pocketbase";
+import Pocketbase from 'pocketbase';
 
-// Temporary compatibility client
-// MongoDB API use ho raha hai, lekin old components ke imports break na ho
+// PocketBase JS client already appends /api internally.
+// Use root base URL so requests go to /api/... instead of /api/api/...
+const POCKETBASE_API_URL = '/';
 
-const POCKETBASE_API_URL = "/";
+const pocketbaseClient = new Pocketbase(POCKETBASE_API_URL);
 
-const pb = new Pocketbase(POCKETBASE_API_URL);
+export default pocketbaseClient;
 
-export default pb;
-export { pb };
+export { pocketbaseClient };

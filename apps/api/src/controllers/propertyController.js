@@ -3,43 +3,10 @@ import Property from "../models/Property.js";
 // GET ALL PROPERTIES
 export const getProperties = async (req, res) => {
   try {
-    const page = Number(req.query.page) || 1;
-    const limit = Number(req.query.limit) || 24;
-    const skip = (page - 1) * limit;
-
-    const filter = {
-      isActive: true,
-      approvalStatus: "approved",
-    };
-
-    if (req.query.city) {
-      filter.city = req.query.city;
-    }
-
-    if (req.query.propertyType) {
-      filter.propertyType = req.query.propertyType;
-    }
-
-    const properties = await Property.find(filter)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
-
-    const total = await Property.countDocuments(filter);
-
-    res.json({
-      success: true,
-      page,
-      total,
-      totalPages: Math.ceil(total / limit),
-      properties,
-    });
-
+    const properties = await Property.find().sort({ createdAt: -1 });
+    res.json(properties);
   } catch (err) {
-    res.status(500).json({
-      success: false,
-      message: err.message,
-    });
+    res.status(500).json({ message: err.message });
   }
 };
 
@@ -49,22 +16,12 @@ export const getPropertyById = async (req, res) => {
     const property = await Property.findById(req.params.id);
 
     if (!property) {
-      return res.status(404).json({
-        success: false,
-        message: "Property not found",
-      });
+      return res.status(404).json({ message: "Property not found" });
     }
 
-    res.json({
-      success: true,
-      property,
-    });
-
+    res.json(property);
   } catch (err) {
-    res.status(500).json({
-      success: false,
-      message: err.message,
-    });
+    res.status(500).json({ message: err.message });
   }
 };
 
@@ -72,17 +29,9 @@ export const getPropertyById = async (req, res) => {
 export const createProperty = async (req, res) => {
   try {
     const property = await Property.create(req.body);
-
-    res.status(201).json({
-      success: true,
-      property,
-    });
-
+    res.status(201).json(property);
   } catch (err) {
-    res.status(400).json({
-      success: false,
-      message: err.message,
-    });
+    res.status(400).json({ message: err.message });
   }
 };
 
@@ -92,61 +41,30 @@ export const updateProperty = async (req, res) => {
     const property = await Property.findByIdAndUpdate(
       req.params.id,
       req.body,
-      {
-        new: true,
-        runValidators: true,
-      }
+      { new: true }
     );
 
     if (!property) {
-      return res.status(404).json({
-        success: false,
-        message: "Property not found",
-      });
+      return res.status(404).json({ message: "Property not found" });
     }
 
-    res.json({
-      success: true,
-      property,
-    });
-
+    res.json(property);
   } catch (err) {
-    res.status(400).json({
-      success: false,
-      message: err.message,
-    });
+    res.status(400).json({ message: err.message });
   }
 };
 
 // DELETE PROPERTY
 export const deleteProperty = async (req, res) => {
   try {
-    const property = await Property.findByIdAndUpdate(
-      req.params.id,
-      {
-        isActive: false,
-      },
-      {
-        new: true,
-      }
-    );
+    const property = await Property.findByIdAndDelete(req.params.id);
 
     if (!property) {
-      return res.status(404).json({
-        success: false,
-        message: "Property not found",
-      });
+      return res.status(404).json({ message: "Property not found" });
     }
 
-    res.json({
-      success: true,
-      message: "Property deleted successfully",
-    });
-
+    res.json({ message: "Property deleted successfully" });
   } catch (err) {
-    res.status(500).json({
-      success: false,
-      message: err.message,
-    });
+    res.status(500).json({ message: err.message });
   }
 };

@@ -1,18 +1,15 @@
+
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { useAuth } from '@/contexts/AuthContext.jsx';
-import api from '@/lib/api.js';
+import pb from '@/lib/pocketbaseClient.js';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Home, IndianRupee, Users, Calendar, PlusCircle, TrendingUp, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const HostDashboardPage = () => {
-
   const { currentUser } = useAuth();
-
-  console.log("Current User:", currentUser);
-  
   const [stats, setStats] = useState({ properties: 0, bookings: 0, revenue: 0 });
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -22,49 +19,40 @@ const HostDashboardPage = () => {
       try {
         setLoading(true);
         // Fetch host properties
-        const { data } = await api.get("/properties");
-         const hostProperties = data.properties.filter(
-  p => p.hostId === (currentUser?._id || currentUser?.id)
-);
-
-setProperties(hostProperties);
-
-const totalBookings = hostProperties.reduce(
-  (sum, p) => sum + (p.totalBookings || 0),
-  0
-);
-
-const totalRevenue = hostProperties.reduce(
-  (sum, p) => sum + (p.totalRevenue || 0),
-  0
-);
+        const props = await pb.collection('properties').getList(1, 10, {
+          filter: `hostId="${currentUser?.id}"`,
+          sort: '-created',
+          $autoCancel: false
+        });
+        setProperties(props.items);
 
         // Fetch bookings for these properties (simplified aggregate)
-      
+        const bookings = await pb.collection('bookings').getList(1, 1, {
+          filter: `propertyId.hostId="${currentUser?.id}" && status="completed"`,
+          $autoCancel: false
+        });
+
         // Calculate Revenue (mocking exact aggregate for this demo)
-       setStats({
-  properties: hostProperties.length,
-  bookings: totalBookings,
-  revenue: totalRevenue,
-});
+        const totalRev = props.items.reduce((acc, curr) => acc + (curr.totalRevenue || 0), 0);
+        const totalBookings = props.items.reduce((acc, curr) => acc + (curr.totalBookings || 0), 0);
+
+        setStats({
+          properties: props.totalItems,
+          bookings: totalBookings || bookings.totalItems || 0,
+          revenue: totalRev
+        });
 
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
       } finally {
-  console.log("FINALLY RUNNING");
-  setLoading(false);
-}
+        setLoading(false);
+      }
     };
 
-   if (!currentUser) {
-  setLoading(false);
-  return;
-}
-
-fetchHostData();
+    if (currentUser?.id) {
+      fetchHostData();
+    }
   }, [currentUser]);
-
-console.log("Loading State:", loading);
 
   if (loading) {
     return (

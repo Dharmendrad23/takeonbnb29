@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
-import api from '@/lib/api.js';
+import pb from '@/lib/pocketbaseClient.js';
 import PropertyCard from '@/components/PropertyCard.jsx';
 import PropertyCardSkeleton from '@/components/PropertyCardSkeleton.jsx';
 import { Button } from '@/components/ui/button';
@@ -10,32 +10,45 @@ const PropertyList = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+
   const fetchProperties = async (pageNum = 1, append = false) => {
-  try {
-    setIsLoading(true);
-
-    const { data } = await api.get(
-      `/properties?page=${pageNum}&limit=24`
-    );
-
-    if (append) {
-      setProperties(prev => [...prev, ...data.properties]);
-    } else {
-      setProperties(data.properties);
+    try {
+      setIsLoading(true);
+      const records = await pb.collection('properties').getList(pageNum, 24, {
+        filter: 'approvalStatus = "approved"',
+        sort: '-created',
+        $autoCancel: false
+      });
+      
+      if (append) {
+        setProperties(prev => [...prev, ...records.items]);
+      } else {
+        setProperties(records.items);
+      }
+      
+      setHasMore(records.page < records.totalPages);
+    } catch (err) {
+      console.error("Failed to fetch properties", err);
+    } finally {
+      setIsLoading(false);
     }
-
-    setHasMore(pageNum < data.totalPages);
-
-  } catch (err) {
-    console.error("Failed to fetch properties", err);
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
   useEffect(() => {
-  fetchProperties(1);
-}, []);
+    fetchProperties(1, false);
+
+    // Real-time subscription
+    pb.collection('properties').subscribe('*', function (e) {
+      fetchProperties(1, false);
+    });
+
+    const interval = setInterval(() => fetchProperties(1, false), 30000);
+
+    return () => {
+      pb.collection('properties').unsubscribe('*');
+      clearInterval(interval);
+    };
+  }, []);
 
   const loadMore = () => {
     const nextPage = page + 1;
@@ -66,7 +79,7 @@ const PropertyList = () => {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-x-6 gap-y-10">
               {properties.map((property, index) => (
-                <PropertyCard key={property._id} property={property} index={index} />
+                <PropertyCard key={property.id} property={property} index={index} />
               ))}
             </div>
             
