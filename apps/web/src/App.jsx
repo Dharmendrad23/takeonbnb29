@@ -41,15 +41,27 @@ import NotFoundPage from '@/pages/NotFoundPage.jsx';
 import GuestDashboardHome from '@/pages/GuestDashboardHome.jsx';
 import GuestBookingsPage from '@/pages/GuestBookingsPage.jsx';
 import GuestWishlistPage from '@/pages/GuestWishlistPage.jsx';
+import GuestPaymentHistoryPage from '@/pages/GuestPaymentHistoryPage.jsx';
+import GuestFavoritesPage from '@/pages/GuestFavoritesPage.jsx';
+import GuestMessagesPage from '@/pages/GuestMessagesPage.jsx';
+import GuestReviewsPage from '@/pages/GuestReviewsPage.jsx';
+import GuestSettingsPage from '@/pages/GuestSettingsPage.jsx';
 
 // Host Pages
 import HostDashboardPage from '@/pages/HostDashboardPage.jsx';
 import HostPropertyListingForm from '@/pages/HostPropertyListingForm.jsx';
 import HostPropertiesPage from '@/pages/HostPropertiesPage.jsx';
+import HostLoginPage from '@/pages/HostLoginPage.jsx';
 
 // Admin Pages
 import AdminLoginPage from '@/pages/admin/AdminLoginPage.jsx';
 import AdminDashboard from '@/pages/admin/AdminDashboard.jsx';
+import AdminPropertyManagement from '@/pages/admin/AdminPropertyManagement.jsx';
+import AdminPropertyApprovalPage from '@/pages/admin/AdminPropertyApprovalPage.jsx';
+import AdminBookingManagement from '@/pages/admin/AdminBookingManagement.jsx';
+import AdminGuestManagement from '@/pages/admin/AdminGuestManagement.jsx';
+import AdminRevenueTracking from '@/pages/admin/AdminRevenueTracking.jsx';
+import AdminActivityLogs from '@/pages/admin/AdminActivityLogs.jsx';
 
 // Wrapping layout for general pages
 const AppLayout = ({ children }) => {
@@ -91,8 +103,9 @@ function App() {
     <ErrorBoundary>
       <Router>
         <AuthProvider>
-          <NotificationProvider>
-            <AdminAuthProvider>
+  <NotificationProvider>
+    <AdminAuthProvider>
+
               <ScrollToTop />
               <Routes>
                 
@@ -105,6 +118,7 @@ function App() {
                 <Route path="/login" element={<AppLayout><LoginPage /></AppLayout>} />
                 <Route path="/signup" element={<AppLayout><SignupPage /></AppLayout>} />
                 <Route path="/host/register" element={<AppLayout><HostRegisterPage /></AppLayout>} />
+                <Route path="/host/login" element={<AppLayout><HostLoginPage /></AppLayout>} />
                 
                 {/* Static Pages */}
                 <Route path="/about" element={<AppLayout><AboutUsPage /></AppLayout>} />
@@ -119,6 +133,15 @@ function App() {
                 <Route path="/guest/dashboard" element={<ProtectedRoute requireGuest><AppLayout><GuestDashboardHome /></AppLayout></ProtectedRoute>} />
                 <Route path="/guest/bookings" element={<ProtectedRoute requireGuest><AppLayout><GuestBookingsPage /></AppLayout></ProtectedRoute>} />
                 <Route path="/guest/wishlist" element={<ProtectedRoute requireGuest><AppLayout><GuestWishlistPage /></AppLayout></ProtectedRoute>} />
+                <Route path="/guest/payments" element={<ProtectedRoute requireGuest><AppLayout><GuestPaymentHistoryPage /></AppLayout></ProtectedRoute>} />
+
+                 <Route path="/guest/favorites" element={<ProtectedRoute requireGuest><AppLayout><GuestFavoritesPage /></AppLayout> </ProtectedRoute>} />
+
+                 <Route path="/guest/messages" element={<ProtectedRoute requireGuest><AppLayout><GuestMessagesPage /></AppLayout></ProtectedRoute>} />
+
+                 <Route path="/guest/reviews" element={<ProtectedRoute requireGuest><AppLayout><GuestReviewsPage /></AppLayout></ProtectedRoute>} />
+
+                 <Route path="/guest/settings" element={<ProtectedRoute requireGuest><AppLayout><GuestSettingsPage /></AppLayout></ProtectedRoute>} />
                 
                 {/* Host Protected Routes */}
                 <Route path="/host/dashboard" element={<ProtectedRoute requireHost><AppLayout><HostDashboardPage /></AppLayout></ProtectedRoute>} />
@@ -128,14 +151,26 @@ function App() {
                 {/* Admin Routes */}
                 <Route path="/admin/login" element={<AdminLoginPage />} />
                 <Route path="/admin" element={<AdminProtectedRoute><AdminLayout /></AdminProtectedRoute>}>
-                  <Route index element={<AdminDashboard />} />
-                </Route>
+  <Route index element={<AdminDashboard />} />
+
+  <Route path="properties" element={<AdminPropertyManagement />} />
+
+  <Route path="properties/pending" element={<AdminPropertyApprovalPage />} />
+
+  <Route path="bookings" element={<AdminBookingManagement />} />
+
+  <Route path="users" element={<AdminGuestManagement />} />
+
+  <Route path="analytics" element={<AdminRevenueTracking />} />
+
+  <Route path="activity-logs" element={<AdminActivityLogs />} />
+</Route>Get-Content apps\web\src\pages\SignupPage.jsx
 
                 {/* Catch-all 404 */}
                 <Route path="*" element={<AppLayout><NotFoundPage /></AppLayout>} />
               </Routes>
               <Toaster position="top-center" richColors theme="light" />
-            </AdminAuthProvider>
+               </AdminAuthProvider>
           </NotificationProvider>
         </AuthProvider>
       </Router>

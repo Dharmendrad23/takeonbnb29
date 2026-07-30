@@ -3,7 +3,8 @@ import mongoose from "mongoose";
 const propertySchema = new mongoose.Schema(
   {
     hostId: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
       required: true,
     },
 
@@ -18,21 +19,76 @@ const propertySchema = new mongoose.Schema(
       required: true,
     },
 
+    propertyType: {
+      type: String,
+      enum: [
+        "Apartment",
+        "House",
+        "Villa",
+        "Room",
+        "Hotel",
+        "Resort",
+        "Homestay",
+      ],
+      default: "Apartment",
+    },
+
     location: {
       type: String,
       required: true,
     },
 
-    propertyType: {
+    address: {
       type: String,
-      enum: ["apartment", "house", "villa", "room"],
-      required: true,
+      default: "",
     },
+
+    city: {
+      type: String,
+      default: "",
+    },
+
+    state: {
+      type: String,
+      default: "",
+    },
+
+    country: {
+      type: String,
+      default: "India",
+    },
+
+    pincode: {
+      type: String,
+      default: "",
+    },
+
+    latitude: Number,
+    longitude: Number,
 
     pricePerNight: {
       type: Number,
       required: true,
-      min: 1,
+    },
+
+    guests: {
+      type: Number,
+      default: 1,
+    },
+
+    bedrooms: {
+      type: Number,
+      default: 1,
+    },
+
+    beds: {
+      type: Number,
+      default: 1,
+    },
+
+    bathrooms: {
+      type: Number,
+      default: 1,
     },
 
     amenities: [
@@ -46,6 +102,32 @@ const propertySchema = new mongoose.Schema(
         type: String,
       },
     ],
+
+    approvalStatus: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
+    },
+
+    featured: {
+      type: Boolean,
+      default: false,
+    },
+
+    rating: {
+      type: Number,
+      default: 0,
+    },
+
+    reviewCount: {
+      type: Number,
+      default: 0,
+    },
+
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
   },
   {
     timestamps: true,
