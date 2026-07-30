@@ -18,14 +18,15 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [20.x]
+        node-version: [22]
 
     steps:
       - uses: actions/checkout@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }} Website change if you have the I am notified with stem K hundred percent sure
+          node-version: ${{ matrix.node-version }}
           cache: npm
 
       - name: Install dependencies
