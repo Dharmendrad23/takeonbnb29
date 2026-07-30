@@ -274,58 +274,68 @@ const Header = () => {
 
 
 
-         {!isAuthenticated ? (
-  <div className="flex items-center gap-2">
-
-    <Button
-      variant="outline"
-      asChild
-      className="font-semibold rounded-full border-border"
-    >
-      <Link to="/login">
-        Log In
-      </Link>
-    </Button>
-
-  </div>
-) : (
-  <DropdownMenu>
-
-    <DropdownMenuTrigger asChild>
-      <Button
-        variant="outline"
-        size="icon"
-        className="rounded-full w-10 h-10 border-border bg-card shadow-sm"
-      >
-        <UserIcon className="w-5 h-5 text-foreground/80" />
-      </Button>
-    </DropdownMenuTrigger>
+          {!isAuthenticated ? (
 
 
-    <DropdownMenuContent
-      align="end"
-      className="w-48 rounded-xl mt-2"
-    >
 
-      <DropdownMenuItem asChild className="cursor-pointer font-medium py-2.5">
-        <Link to={isHost ? "/host/dashboard" : "/guest/dashboard"}>
-          Dashboard
-        </Link>
-      </DropdownMenuItem>
+            <div className="flex items-center gap-2">
 
 
-      <DropdownMenuItem
-        className="cursor-pointer font-medium py-2.5 text-destructive"
-        onClick={logout}
-      >
-        Log Out
-      </DropdownMenuItem>
+
+              <Button variant="outline" asChild className="font-semibold rounded-full border-border">
 
 
-    </DropdownMenuContent>
 
-  </DropdownMenu>
-)}
+                <Link to="/login">Log In</Link>
+
+
+
+              </Button>
+
+
+
+              </DropdownMenuTrigger>
+
+
+
+              <DropdownMenuContent align="end" className="w-48 rounded-xl mt-2">
+
+
+
+                <DropdownMenuItem asChild className="cursor-pointer font-medium py-2.5">
+
+
+
+                  <Link to={isHost ? '/host/dashboard' : '/guest/dashboard'}>Dashboard</Link>
+
+
+
+                </DropdownMenuItem>
+
+
+
+                <DropdownMenuItem className="cursor-pointer font-medium py-2.5 text-destructive focus:text-destructive" onClick={logout}>
+
+
+
+                  Log Out
+
+
+
+                </DropdownMenuItem>
+
+
+
+              </DropdownMenuContent>
+
+
+
+            </DropdownMenu>
+
+
+
+          )}
+
 
 
         </div>
@@ -480,48 +490,63 @@ const Header = () => {
 
 
 
-               {!isAuthenticated ? (
+                {!isAuthenticated ? (
 
-  <div className="flex items-center gap-2">
 
-    <Button variant="outline" asChild className="font-semibold rounded-full border-border">
-      <Link to="/login">Log In</Link>
-    </Button>
 
-  </div>
+                  <>
 
-) : (
 
-  <DropdownMenu>
 
-    <DropdownMenuTrigger asChild>
+                    <Button variant="outline" asChild className="font-semibold rounded-full border-border">
+  <Link to="/login">Log In</Link>
+</Button>
 
-      <Button variant="outline" size="icon" className="rounded-full w-10 h-10 border-border bg-card shadow-sm hover:shadow-md transition-all">
-        <UserIcon className="w-5 h-5 text-foreground/80" />
-      </Button>
+</div>
 
-    </DropdownMenuTrigger>
 
-    <DropdownMenuContent align="end" className="w-48 rounded-xl mt-2">
 
-      <DropdownMenuItem asChild className="cursor-pointer font-medium py-2.5">
-        <Link to={isHost ? '/host/dashboard' : '/guest/dashboard'}>
-          Dashboard
-        </Link>
-      </DropdownMenuItem>
+                    
 
-      <DropdownMenuItem 
-        className="cursor-pointer font-medium py-2.5 text-destructive focus:text-destructive"
-        onClick={logout}
-      >
-        Log Out
-      </DropdownMenuItem>
 
-    </DropdownMenuContent>
 
-  </DropdownMenu>
+                  </>
 
-)}
+
+
+               
+
+
+
+                    <Button variant="outline" asChild className="w-full justify-center rounded-xl h-12 text-base">
+
+
+
+                      <Link to={isHost ? '/host/dashboard' : '/guest/dashboard'}>Dashboard</Link>
+
+
+
+                    </Button>
+
+
+
+                    <Button variant="ghost" onClick={logout} className="w-full justify-center text-destructive h-12 text-base">
+
+
+
+                      Log Out
+
+
+
+                    </Button>
+
+
+
+                  </>
+
+
+
+                )}
 
 
 

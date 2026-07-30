@@ -1,7 +1,15 @@
-
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Home, Building, Tent, Tractor, Ship, Trees, Building2, Palmtree } from 'lucide-react';
+import {
+  Home,
+  Building,
+  Tent,
+  Tractor,
+  Ship,
+  Palmtree,
+  Building2
+} from 'lucide-react';
+
 
 const categories = [
   { name: 'Villas', count: '1,245', icon: Home },
@@ -9,48 +17,209 @@ const categories = [
   { name: 'Cabins', count: '892', icon: Tent },
   { name: 'Farm Houses', count: '567', icon: Tractor },
   { name: 'Houseboats', count: '234', icon: Ship },
-  { name: 'Treehouses', count: '445', icon: Trees },
-  { name: 'Penthouses', count: '678', icon: Building2 },
   { name: 'Cottages', count: '1,123', icon: Palmtree },
+  { name: 'Luxury Stays', count: '950', icon: Building2 },
 ];
 
+
 const PropertyCategories = () => {
+
   return (
-    <section className="py-24 bg-muted/30">
+
+    <section className="py-24 bg-muted/30 overflow-hidden">
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+
+        {/* Heading */}
+
         <div className="mb-12 text-center">
-          <h2 className="relative inline-block pb-2">
+
+          <h2 className="relative inline-block pb-3 text-3xl md:text-4xl font-bold">
+
             Browse by Category
-            <span className="absolute bottom-0 left-1/4 w-1/2 h-1 bg-primary rounded-full"></span>
+
+            <span className="
+              absolute
+              bottom-0
+              left-1/4
+              w-1/2
+              h-1
+              bg-primary
+              rounded-full
+            "/>
+
           </h2>
+
+
+          <p className="text-muted-foreground mt-4">
+
+            Find your perfect stay from our curated categories
+
+          </p>
+
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
-          {categories.map((cat, index) => {
-            const Icon = cat.icon;
-            return (
-              <motion.div
-                key={cat.name}
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.05 }}
-                className="bg-card hover:bg-primary group cursor-pointer border border-border rounded-2xl p-6 text-center shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col items-center justify-center gap-3"
-              >
-                <div className="p-3 bg-muted group-hover:bg-white/20 rounded-full transition-colors">
-                  <Icon className="w-8 h-8 text-foreground group-hover:text-white transition-colors" strokeWidth={1.5} />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-sm group-hover:text-white transition-colors">{cat.name}</h3>
-                  <p className="text-xs text-muted-foreground group-hover:text-white/80 transition-colors mt-1">{cat.count}</p>
-                </div>
-              </motion.div>
-            )
-          })}
+
+
+        {/* Animated Slider */}
+
+        <div className="relative">
+
+
+          <motion.div
+
+            className="flex gap-5"
+
+            animate={{
+              x: ["0%", "-50%"]
+            }}
+
+            transition={{
+              duration: 30,
+              repeat: Infinity,
+              ease: "linear"
+            }}
+
+          >
+
+
+            {[...categories, ...categories].map((cat, index) => {
+
+              const Icon = cat.icon;
+
+
+              return (
+
+                <motion.div
+
+                  key={index}
+
+                  whileHover={{
+                    y: -10,
+                    scale: 1.05
+                  }}
+
+                  transition={{
+                    duration: 0.3
+                  }}
+
+
+                  className="
+                    min-w-[180px]
+                    h-[190px]
+                    rounded-3xl
+                    bg-card
+                    border
+                    border-border
+                    shadow-sm
+                    hover:shadow-2xl
+                    cursor-pointer
+                    flex
+                    flex-col
+                    items-center
+                    justify-center
+                    gap-4
+                    group
+                  "
+
+                >
+
+
+
+                  <motion.div
+
+                    whileHover={{
+                      rotate: 360
+                    }}
+
+                    transition={{
+                      duration: 0.6
+                    }}
+
+
+                    className="
+                      p-4
+                      rounded-full
+                      bg-muted
+                      group-hover:bg-primary
+                      transition-all
+                    "
+
+                  >
+
+                    <Icon
+
+                      className="
+                        w-9
+                        h-9
+                        text-foreground
+                        group-hover:text-white
+                        transition-colors
+                      "
+
+                      strokeWidth={1.5}
+
+                    />
+
+
+                  </motion.div>
+
+
+
+
+                  <div className="text-center">
+
+
+                    <h3 className="
+                      font-semibold
+                      text-base
+                      group-hover:text-primary
+                      transition
+                    ">
+
+                      {cat.name}
+
+                    </h3>
+
+
+
+                    <p className="
+                      text-xs
+                      text-muted-foreground
+                      mt-1
+                    ">
+
+                      {cat.count} properties
+
+                    </p>
+
+
+                  </div>
+
+
+
+                </motion.div>
+
+              );
+
+            })}
+
+
+          </motion.div>
+
+
         </div>
+
+
       </div>
+
+
     </section>
+
   );
+
 };
+
 
 export default PropertyCategories;
