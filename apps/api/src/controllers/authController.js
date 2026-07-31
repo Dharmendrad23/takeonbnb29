@@ -31,6 +31,14 @@ const createToken = (user) => {
 export const register = async (req, res) => {
   try {
     const { fullName, email, password, phone, role } = req.body;
+    const normalizedEmail = email.trim().toLowerCase();
+
+if (password.length < 8) {
+  return res.status(400).json({
+    success: false,
+    message: "Password must be at least 8 characters",
+  });
+}
 
     if (!fullName || !email || !password) {
       return res.status(400).json({
@@ -39,9 +47,9 @@ export const register = async (req, res) => {
       });
     }
 
-    const exists = await User.findOne({
-      email: email.toLowerCase(),
-    });
+   const exists = await User.findOne({
+  email: normalizedEmail,
+});
 
     if (exists) {
       return res.status(400).json({
@@ -51,23 +59,22 @@ export const register = async (req, res) => {
     }
 
     const hash = await bcrypt.hash(password, 10);
+Next year construction profile Hello hello, good afternoon. My shooty bold video architect and developer inquiry architecture interior design in kindergarten developers architectural format like construction, engine design that's why I called you O'Keefe, good afternoonconst user = await User.create({
+  fullName: fullName.trim(),
+  email: normalizedEmail,
+  password: hash,
+  phone,
+  role: role || "guest",
+});
+const token = createToken(user);
 
-    const user = await User.create({
-      fullName,
-      email: email.toLowerCase(),
-      password: hash,
-      phone,
-      role: role || "guest",
-    });
+const safeUser = await User.findById(user._id).select("-password");
 
-    const token = createToken(user);
-
-    res.status(201).json({
-      success: true,
-      token,
-      user,
-    });
-  } catch (err) {
+res.status(201).json({
+  success: true,
+  token,
+  user: safeUser,
+});  } catch (err) {
     console.error(err);
 
     res.status(500).json({
@@ -82,10 +89,11 @@ export const register = async (req, res) => {
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
+    const normalizedEmail = email.trim().toLowerCase();
 
-    const user = await User.findOne({
-      email: email.toLowerCase(),
-    });
+   const user = await User.findOne({
+  email: normalizedEmail,
+});
 
     if (!user) {
       return res.status(400).json({
@@ -105,11 +113,13 @@ export const login = async (req, res) => {
 
     const token = createToken(user);
 
-    res.json({
-      success: true,
-      token,
-      user,
-    });
+const safeUser = await User.findById(user._id).select("-password");
+
+res.json({
+  success: true,
+  token,
+  user: safeUser,
+});
 
   } catch (err) {
     console.error(err);
