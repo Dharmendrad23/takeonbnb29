@@ -4,28 +4,40 @@ import User from "../models/User.js";
 import nodemailer from "nodemailer";
 import otpGenerator from "otp-generator";
 import OtpSession from "../models/OtpSession.js";
-const createToken = (user) => {
-  const transporter = nodemailer.createTransport({
+
+const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: process.env.SMTP_EMAIL,
     pass: process.env.SMTP_PASSWORD,
   },
 });
+
+const createToken = (user) => {
   return jwt.sign(
     {
       id: user._id,
       role: user.role,
     },
     process.env.JWT_SECRET || "takeonbnb_secret",
-    { expiresIn: "7d" }
+    {
+      expiresIn: "7d",
+    }
   );
 };
 
-// Register
+// ===================== REGISTER =====================
+
 export const register = async (req, res) => {
   try {
     const { fullName, email, password, phone, role } = req.body;
+
+    if (!fullName || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Please fill all required fields",
+      });
+    }
 
     const exists = await User.findOne({
       email: email.toLowerCase(),
@@ -56,6 +68,8 @@ export const register = async (req, res) => {
       user,
     });
   } catch (err) {
+    console.error(err);
+
     res.status(500).json({
       success: false,
       message: err.message,
@@ -63,7 +77,8 @@ export const register = async (req, res) => {
   }
 };
 
-// Login
+// ===================== LOGIN =====================
+
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -97,6 +112,8 @@ export const login = async (req, res) => {
     });
 
   } catch (err) {
+    console.error(err);
+
     res.status(500).json({
       success: false,
       message: err.message,
@@ -104,15 +121,16 @@ export const login = async (req, res) => {
   }
 };
 
-// Current User
-export const me = async (req, res) => {
+// ===================== CURRENT USER =====================
 
+export const me = async (req, res) => {
   const user = await User.findById(req.user.id).select("-password");
 
   res.json(user);
-
 };
-// Request Email OTP
+
+// ===================== REQUEST EMAIL OTP =====================
+
 export const requestOTP = async (req, res) => {
   try {
     const { email } = req.body;
@@ -158,6 +176,56 @@ export const requestOTP = async (req, res) => {
     res.json({
       success: true,
       message: "OTP sent successfully.",
+    });
+
+  } catch (err) {
+    console.error(err);
+
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
+
+// ===================== VERIFY EMAIL OTP =====================
+
+export const verifyEmailOTP = async (req, res) => {
+  try {
+    const { email, otpCode } = req.body;
+
+    if (!email || !otpCode) {
+      return res.status(400).json({
+        success: false,
+        message: "Email and OTP are required",
+      });
+    }
+
+    const otp = await OtpSession.findOne({
+      email: email.toLowerCase(),
+      otpCode,
+    });
+
+    if (!otp) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid OTP",
+      });
+    }
+
+    if (otp.expiresAt < new Date()) {
+      return res.status(400).json({
+        success: false,
+        message: "OTP has expired",
+      });
+    }
+
+    otp.isVerified = true;
+    await otp.save();
+
+    res.json({
+      success: true,
+      message: "Email verified successfully",
     });
 
   } catch (err) {

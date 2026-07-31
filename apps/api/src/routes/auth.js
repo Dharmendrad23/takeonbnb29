@@ -4,6 +4,7 @@ import {
   login,
   me,
   requestOTP,
+  verifyEmailOTP,
 } from "../controllers/authController.js";
 
 import authMiddleware from "../middleware/authMiddleware.js";
@@ -11,6 +12,7 @@ import authMiddleware from "../middleware/authMiddleware.js";
 const router = express.Router();
 
 router.post("/request-email-otp", requestOTP);
+router.post("/verify-email-otp", verifyEmailOTP);
 
 router.post("/register", register);
 router.post("/login", login);
