@@ -27,7 +27,7 @@ export const AuthProvider = ({ children }) => {
   const user = localStorage.getItem("user");
 
   if (token && user) {
-    api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    api.defaults.headers.common["Authorization"] = "Bearer " + token;
     setCurrentUser(JSON.parse(user));
   }
 
@@ -44,8 +44,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem("token", data.token);
     localStorage.setItem("user", JSON.stringify(data.user));
 
-    api.defaults.headers.common["Authorization"] =
-      `Bearer ${data.token}`;
+    api.defaults.headers.common["Authorization"] = "Bearer " + data.token;
 
     setCurrentUser(data.user);
 
@@ -74,8 +73,7 @@ const signup = async (email, password, name, userType = "guest") => {
     localStorage.setItem("token", data.token);
     localStorage.setItem("user", JSON.stringify(data.user));
 
-    api.defaults.headers.common["Authorization"] =
-      `Bearer ${data.token}`;
+    api.defaults.headers.common["Authorization"] = "Bearer " + data.token;
 
     setCurrentUser(data.user);
 
@@ -120,42 +118,58 @@ const signup = async (email, password, name, userType = "guest") => {
     return response.json();
   };
 
- const requestOTPCode = async (identifier) => {
-  try {
-    const { data } = await api.post("/auth/request-otp", {
-      phone: identifier,
-    });
+  const storeAuthSession = (token, user) => {
+    localStorage.setItem("token", token);
+    localStorage.setItem("user", JSON.stringify(user));
+    api.defaults.headers.common["Authorization"] = "Bearer " + token;
+    setCurrentUser(user);
+  };
 
-    return data.otpId;
+  const requestOTPCode = async (identifier) => {
+    if (!identifier?.includes("@")) {
+      throw new Error("Phone OTP login is not currently available.");
+    }
 
-  } catch (error) {
-    console.error("OTP request error:", error);
+    try {
+      const normalizedEmail = identifier.trim().toLowerCase();
+      await api.post("/auth/request-email-otp", {
+        email: normalizedEmail,
+      });
 
-    throw new Error(
-      error?.response?.data?.message ||
-      "Failed to request OTP"
-    );
-  }
-};
+      setPendingOtpId(normalizedEmail);
+      setPendingOTPIdentifier(normalizedEmail);
+      return normalizedEmail;
+    } catch (error) {
+      console.error("OTP request error:", error);
+
+      throw new Error(
+        error?.response?.data?.message ||
+        "Failed to request OTP"
+      );
+    }
+  };
 
   const verifyOTPCode = async (otpId, code) => {
-  try {
-    const { data } = await api.post("/auth/verify-otp", {
-      otpId,
-      otpCode: code,
-    });
-console.log("OTP Response:", data);
+    if (!otpId?.includes("@")) {
+      throw new Error("Phone OTP login is not currently available.");
+    }
 
-return data;
-  } catch (error) {
-    console.error("OTP verify error:", error);
+    try {
+      const { data } = await api.post("/auth/verify-email-otp", {
+        email: otpId,
+        otpCode: code,
+      });
 
-    throw new Error(
-      error?.response?.data?.message ||
-      "Invalid OTP"
-    );
-  }
-};
+      return data;
+    } catch (error) {
+      console.error("OTP verify error:", error);
+
+      throw new Error(
+        error?.response?.data?.message ||
+        "Invalid OTP"
+      );
+    }
+  };
 
   const requestOTP = async (identifier) => {
     return await requestOTPCode(identifier);
@@ -177,24 +191,14 @@ return data;
     if (args.length === 1) {
       const [identifier] = args;
       const otpId = await requestOTPCode(identifier);
-      setPendingOtpId(otpId);
-      setPendingOTPIdentifier(identifier);
-      if (!identifier.includes('@')) setPendingPhone(identifier);
       return { otpId };
     }
 
     if (args.length === 3) {
       const [identifier, otpId, code] = args;
-      await verifyOTPCode(otpId, code);
-      const filter = identifier.includes('@') ? `email="${identifier}"` : `phone="${identifier}"`;
-      const users = await pb.collection('users').getList(1, 1, { filter, $autoCancel: false });
-      if (users.totalItems === 0) {
-        throw new Error('No account found with this identifier.');
-      }
-      const user = users.items[0];
-      pb.authStore.save('phone_auth_token_' + Date.now(), user);
-      setCurrentUser(user);
-      return user;
+      const data = await verifyOTPCode(otpId || identifier, code);
+      storeAuthSession(data.token, data.user);
+      return data.user;
     }
 
     throw new Error('Invalid loginWithOTP call');
@@ -220,32 +224,22 @@ return data;
       if (!pendingOtpId || !pendingOTPIdentifier) {
         throw new Error('OTP session missing. Please request a new OTP.');
       }
-      const record = await verifyOTPCode(pendingOtpId, otpIdOrCode);
-      const filter = pendingOTPIdentifier.includes('@') ? `email="${pendingOTPIdentifier}"` : `phone="${pendingOTPIdentifier}"`;
-      const users = await pb.collection('users').getList(1, 1, { filter, $autoCancel: false });
-      if (users.totalItems === 0) {
-        throw new Error('No account found with this identifier.');
-      }
-      const user = users.items[0];
-      pb.authStore.save('phone_auth_token_' + Date.now(), user);
-      setCurrentUser(user);
-      return user;
+      const data = await verifyOTPCode(pendingOtpId, otpIdOrCode);
+      storeAuthSession(data.token, data.user);
+      return data.user;
     }
-    return await verifyOTPCode(otpIdOrCode, code);
+    const data = await verifyOTPCode(otpIdOrCode, code);
+    if (data?.token && data?.user) {
+      storeAuthSession(data.token, data.user);
+      return { record: data.user };
+    }
+    return data;
   };
 
   const authWithOTP = async (otpId, code) => {
-    const record = await verifyOTPCode(otpId, code);
-    const identifier = pendingOTPIdentifier || record.phone;
-    const filter = identifier.includes('@') ? `email="${identifier}"` : `phone="${identifier}"`;
-    const users = await pb.collection('users').getList(1, 1, { filter, $autoCancel: false });
-    if (users.totalItems === 0) {
-      throw new Error('No account found with this identifier.');
-    }
-    const user = users.items[0];
-    pb.authStore.save('phone_auth_token_' + Date.now(), user);
-    setCurrentUser(user);
-    return { record: user };
+    const data = await verifyOTPCode(otpId, code);
+    storeAuthSession(data.token, data.user);
+    return { record: data.user };
   };
 
   const verifyPhoneOTP = async (otpId, code) => {
@@ -283,8 +277,7 @@ const signupWithOTP = async (
     localStorage.setItem("token", data.token);
     localStorage.setItem("user", JSON.stringify(data.user));
 
-    api.defaults.headers.common["Authorization"] =
-      `Bearer ${data.token}`;
+    api.defaults.headers.common["Authorization"] = "Bearer " + data.token;
 
     setCurrentUser(data.user);
 

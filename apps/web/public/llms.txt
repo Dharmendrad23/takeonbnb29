@@ -1,0 +1,65 @@
+## Pages
+- [| Take On BnB](/categoryfilter): No description available
+- [| Take On BnB Blog](/blogdetail): No description available
+- [| Take on BnB`}](/propertydetail): No description available
+- [| TakeOn BnB`}](/destination): No description available
+- [About Us | TakeOn BnB](/aboutus): Learn more about TakeOn BnB, our mission, values, and the team behind your perfect stays.
+- [Account Settings | TakeOn BnB](/guestsettings): No description available
+- [Add New Property | Take on BNB](/hostpropertylistingform): No description available
+- [Add Property | Take On BnB](/hostaddproperty): No description available
+- [All Properties | Take On BnB](/propertylist.backup): No description available
+- [All Properties | Take On BnB](/propertylist): No description available
+- [Become a Host | Take On BnB](/hostregister): No description available
+- [Blog | TakeOn BnB](/blog): Travel guides, host tips, and company news from TakeOn BnB.
+- [Booking Confirmed | Take On BnB](/bookingconfirmation): No description available
+- [Booking Details | Take On BnB](/bookingdetail): No description available
+- [Bookings | Take On BnB](/hostbookings): No description available
+- [Careers | TakeOn BnB](/careers): Join the TakeOn BnB team and help us redefine travel and hospitality.
+- [Complete Booking | Take On BnB](/booking): No description available
+- [Contact Us | TakeOn BnB](/contact): Get in touch with TakeOn BnB for support, partnerships, or general inquiries.
+- [Create Property - Take on BNB](/createproperty): List your property on Take on BNB
+- [Dashboard | Take On BnB](/guestdashboardhome): No description available
+- [Earnings | Take On BnB](/hostearnings): No description available
+- [Edit Property | Take On BnB](/editproperty): No description available
+- [Explore Properties - Take on BNB](/explore): Browse and discover unique vacation rentals for your next trip
+- [FAQ | TakeOn BnB](/faq): Frequently asked questions about booking, hosting, and travel with TakeOn BnB.
+- [Favorites | Take On BnB](/guestfavorites): No description available
+- [Help Center | Take On BnB](/helpcenter): Find answers to your questions and get support anytime at Take On BnB.
+- [Help Center | TakeOn BnB](/helpcenter): Find answers to common questions and contact our support team.
+- [Himachal Luxury Stays | Take on BNB](/himachal): Discover premium vacation rentals and properties in Himachal on Take on BNB. Book your perfect stay today.
+- [Host Dashboard | Take on BnB](/hostdashboard): No description available
+- [Host Dashboard | Take On BnB](/hostdashboardhome): No description available
+- [Host Dashboard | TakeOn BnB](/hostdashboard): No description available
+- [Host Settings | Take On BnB](/hostsettings): No description available
+- [Jammu & Kashmir Luxury Stays | Take on BNB](/jammukashmir): Discover premium vacation rentals and properties in Jammu & Kashmir on Take on BNB. Book your perfect stay today.
+- [Kerala Luxury Stays | Take on BNB](/kerala): Discover premium vacation rentals and properties in Kerala on Take on BNB. Book your perfect stay today.
+- [Log in | TakeOn BnB](/login): No description available
+- [Luxury Beach Villas in Goa | Take on BNB](/goadestination): Beachfront luxury stays with ocean views. Book exclusive beach villas and retreats in Goa.
+- [Luxury Villas in Delhi | Take on BNB](/delhidestination): Premium stays in Delhi with modern amenities. Book exclusive luxury villas and apartments in Delhi NCR.
+- [Luxury Villas in Jaipur | Take on BNB](/jaipurdestination): Royal heritage meets modern luxury in Jaipur. Book exclusive palace-style villas and havelis.
+- [Messages | Take On BnB](/guestmessages): No description available
+- [Messages | Take On BnB](/hostmessages): No description available
+- [My Bookings - Take on BNB](/guestdashboard): View and manage your bookings
+- [My Bookings | TakeOn BnB](/guestbookings): No description available
+- [My Properties | Take On BnB](/hostproperties): No description available
+- [My Reviews | TakeOn BnB](/guestreviews): No description available
+- [My Wishlist - Take on BNB](/wishlist): Your saved properties
+- [Page Not Found | Take On BnB](/notfound): No description available
+- [Payment Cancelled | TakeOn BnB](/cancel): No description available
+- [Payment History | TakeOn BnB](/guestpaymenthistory): No description available
+- [Payment Successful | TakeOn BnB](/success): No description available
+- [Punjab Luxury Stays | Take on BNB](/punjab): Discover premium vacation rentals and properties in Punjab on Take on BNB. Book your perfect stay today.
+- [Rajasthan Luxury Stays | Take on BNB](/rajasthan): Discover premium vacation rentals and properties in Rajasthan on Take on BNB. Book your perfect stay today.
+- [Reviews | Take On BnB](/hostreviews): No description available
+- [Safety & Trust | TakeOn BnB](/safety): Learn about our commitment to host and guest safety at TakeOn BnB.
+- [Search Properties | TakeOn BnB](/search): Find the perfect stay for your next trip.
+- [Search Results | Take on BNB](/searchresults): Discover premium vacation rentals and properties on Take on BNB. Book your perfect stay today.
+- [Secure Payment | Take on BnB](/payment): No description available
+- [Sign Up | Take On BnB](/register): No description available
+- [Sign Up | Take On BnB](/signup): No description available
+- [Take on BnB - Luxury Vacation Rentals](/home): Discover and book luxury vacation rentals, villas, and unique stays globally with Take on BnB.
+- [Upcoming Trips | TakeOn BnB](/guestupcomingtrips): No description available
+- [Uttar Pradesh Luxury Stays | Take on BNB](/uttarpradesh): Discover premium vacation rentals and properties in Uttar Pradesh on Take on BNB. Book your perfect stay today.
+- [Uttarakhand Luxury Stays | Take on BNB](/uttarakhand): Discover premium vacation rentals and properties in Uttarakhand on Take on BNB. Book your perfect stay today.
+- [Verify Email | TakeOn BnB](/verifyotp): No description available
+- [Wishlist | TakeOn BnB](/guestwishlist): No description available

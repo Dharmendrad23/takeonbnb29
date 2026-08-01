@@ -23,15 +23,17 @@ const HostLoginPage = () => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const user = await loginWithEmail(email, password);
-      if (user.userType !== 'host') {
+      const authData = await loginWithEmail(email, password);
+      const user = authData.record;
+
+      if (user.role !== 'host' && user.role !== 'admin') {
         toast.error('This account is not registered as a host.');
-        // Optionally log them out or redirect
       } else {
+        toast.success('Welcome back!');
         navigate('/host/dashboard');
       }
     } catch (error) {
-      toast.error(' email or password');
+      toast.error(error.message || 'Invalid email or password');
     } finally {
       setIsLoading(false);
     }
@@ -52,16 +54,21 @@ const HostLoginPage = () => {
 
   const handleOTPVerify = async (e) => {
     e.preventDefault();
+    if (otpCode.length !== 6) {
+      toast.error('Please enter the full 6-digit OTP');
+      return;
+    }
     setIsLoading(true);
     try {
       const user = await verifyOTP(otpCode);
-      if (user.userType !== 'host') {
+      if (user.role !== 'host' && user.role !== 'admin') {
         toast.error('This account is not registered as a host.');
       } else {
+        toast.success('Welcome back!');
         navigate('/host/dashboard');
       }
     } catch (error) {
-      toast.error('Invalid OTP code');
+      toast.error(error.message || 'Invalid OTP code');
     } finally {
       setIsLoading(false);
     }
@@ -137,19 +144,19 @@ const HostLoginPage = () => {
             ) : (
               <form onSubmit={handleOTPVerify} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="otpCode">Enter 8-digit OTP</Label>
+                  <Label htmlFor="otpCode">Enter 6-digit OTP</Label>
                   <Input 
                     id="otpCode" 
                     type="text" 
-                    maxLength={8}
-                    placeholder="12345678"
+                    maxLength={6}
+                    placeholder="123456"
                     value={otpCode}
-                    onChange={(e) => setOtpCode(e.target.value)}
+                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                     required
                     className="text-foreground text-center tracking-widest text-lg"
                   />
                 </div>
-                <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={isLoading}>
+                <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={isLoading || otpCode.length !== 6}>
                   {isLoading ? 'Verifying...' : 'Verify & Login'}
                 </Button>
                 <Button type="button" variant="ghost" className="w-full" onClick={() => setStep('request')}>
