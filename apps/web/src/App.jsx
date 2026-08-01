@@ -164,7 +164,7 @@ function App() {
   <Route path="analytics" element={<AdminRevenueTracking />} />
 
   <Route path="activity-logs" element={<AdminActivityLogs />} />
-</Route>Get-Content apps\web\src\pages\SignupPage.jsx
+</Route>
 
                 {/* Catch-all 404 */}
                 <Route path="*" element={<AppLayout><NotFoundPage /></AppLayout>} />
