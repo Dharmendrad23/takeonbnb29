@@ -79,6 +79,7 @@ const Footer = () => {
             <Link to="/privacy" className="text-sm text-gray-500 hover:text-white transition-colors">Privacy Policy</Link>
             <Link to="/terms" className="text-sm text-gray-500 hover:text-white transition-colors">Terms of Service</Link>
             <Link to="/cancellation" className="text-sm text-gray-500 hover:text-white transition-colors">Cancellation Policy</Link>
+            <Link to="/admin/login" className="text-sm text-gray-500 hover:text-white transition-colors">Admin Login</Link>
           </div>
         </div>
       </div>
