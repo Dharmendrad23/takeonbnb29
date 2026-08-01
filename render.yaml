@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: takeonbnb29-web
+    env: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist/apps/web
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        value: https://takeonbnb-api.onrender.com
