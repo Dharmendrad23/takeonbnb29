@@ -1,4 +1,3 @@
-import pb from '@/lib/pocketbaseClient.js';
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '@/lib/api.js';
@@ -93,31 +92,6 @@ const signup = async (email, password, name, userType = "guest") => {
   // --- OTP Flow ---
   const [pendingOtpId, setPendingOtpId] = useState(null);
   const [pendingOTPIdentifier, setPendingOTPIdentifier] = useState(null);
-  const [pendingPhone, setPendingPhone] = useState(null);
-
-  const sendOtpSms = async (phone, otpCode) => {
-    const trimmedPhone = phone.trim();
-    const digitsOnlyPhone = trimmedPhone.replace(/\D/g, '');
-    const recipientPhone = trimmedPhone.startsWith('+') ? trimmedPhone : `+91${digitsOnlyPhone}`;
-    const messageBody = `Your TakeOnBnB verification code is ${otpCode}. It expires in 5 minutes. Do not share this code with anyone.`;
-    const apiHost = `${window.location.protocol}//${window.location.hostname}:3001`;
-
-    const response = await fetch(`${apiHost}/notifications/send-sms`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ recipientPhone, messageBody }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => response.statusText);
-      throw new Error(`Unable to send OTP SMS: ${errorText || response.statusText}`);
-    }
-
-    return response.json();
-  };
-
   const storeAuthSession = (token, user) => {
     localStorage.setItem("token", token);
     localStorage.setItem("user", JSON.stringify(user));
@@ -175,14 +149,6 @@ const signup = async (email, password, name, userType = "guest") => {
     return await requestOTPCode(identifier);
   };
 
-  const requestPhoneOTP = async (phone) => {
-    const otpId = await requestOTPCode(phone);
-    setPendingOtpId(otpId);
-    setPendingOTPIdentifier(phone);
-    setPendingPhone(phone);
-    return otpId;
-  };
-
   const loginWithEmail = async (email, password) => {
     return await login(email, password);
   };
@@ -202,21 +168,6 @@ const signup = async (email, password, name, userType = "guest") => {
     }
 
     throw new Error('Invalid loginWithOTP call');
-  };
-
-  const loginWithOAuth2 = async (provider, options = {}) => {
-    try {
-      const authData = await pb.collection('users').authWithOAuth2({
-        provider,
-        scopes: options.scopes || ['email', 'name'],
-        createData: options.createData || {},
-      });
-      setCurrentUser(authData.record);
-      return authData;
-    } catch (error) {
-      console.error('OAuth login error:', error);
-      throw new Error(error.message || 'OAuth login failed');
-    }
   };
 
   const verifyOTP = async (otpIdOrCode, code) => {
@@ -241,58 +192,7 @@ const signup = async (email, password, name, userType = "guest") => {
     storeAuthSession(data.token, data.user);
     return { record: data.user };
   };
-
-  const verifyPhoneOTP = async (otpId, code) => {
-    const user = await loginWithOTP(pendingPhone || '', otpId, code);
-    return { record: user };
-  };
-
-const signupWithOTP = async (
-  phone,
-  password,
-  userType,
-  name = '',
-  email = '',
-  otpId,
-  otpCode
-) => {
-  try {
-
-    if (!otpId || !otpCode) {
-      throw new Error("OTP verification is required");
-    }
-
-    // Verify OTP from MongoDB API
-    await verifyOTPCode(otpId, otpCode);
-
-    // Create user in MongoDB
-    const { data } = await api.post("/auth/register", {
-      fullName: name,
-      email,
-      phone,
-      password,
-      role: userType,
-    });
-
-    localStorage.setItem("token", data.token);
-    localStorage.setItem("user", JSON.stringify(data.user));
-
-    api.defaults.headers.common["Authorization"] = "Bearer " + data.token;
-
-    setCurrentUser(data.user);
-
-    return data.user;
-
-  } catch (error) {
-    console.error("OTP signup error:", error);
-
-    throw new Error(
-      error?.response?.data?.message ||
-      error.message ||
-      "Signup failed"
-    );
-  }
-}; const logout = () => {
+const logout = () => {
   localStorage.removeItem("token");
   localStorage.removeItem("user");
 
@@ -321,13 +221,9 @@ const signupWithOTP = async (
       login,
       signup,
       loginWithEmail,
-      loginWithOAuth2,
       requestOTP,
-      requestPhoneOTP,
       verifyOTP,
       authWithOTP,
-      verifyPhoneOTP,
-      signupWithOTP,
       loginWithOTP,
       logout 
     }}>

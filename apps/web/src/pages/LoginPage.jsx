@@ -9,18 +9,16 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Mail, Lock, Phone, Loader2, KeyRound, Apple } from 'lucide-react';
+import { Mail, Lock, Loader2, KeyRound } from 'lucide-react';
 
 const LoginPage = () => {
-  const { login, loginWithOAuth2, requestPhoneOTP, verifyPhoneOTP } = useAuth();
-  const [method, setMethod] = useState('email'); // 'email' or 'phone'
+  const { login, requestOTP, verifyOTP } = useAuth();
+  const [method, setMethod] = useState('password');
   const [loading, setLoading] = useState(false);
   const [otpStep, setOtpStep] = useState(false);
-  
-  // Form values
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [phone, setPhone] = useState('');
+  const [otpEmail, setOtpEmail] = useState('');
   const [otpId, setOtpId] = useState(null);
   const [otpCode, setOtpCode] = useState('');
   const navigate = useNavigate();
@@ -55,19 +53,19 @@ const LoginPage = () => {
     }
   };
 
-  const handlePhoneOTPRequest = async (e) => {
+  const handleEmailOTPRequest = async (e) => {
     e.preventDefault();
-    if (phone.length !== 10) {
-      toast.error('Enter a valid 10-digit mobile number');
+    if (!otpEmail) {
+      toast.error('Enter your registered email address');
       return;
     }
 
     setLoading(true);
     try {
-      const id = await requestPhoneOTP(phone);
+      const id = await requestOTP(otpEmail);
       setOtpId(id);
       setOtpStep(true);
-      toast.success('OTP sent to your mobile');
+      toast.success('OTP sent to your email');
     } catch (error) {
       toast.error(error.message);
     } finally {
@@ -75,26 +73,13 @@ const LoginPage = () => {
     }
   };
 
-  const handleAppleLogin = async () => {
-    setLoading(true);
-    try {
-      const authData = await loginWithOAuth2('apple');
-      handleSuccess(authData.record);
-    } catch (error) {
-      console.error('Apple login failed:', error);
-      toast.error(error.message || 'Apple login failed. Check backend OAuth configuration.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handlePhoneOTPVerify = async (e) => {
+  const handleEmailOTPVerify = async (e) => {
     e.preventDefault();
     if (otpCode.length !== 6) return;
 
     setLoading(true);
     try {
-      const authData = await verifyPhoneOTP(otpId, otpCode);
+      const authData = await verifyOTP(otpId, otpCode);
       handleSuccess(authData.record);
     } catch (error) {
       toast.error(error.message);
@@ -117,29 +102,23 @@ const LoginPage = () => {
         
         <CardContent>
           {!otpStep ? (
-            <Tabs value={method} onValueChange={setMethod} className="w-full">
-              <TabsList className="grid w-full grid-cols-1 p-1 bg-muted rounded-xl h-12 mb-6">
-                <TabsTrigger value="email" className="rounded-lg font-bold text-sm">Email & Password</TabsTrigger>
+            <Tabs
+              value={method}
+              onValueChange={(value) => {
+                setMethod(value);
+                setOtpEmail('');
+                setOtpCode('');
+                setOtpId(null);
+              }}
+              className="w-full"
+            >
+              <TabsList className="grid w-full grid-cols-2 p-1 bg-muted rounded-xl h-12 mb-6">
+                <TabsTrigger value="password" className="rounded-lg font-bold text-sm">Email & Password</TabsTrigger>
+                <TabsTrigger value="otp" className="rounded-lg font-bold text-sm">Email OTP</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="email" className="animate-in fade-in">
-                <div className="space-y-4 mb-6">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full h-12 text-base font-bold rounded-xl border-border text-foreground hover:bg-muted"
-                    onClick={handleAppleLogin}
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                    ) : (
-                      <Apple className="w-5 h-5 mr-2" />
-                    )}
-                    Continue with Apple
-                  </Button>
-                </div>
-                <form onSubmit={handlePhoneOTPVerify} className="space-y-5">
+              <TabsContent value="password" className="animate-in fade-in">
+                <form onSubmit={handleEmailLogin} className="space-y-5">
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-foreground">Email Address</label>
                     <div className="relative">
@@ -182,18 +161,18 @@ const LoginPage = () => {
                 </form>
               </TabsContent>
 
-              <TabsContent value="phone" className="animate-in fade-in">
-                <form onSubmit={handlePhoneOTPRequest} className="space-y-5">
+             <TabsContent value="otp" className="animate-in fade-in">
+               <form onSubmit={handleEmailOTPRequest} className="space-y-5">
                   <div className="space-y-2">
-                    <label className="text-sm font-bold text-foreground">Mobile Number</label>
+                   <label className="text-sm font-bold text-foreground">Registered Email Address</label>
                     <div className="relative">
-                      <Phone className="absolute left-3 top-3.5 h-5 w-5 text-muted-foreground" />
+                     <Mail className="absolute left-3 top-3.5 h-5 w-5 text-muted-foreground" />
                       <Input
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                       type="email"
+                       value={otpEmail}
+                       onChange={(e) => setOtpEmail(e.target.value)}
                         className="pl-10 h-12"
-                        placeholder="10-digit mobile number"
+                       placeholder="Enter your registered email"
                         required
                       />
                     </div>
@@ -201,7 +180,7 @@ const LoginPage = () => {
                   <Button 
                     type="submit" 
                     className="w-full h-12 text-base font-bold rounded-xl mt-4"
-                    disabled={loading || phone.length !== 10}
+                   disabled={loading || !otpEmail}
                   >
                     {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Send OTP'}
                   </Button>
@@ -209,14 +188,14 @@ const LoginPage = () => {
               </TabsContent>
             </Tabs>
           ) : (
-           <form onSubmit={handleEmailLogin} className="space-y-5">
+           <form onSubmit={handleEmailOTPVerify} className="space-y-5">
               <div className="text-center mb-6">
                 <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-4">
                   <KeyRound className="w-8 h-8" />
                 </div>
-                <h3 className="text-xl font-bold">Verify Mobile</h3>
+               <h3 className="text-xl font-bold">Verify Email</h3>
                 <p className="text-muted-foreground text-sm mt-2">
-                  Enter the 6-digit code sent to +91 {phone}
+                 Enter the 6-digit code sent to {otpEmail || otpId}
                 </p>
               </div>
 
@@ -251,7 +230,14 @@ const LoginPage = () => {
               </Button>
               
               <div className="text-center mt-2">
-                <button type="button" onClick={() => setOtpStep(false)} className="text-xs text-muted-foreground hover:text-foreground underline">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOtpStep(false);
+                    setOtpCode('');
+                  }}
+                  className="text-xs text-muted-foreground hover:text-foreground underline"
+                >
                   Back
                 </button>
               </div>
