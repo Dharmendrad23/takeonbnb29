@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import axios from "axios";
+import api from '@/lib/api.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 
 const STEPS = [
@@ -43,8 +43,8 @@ const HostPropertyListingForm = () => {
   useEffect(() => {
     const fetchAmenities = async () => {
       try {
-        const { data } = await axios.api.get("/amenities")
-const records = data;
+        const { data } = await api.get('/amenities');
+        const records = data;
         setAvailableAmenities(records);
       } catch (err) {
         console.error("Failed to fetch amenities", err);
@@ -56,7 +56,7 @@ const records = data;
   useEffect(() => {
   const fetchCities = async () => {
     try {
-      const { data } = await api.get("/properties")
+      const { data } = await api.get("/properties");
 
       const uniqueCities = Array.from(
   new Set(
@@ -164,20 +164,20 @@ const records = data;
 
       selectedAmenities.forEach(id => data.append('amenities', id));
       photos.forEach(photo => data.append('photos', photo.file));
-await api.post("/properties", {
-  hostId: currentUser?._id || currentUser?.id,
-  title: formData.title,
-  description: formData.description,
-  location: formData.location,
-  propertyType: formData.propertyType,
-  pricePerNight: Number(formData.pricePerNight),
-  bedrooms: Number(formData.bedrooms),
-  bathrooms: Number(formData.bathrooms),
-  guests: Number(formData.guestCapacity),
-  amenities: selectedAmenities,
- photos: photos.map(photo => photo.preview || ""),
-  approvalStatus: "approved",
-});
+      await api.post("/properties", {
+        hostId: currentUser?._id || currentUser?.id,
+        title: formData.title,
+        description: formData.description,
+        location: formData.location,
+        propertyType: formData.propertyType,
+        pricePerNight: Number(formData.pricePerNight),
+        bedrooms: Number(formData.bedrooms),
+        bathrooms: Number(formData.bathrooms),
+        guests: Number(formData.guestCapacity),
+        amenities: selectedAmenities,
+        photos: photos.map(photo => photo.preview || ""),
+        approvalStatus: "approved",
+      });
       
       toast.success('Property submitted successfully!');
       navigate('/host/dashboard');

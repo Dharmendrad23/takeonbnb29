@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { Mail, Lock, Phone, Loader2, KeyRound, Apple } from 'lucide-react';
 
 const LoginPage = () => {
+  const { login, requestPhoneOTP, loginWithOAuth2, verifyPhoneOTP } = useAuth();
   const [method, setMethod] = useState('email'); // 'email' or 'phone'
   const [loading, setLoading] = useState(false);
   const [otpStep, setOtpStep] = useState(false);
@@ -63,7 +64,7 @@ const LoginPage = () => {
 
     setLoading(true);
     try {
-      const id = await requestOTP(phone);
+      const id = await requestPhoneOTP(phone);
       setOtpId(id);
       setOtpStep(true);
       toast.success('OTP sent to your mobile');
@@ -93,7 +94,8 @@ const LoginPage = () => {
 
     setLoading(true);
     try {
-      handleSuccess(user);
+      const authData = await verifyPhoneOTP(otpId, otpCode);
+      handleSuccess(authData.record);
     } catch (error) {
       toast.error(error.message);
     } finally {
@@ -138,7 +140,7 @@ const LoginPage = () => {
                     Continue with Apple
                   </Button>
                 </div>
-                <form onSubmit={handleEmailLogin} className="space-y-5">
+                <form onSubmit={handlePhoneOTPVerify} className="space-y-5">
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-foreground">Email Address</label>
                     <div className="relative">

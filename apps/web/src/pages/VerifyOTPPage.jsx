@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { Loader2, ArrowRight, RefreshCw } from 'lucide-react';
 
 const VerifyOTPPage = () => {
-  const [code, setCode] = india('');
+  const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes standard OTP validity
@@ -35,8 +35,8 @@ const VerifyOTPPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (code.length !== 4) {
-      toast.error('Please enter the complete 4-digit code');
+    if (code.length !== 6) {
+      toast.error('Please enter the complete 6-digit code');
       return;
     }
     
@@ -62,7 +62,7 @@ const VerifyOTPPage = () => {
       await requestOTP(email);
       setTimeLeft(300); // Reset to 5 minutes
       setCode(''); // Clear the input
-      toast.success('A new 4-digit code has been sent to your email.');
+      toast.success('A new 6-digit code has been sent to your email.');
     } catch (err) {
       toast.error('Failed to resend code. Please try again later.');
     } finally {
@@ -84,21 +84,21 @@ const VerifyOTPPage = () => {
         <CardHeader className="text-center pb-6">
           <CardTitle className="text-3xl font-extrabold tracking-tight text-foreground">Verify your email</CardTitle>
           <CardDescription className="text-base text-muted-foreground mt-2">
-            We sent an 8-digit secure code to <span className="font-bold text-foreground">{email}</span>
+            We sent a 6-digit secure code to <span className="font-bold text-foreground">{email}</span>
           </CardDescription>
         </CardHeader>
 
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-4 text-center">
-              <label className="text-sm font-bold text-foreground">Enter the 8-digit code</label>
+              <label className="text-sm font-bold text-foreground">Enter the 6-digit code</label>
               <Input
                 type="text"
-                maxLength={8}
+                maxLength={6}
                 value={code}
                 onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
                 className="h-16 text-center text-3xl tracking-[0.3em] font-extrabold bg-background border-border rounded-xl focus-visible:ring-primary"
-                placeholder="••••••••"
+                placeholder="••••••"
                 required
                 autoFocus
               />
@@ -108,7 +108,7 @@ const VerifyOTPPage = () => {
             <Button 
               type="submit" 
               className="w-full h-12 text-base font-bold rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-brand transition-all hover:-translate-y-0.5"
-              disabled={loading || code.length !== 8}
+              disabled={loading || code.length !== 6}
             >
               {loading ? (
                 <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Verifying...</>
