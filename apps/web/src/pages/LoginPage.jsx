@@ -12,6 +12,8 @@ import { toast } from 'sonner';
 import { Mail, Lock, Phone, Loader2, KeyRound, Apple } from 'lucide-react';
 
 const LoginPage = () => {
+  const { login, requestOTP, loginWithOAuth2, verifyOTP } = useAuth();
+
   const [method, setMethod] = useState('email'); // 'email' or 'phone'
   const [loading, setLoading] = useState(false);
   const [otpStep, setOtpStep] = useState(false);
@@ -93,9 +95,10 @@ const LoginPage = () => {
 
     setLoading(true);
     try {
-      handleSuccess(user);
+      const authData = await verifyOTP(otpId, otpCode);
+      handleSuccess(authData.record || authData);
     } catch (error) {
-      toast.error(error.message);
+      toast.error(error.message || 'Invalid OTP');
     } finally {
       setLoading(false);
     }
@@ -208,7 +211,7 @@ const LoginPage = () => {
               </TabsContent>
             </Tabs>
           ) : (
-           <form onSubmit={handleEmailLogin} className="space-y-5">
+           <form onSubmit={handlePhoneOTPVerify} className="space-y-5">
               <div className="text-center mb-6">
                 <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-4">
                   <KeyRound className="w-8 h-8" />

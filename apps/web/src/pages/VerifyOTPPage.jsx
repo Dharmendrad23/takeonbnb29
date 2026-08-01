@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { Loader2, ArrowRight, RefreshCw } from 'lucide-react';
 
 const VerifyOTPPage = () => {
-  const [code, setCode] = india('');
+  const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes standard OTP validity

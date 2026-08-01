@@ -41,9 +41,23 @@ process.on('SIGTERM', async () => {
 
 app.use(helmet());
 
+const ALLOWED_ORIGINS = [
+	'https://takeonbnb.com',
+	'https://www.takeonbnb.com',
+	...(process.env.CORS_ORIGIN
+		? process.env.CORS_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean)
+		: []),
+];
+
 app.use(cors({
-    origin: true,
-    credentials: true,
+	origin: (origin, callback) => {
+		// Allow requests with no Origin header (mobile apps, server-to-server, curl)
+		if (!origin) return callback(null, true);
+		if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
+		logger.warn(`CORS blocked origin: ${origin}`);
+		callback(null, false);
+	},
+	credentials: true,
 }));
 
 app.use(morgan('combined'));

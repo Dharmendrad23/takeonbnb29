@@ -102,7 +102,7 @@ const signup = async (email, password, name, userType = "guest") => {
     const digitsOnlyPhone = trimmedPhone.replace(/\D/g, '');
     const recipientPhone = trimmedPhone.startsWith('+') ? trimmedPhone : `+91${digitsOnlyPhone}`;
     const messageBody = `Your TakeOnBnB verification code is ${otpCode}. It expires in 5 minutes. Do not share this code with anyone.`;
-    const apiHost = `${window.location.protocol}//${window.location.hostname}:3001`;
+    const apiHost = import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}:3001`;
 
     const response = await fetch(`${apiHost}/notifications/send-sms`, {
       method: 'POST',
@@ -122,11 +122,14 @@ const signup = async (email, password, name, userType = "guest") => {
 
  const requestOTPCode = async (identifier) => {
   try {
-    const { data } = await api.post("/auth/request-otp", {
-      phone: identifier,
+    // identifier is expected to be an email address
+    const { data } = await api.post("/auth/request-email-otp", {
+      email: identifier,
     });
 
-    return data.otpId;
+    // Return identifier (email) as the session key since the backend
+    // looks up OTP sessions by email during verification
+    return identifier;
 
   } catch (error) {
     console.error("OTP request error:", error);
@@ -138,10 +141,10 @@ const signup = async (email, password, name, userType = "guest") => {
   }
 };
 
-  const verifyOTPCode = async (otpId, code) => {
+  const verifyOTPCode = async (emailOrId, code) => {
   try {
-    const { data } = await api.post("/auth/verify-otp", {
-      otpId,
+    const { data } = await api.post("/auth/verify-email-otp", {
+      email: emailOrId,
       otpCode: code,
     });
 console.log("OTP Response:", data);
