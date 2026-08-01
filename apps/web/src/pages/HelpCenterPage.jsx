@@ -7,6 +7,10 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 
 const faqs = [
   {
+    question: "Tum direct change kaise kar sakte ho?",
+    answer: "Aap bas exact change bata dijiye—kaunsi page, feature, text, ya file update karni hai. Hum project mein directly change karke usse lint/build checks ke saath verify kar sakte hain. Agar aapko file ka naam nahi pata, to visible issue ya expected result describe kar dijiye."
+  },
+  {
     question: "How do I cancel a booking?",
     answer: "You can cancel your booking by going to 'My Bookings' in your dashboard. Select the booking you wish to cancel and click 'Cancel Booking'. Please refer to the specific property's cancellation policy for refund details."
   },
@@ -30,6 +34,15 @@ const faqs = [
 
 const HelpCenterPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const filteredFaqs = faqs.filter((faq) => {
+    if (!normalizedQuery) return true;
+
+    return (
+      faq.question.toLowerCase().includes(normalizedQuery) ||
+      faq.answer.toLowerCase().includes(normalizedQuery)
+    );
+  });
 
   return (
     <div className="min-h-screen bg-background">
@@ -60,7 +73,7 @@ const HelpCenterPage = () => {
         
         <div className="bg-card rounded-3xl border border-border p-6 md:p-8 shadow-sm">
           <Accordion type="single" collapsible className="w-full">
-            {faqs.map((faq, index) => (
+            {filteredFaqs.length > 0 ? filteredFaqs.map((faq, index) => (
               <AccordionItem key={index} value={`item-${index}`} className="border-b border-border last:border-0">
                 <AccordionTrigger className="text-left text-lg font-semibold hover:text-primary transition-colors py-5">
                   {faq.question}
@@ -69,7 +82,11 @@ const HelpCenterPage = () => {
                   {faq.answer}
                 </AccordionContent>
               </AccordionItem>
-            ))}
+            )) : (
+              <div className="py-8 text-center text-muted-foreground">
+                No answers found for "{searchQuery}".
+              </div>
+            )}
           </Accordion>
         </div>
       </section>
