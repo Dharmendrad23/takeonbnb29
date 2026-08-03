@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api';
 import PropertyCard from '@/components/PropertyCard.jsx';
 import PropertyCardSkeleton from '@/components/PropertyCardSkeleton.jsx';
 import { Search, SlidersHorizontal } from 'lucide-react';
@@ -24,27 +24,85 @@ const SearchResultsPage = () => {
     const fetchResults = async () => {
       setIsLoading(true);
       try {
-        let filterStr = 'status = "Live"';
-        
-        if (location) {
-          filterStr += ` && (location ~ "${location}" || title ~ "${location}")`;
-        }
-        
-        if (typeFilter !== 'All') {
-          filterStr += ` && propertyType = "${typeFilter}"`;
-        }
+        const { data } = await api.get("/properties");
 
-        if (guests && parseInt(guests) > 1) {
-          filterStr += ` && guestCapacity >= ${parseInt(guests)}`;
-        }
+  console.log("Properties API:", data);
 
-        const records = await pb.collection('properties').getList(1, 48, {
-          filter: filterStr,
-          sort: sortFilter,
-          $autoCancel: false
-        });
-        
-        setProperties(records.items);
+  let filtered = [...data];
+
+  if (location) {
+    filtered = filtered.filter(
+      (p) =>
+        p.location?.toLowerCase().includes(location.toLowerCase()) ||
+        p.title?.toLowerCase().includes(location.toLowerCase())
+    );
+  }
+
+  if (typeFilter !== "All") {
+    filtered = filtered.filter(
+      (p) =>
+        p.propertyType?.toLowerCase() === typeFilter.toLowerCase()
+    );
+  }
+
+  if (parseInt(guests) > 1) {
+    filtered = filtered.filter(
+      (p) => (p.guestCapacity || 99) >= parseInt(guests)
+    );
+  }
+
+  if (sortFilter === "pricePerNight") {
+    filtered.sort((a, b) => a.pricePerNight - b.pricePerNight);
+  } else if (sortFilter === "-pricePerNight") {
+    filtered.sort((a, b) => b.pricePerNight - a.pricePerNight);
+  } else {
+    filtered.sort(
+      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+    );
+  }
+
+  console.log("Filtered:", filtered);
+
+  setProperties(filtered);
+}
+catch (err) {
+  console.error(err);
+}
+
+if (location) {
+  filtered = filtered.filter(p =>
+    p.location?.toLowerCase().includes(location.toLowerCase()) ||
+    p.title?.toLowerCase().includes(location.toLowerCase())
+  );
+}
+
+if (typeFilter !== "All") {
+  filtered = filtered.filter(p =>
+    p.propertyType?.toLowerCase() === typeFilter.toLowerCase()
+  );
+}
+
+if (parseInt(guests) > 1) {
+  filtered = filtered.filter(p =>
+    (p.guestCapacity || 0) >= parseInt(guests)
+  );
+}
+
+if (sortFilter === "pricePerNight") {
+  filtered.sort((a, b) => a.pricePerNight - b.pricePerNight);
+}
+
+if (sortFilter === "-pricePerNight") {
+  filtered.sort((a, b) => b.pricePerNight - a.pricePerNight);
+}
+
+if (sortFilter === "-created") {
+  filtered.sort(
+    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+  );
+}
+
+setProperties(filtered);
       } catch (err) {
         console.error("Failed to fetch search results", err);
       } finally {
@@ -142,7 +200,11 @@ const SearchResultsPage = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-10">
             {properties.map((property, index) => (
-              <PropertyCard key={property.id} property={property} index={index} />
+              <PropertyCard
+  key={property._id || property.id}
+  property={property}
+  index={index}
+/>
             ))}
           </div>
         )}

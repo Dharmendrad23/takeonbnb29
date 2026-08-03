@@ -3,7 +3,17 @@ import Booking from "../models/Booking.js";
 // GET ALL BOOKINGS
 export const getBookings = async (req, res) => {
   try {
-    const bookings = await Booking.find()
+    const filter = {};
+
+    if (req.query.propertyId) {
+      filter.propertyId = req.query.propertyId;
+    }
+
+    if (req.query.guestId) {
+      filter.guestId = req.query.guestId;
+    }
+
+    const bookings = await Booking.find(filter)
       .populate("propertyId")
       .populate("guestId")
       .sort({ createdAt: -1 });

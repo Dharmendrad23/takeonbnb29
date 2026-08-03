@@ -15,40 +15,31 @@ const HostDashboardPage = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-   const fetchHostData = async () => {
-  try {
-    setLoading(true);
+    const fetchHostData = async () => {
+      try {
+        setLoading(true);
+        // Fetch host properties
+       const { data: props } = await api.get(`/properties?hostId=${currentUser?.id}`);
+setProperties(props);
 
-    const { data } = await api.get(
-      `/properties?hostId=${currentUser.id}`
-    );
+const { data: bookings } = await api.get("/bookings");
 
-    setProperties(data);
+const hostBookings = bookings.filter(
+  booking => booking.propertyId?.hostId === currentUser?.id
+);
 
-    setStats({
-      properties: data.length,
-      bookings: 0,
-      revenue: data.reduce(
-        (sum, item) => sum + (item.pricePerNight || 0),
-        0
-      ),
-    });
+const totalRev = props.reduce(
+  (acc, curr) => acc + (curr.totalRevenue || 0),
+  0
+);
 
-  } catch (error) {
-    console.error(error);
-  } finally {
-    setLoading(false);
-  }
-};
-        // Calculate Revenue (mocking exact aggregate for this demo)
-        const totalRev = props.items.reduce((acc, curr) => acc + (curr.totalRevenue || 0), 0);
-        const totalBookings = props.items.reduce((acc, curr) => acc + (curr.totalBookings || 0), 0);
+const totalBookings = hostBookings.length;
 
-        setStats({
-          properties: props.totalItems,
-          bookings: totalBookings || bookings.totalItems || 0,
-          revenue: totalRev
-        });
+setStats({
+  properties: props.length,
+  bookings: totalBookings,
+  revenue: totalRev
+});
 
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
@@ -174,7 +165,7 @@ const HostDashboardPage = () => {
                 </thead>
                 <tbody className="divide-y divide-border">
                   {properties.map((prop) => (
-                    <tr key={prop.id} className="hover:bg-muted/50 transition-colors">
+                    <tr key={prop._id}> className="hover:bg-muted/50 transition-colors">
                       <td className="px-6 py-4 font-medium text-foreground">{prop.title}</td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${

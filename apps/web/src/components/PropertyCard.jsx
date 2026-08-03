@@ -4,27 +4,26 @@ import { Heart, Star, MapPin, BedDouble, Bath, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useFavorites } from '@/hooks/useFavorites.js';
 import { Button } from '@/components/ui/button';
-import pb from '@/lib/pocketbaseClient.js';
 
 const PropertyCard = memo(({ property, isHostView = false }) => {
   const navigate = useNavigate();
   const { favorites, toggleFavorite } = useFavorites();
-  const isFavorite = favorites.includes(property.id);
+  const propertyId = property._id || property.id;
+
+  const isFavorite = favorites.includes(propertyId);
 
   const handleFavoriteClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    toggleFavorite(property.id);
+    toggleFavorite(propertyId);
   };
 
   const handleCardClick = () => {
-    navigate(isHostView ? `/host/edit-property/${property.id}` : `/property/${property.id}`);
-  };
-
-  const handleBookNow = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    navigate(`/property/${property.id}?book=true`);
+    navigate(
+  isHostView
+    ? `/host/edit-property/${propertyId}`
+    : `/property/${propertyId}`
+);
   };
 
   const formatPrice = (price) => {
@@ -35,12 +34,12 @@ const PropertyCard = memo(({ property, isHostView = false }) => {
     }).format(price);
   };
 
-  const imageUrl = property.coverImage 
-    ? pb.files.getUrl(property, property.coverImage)
-    : property.photos?.length > 0 
-      ? pb.files.getUrl(property, property.photos[0]) 
-      : 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80';
-
+const imageUrl =
+  property.coverImage ||
+  property.image ||
+  (Array.isArray(property.photos) && property.photos.length
+    ? property.photos[0]
+    : "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80");
   return (
     <motion.div
       variants={{
@@ -50,6 +49,14 @@ const PropertyCard = memo(({ property, isHostView = false }) => {
       className="group flex flex-col h-full w-full bg-card rounded-[1.5rem] border border-border overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer"
       onClick={handleCardClick}
     >
+      {(() => {
+        const handleBookNow = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          navigate(`/property/${propertyId}?book=true`);
+        };
+        return null;
+      })()}
       <div className="relative aspect-[4/3] overflow-hidden bg-muted">
         <img 
           src={imageUrl} 

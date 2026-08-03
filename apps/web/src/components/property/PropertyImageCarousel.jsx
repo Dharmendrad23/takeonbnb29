@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
 import { ChevronLeft, ChevronRight, Image as ImageIcon } from 'lucide-react';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api';
 import { cn } from '@/lib/utils.js';
 
 // Helper to shuffle array

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api';
 import CityCarouselSection from '@/components/CityCarouselSection.jsx';
 import PropertyCardSkeleton from '@/components/PropertyCardSkeleton.jsx';
 

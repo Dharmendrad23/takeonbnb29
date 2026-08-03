@@ -1,3 +1,5 @@
+import Property from "../models/Property.js";
+import User from "../models/User.js";
 import express from "express";
 import ActivityLog from "../models/ActivityLog.js";
 import Booking from "../models/Booking.js";
@@ -36,6 +38,10 @@ router.post("/activity-log", async (req, res) => {
 // GET /admin/dashboard/stats
 router.get("/dashboard/stats", async (req, res) => {
   try {
+const totalProperties = await Property.countDocuments();
+
+  totalUsers = await User.countDocuments();
+
     const totalBookings = await Booking.countDocuments();
 
     const pendingBookings = await Booking.countDocuments({
@@ -74,12 +80,14 @@ router.get("/dashboard/stats", async (req, res) => {
         : 0;
 
     res.json({
-      totalBookings,
-      pendingBookings,
-      confirmedBookings,
-      totalRevenue,
-      occupancyRate,
-    });
+  totalBookings,
+  pendingBookings,
+  confirmedBookings,
+  totalRevenue,
+  occupancyRate,
+  totalProperties,
+  totalUsers,
+});
   } catch (err) {
     res.status(500).json({
       error: err.message,

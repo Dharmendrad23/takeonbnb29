@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import Guest from "../models/Guest.js";
+import User from "../models/User.js";
 import OtpSession from "../models/OtpSession.js";
 import { sendEmail } from "../utils/mailer.js";
 
@@ -27,7 +27,7 @@ export const login = async (req, res) => {
       return res.status(400).json({ message: "Email and password are required" });
     }
 
-    const user = await Guest.findOne({ email: email.toLowerCase().trim() });
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
     if (!user) return res.status(401).json({ message: "Invalid email or password" });
 
     const isMatch = await bcrypt.compare(password, user.password);
@@ -102,11 +102,11 @@ export const signupWithOtp = async (req, res) => {
 
     await verifyOtpRecord(otpId, otpCode);
 
-    const existing = await Guest.findOne({ email: normalizedEmail });
+    const existing = await User.findOne({ email: normalizedEmail });
     if (existing) return res.status(400).json({ message: "Email already registered" });
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await Guest.create({
+    const user = await User.create({
       name,
       email: normalizedEmail,
       password: hashedPassword,
@@ -123,7 +123,7 @@ export const signupWithOtp = async (req, res) => {
 // GET /auth/me
 export const getMe = async (req, res) => {
   try {
-    const user = await Guest.findById(req.userId);
+    const user = await User.findById(req.userId);
     if (!user) return res.status(404).json({ message: "User not found" });
     res.json({ user: sanitizeUser(user) });
   } catch (err) {

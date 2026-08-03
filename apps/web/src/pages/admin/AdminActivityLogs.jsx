@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api';
 import { Activity, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 

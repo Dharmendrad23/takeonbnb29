@@ -26,7 +26,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 
 export const PropertyHeader = ({ property }) => {

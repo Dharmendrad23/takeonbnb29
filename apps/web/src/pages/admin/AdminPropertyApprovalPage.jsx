@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { Check, X, Search, FileText, MapPin, Users, Bath, Bed } from 'lucide-react';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
@@ -27,12 +27,23 @@ const AdminPropertyApprovalPage = () => {
         ? `status="Submitted" && (title ~ "${search}" || location ~ "${search}")`
         : `status="Submitted"`;
 
-      const records = await pb.collection('properties').getList(1, 50, {
-        filter: filterStr,
-        expand: 'hostId',
-        sort: '-created',
-        $autoCancel: false
-      });
+     const { data } = await api.get("/properties");
+
+let records = data.filter(
+  p => (p.status || "").toLowerCase() === "submitted"
+);
+
+if (search) {
+  const q = search.toLowerCase();
+
+  records = records.filter(
+    p =>
+      p.title?.toLowerCase().includes(q) ||
+      p.location?.toLowerCase().includes(q)
+  );
+}
+
+setProperties(records);
       setProperties(records.items);
     } catch (error) {
       console.error(error);
@@ -48,7 +59,7 @@ const AdminPropertyApprovalPage = () => {
 
   const handleApprove = async (id) => {
     try {
-      await pb.collection('properties').update(id, {
+      await api.put(`/properties/${id}`,{
         status: 'Approved',
         approvalStatus: 'approved'
       }, { $autoCancel: false });
@@ -73,7 +84,7 @@ const AdminPropertyApprovalPage = () => {
     }
 
     try {
-      await pb.collection('properties').update(selectedProperty.id, {
+      await api.put(`/properties/${selectedProperty._id}`,{
         status: 'Draft', // Return to draft so host can fix
         approvalStatus: 'rejected',
         rejectionReason: rejectionReason
@@ -119,13 +130,13 @@ const AdminPropertyApprovalPage = () => {
       ) : (
         <div className="grid grid-cols-1 gap-6">
           {properties.map(property => (
-            <Card key={property.id} className="bg-card border-border overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+            <Card key={property._id} className="bg-card border-border overflow-hidden shadow-sm hover:shadow-md transition-shadow">
               <div className="flex flex-col md:flex-row">
                 {/* Image Section */}
                 <div className="w-full md:w-72 h-48 md:h-auto bg-muted shrink-0 relative">
                   {property.photos?.length > 0 ? (
                     <img 
-                      src={pb.files.getUrl(property, property.photos[0])} 
+                      src={property.photos?.[0]}
                       alt={property.title} 
                       className="w-full h-full object-cover" 
                     />
@@ -166,14 +177,14 @@ const AdminPropertyApprovalPage = () => {
                   <div className="flex items-center justify-between mt-auto pt-4 border-t border-border">
                     <div className="text-sm">
                       <span className="text-muted-foreground">Host: </span>
-                      <span className="font-bold text-foreground">{property.expand?.hostId?.name || property.expand?.hostId?.email || 'Unknown'}</span>
+                      <span className="font-bold text-foreground">{property.hostName || property.hostId || ''||'Unknown'}</span>
                     </div>
                     
                     <div className="flex items-center gap-2">
                       <Button variant="outline" className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive h-10 px-6 rounded-xl" onClick={() => openRejectionModal(property)}>
                         <X className="w-4 h-4 mr-2" /> Reject
                       </Button>
-                      <Button className="bg-success hover:bg-success/90 text-success-foreground h-10 px-6 rounded-xl shadow-sm" onClick={() => handleApprove(property.id)}>
+                      <Button className="bg-success hover:bg-success/90 text-success-foreground h-10 px-6 rounded-xl shadow-sm" onClick={() => handleApprove(property._id)}>
                         <Check className="w-4 h-4 mr-2" /> Approve
                       </Button>
                     </div>

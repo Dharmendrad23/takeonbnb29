@@ -2,7 +2,7 @@ import React, { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { Star, MapPin, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api';
 
 const CityPropertyCard = memo(({ property }) => {
   const imageUrl = property.coverImage 

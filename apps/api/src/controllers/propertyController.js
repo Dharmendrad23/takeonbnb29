@@ -1,9 +1,16 @@
 import Property from "../models/Property.js";
 
-// GET ALL PROPERTIES
+// GET ALL PROPERTIES (with optional hostId filter)
 export const getProperties = async (req, res) => {
   try {
-    const properties = await Property.find().sort({ createdAt: -1 });
+    const filter = {};
+
+    if (req.query.hostId) {
+      filter.hostId = req.query.hostId;
+    }
+
+    const properties = await Property.find(filter).sort({ createdAt: -1 });
+
     res.json(properties);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -66,23 +73,5 @@ export const deleteProperty = async (req, res) => {
     res.json({ message: "Property deleted successfully" });
   } catch (err) {
     res.status(500).json({ message: err.message });
-  }
-};export const getProperties = async (req, res) => {
-  try {
-    const filter = {};
-
-    if (req.query.hostId) {
-      filter.hostId = req.query.hostId;
-    }
-
-    const properties = await Property.find(filter).sort({
-      createdAt: -1,
-    });
-
-    res.json(properties);
-  } catch (err) {
-    res.status(500).json({
-      message: err.message,
-    });
   }
 };

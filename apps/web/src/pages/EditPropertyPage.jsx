@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { toast } from 'sonner';
 import { validatePropertyForm } from '@/lib/validatePropertyForm.js';
@@ -46,7 +46,7 @@ const EditPropertyPage = () => {
 
   const loadData = async () => {
     try {
-      const propertyData = await pb.collection('properties').getOne(id, { $autoCancel: false });
+     const { data: propertyData } = await api.get(`/properties/${id}`);
 
       if (propertyData.hostId !== currentUser.id) {
         toast.error('You can only edit your own properties');
@@ -97,7 +97,7 @@ const EditPropertyPage = () => {
           checkInTime: formData.checkInTime,
           checkOutTime: formData.checkOutTime,
         };
-        await pb.collection('properties').update(id, dataToSave, { $autoCancel: false });
+       await pb.collection('properties').update(id, dataToSave, { $autoCancel: false });
         setSaveStatus('saved');
         setTimeout(() => setSaveStatus(''), 2000);
       } catch (err) {
@@ -141,28 +141,25 @@ const EditPropertyPage = () => {
     setLoading(true);
 
     try {
-      const data = new FormData();
-      data.append('title', formData.title);
-      data.append('description', formData.description);
-      data.append('location', formData.location);
-      data.append('propertyType', formData.propertyType);
-      data.append('pricePerNight', parseFloat(formData.pricePerNight) || 0);
-      data.append('bedrooms', parseInt(formData.bedrooms) || 1);
-      data.append('bathrooms', parseInt(formData.bathrooms) || 1);
-      data.append('guestCapacity', parseInt(formData.guestCapacity) || 1);
-      data.append('houseRules', formData.houseRules);
-      data.append('checkInTime', formData.checkInTime);
-      data.append('checkOutTime', formData.checkOutTime);
-      
-      if (formData.newPhotos && formData.newPhotos.length > 0) {
-        formData.newPhotos.forEach(photo => {
-          data.append('photos', photo);
-        });
-      }
+     const data = {
+  title: formData.title,
+  description: formData.description,
+  location: formData.location,
+  propertyType: formData.propertyType,
+  pricePerNight: Number(formData.pricePerNight) || 0,
+  bedrooms: Number(formData.bedrooms) || 1,
+  bathrooms: Number(formData.bathrooms) || 1,
+  guestCapacity: Number(formData.guestCapacity) || 1,
+  houseRules: formData.houseRules,
+  checkInTime: formData.checkInTime,
+  checkOutTime: formData.checkOutTime,
+};
 
-      if (submitForReview) {
-        data.append('status', 'Submitted');
-      }
+if (submitForReview) {
+  data.status = "Submitted";
+}
+
+await api.put(`/properties/${id}`, data);
 
       await pb.collection('properties').update(id, data, { $autoCancel: false });
       toast.success(submitForReview ? 'Property submitted for review!' : 'Property details updated successfully');

@@ -1,20 +1,22 @@
-
+﻿
 import React from 'react';
 import { motion } from 'framer-motion';
 import { MapPin, Users, Wifi, Star, Home, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api';
 import PropertyCardSkeleton from './PropertyCardSkeleton.jsx';
 
 const PropertyGrid = ({ properties = [], title, subtitle, isLoading = false, error = null }) => {
-  const getSafeImage = (property) => {
-    if (property?.image) return property.image;
-    if (property?.photos && Array.isArray(property.photos) && property.photos.length > 0) {
-      return pb.files.getURL(property, property.photos[0]);
-    }
-    return 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=800';
-  };
+ const getSafeImage = (property) => {
+  if (property?.image) return property.image;
+
+  if (Array.isArray(property?.photos) && property.photos.length > 0) {
+    return property.photos[0];
+  }
+
+  return 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=800';
+};
 
   const renderContent = () => {
     if (error) {
@@ -57,7 +59,7 @@ const PropertyGrid = ({ properties = [], title, subtitle, isLoading = false, err
 
       return (
         <motion.div
-          key={property?.id || `fallback-${idx}`}
+          key={property?._id || `fallback-${idx}`}
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}

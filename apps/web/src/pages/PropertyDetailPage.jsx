@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api';
 import { PropertyImageGallery } from '@/components/property/PropertyImageGallery.jsx';
 import { BookingWidget } from '@/components/property/BookingWidget.jsx';
 import { 
@@ -29,10 +29,7 @@ const PropertyDetailPage = () => {
     const fetchProperty = async () => {
       try {
         setLoading(true);
-        const record = await pb.collection('properties').getOne(id, {
-          expand: 'hostId,amenities',
-          $autoCancel: false
-        });
+        const { data: record } = await api.get(`/properties/${id}`);
         setProperty(record);
       } catch (err) {
         console.error("Error fetching property:", err);
@@ -66,7 +63,7 @@ const PropertyDetailPage = () => {
     );
   }
 
-  const photos = property.photos?.map(file => pb.files.getURL(property, file)) || [];
+  const photos = property.photos?.map(file => api.getFileURL(property, file)) || [];
 
   return (
     <div className="bg-background min-h-screen pb-24">
@@ -102,7 +99,7 @@ const PropertyDetailPage = () => {
               checkInTime={property.checkInTime} 
               checkOutTime={property.checkOutTime} 
             />
-            <ReviewsSection propertyId={property.id} />
+            <ReviewsSection propertyId={property._id} />
             <LocationMap location={property.location} />
             <HostCard host={property.expand?.hostId} />
           </div>

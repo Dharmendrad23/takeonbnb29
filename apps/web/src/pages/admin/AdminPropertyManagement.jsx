@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api';
 import { formatCurrency } from '@/lib/bookingUtils.js';
 import { toast } from 'sonner';
 
@@ -25,11 +25,17 @@ const AdminPropertyManagement = () => {
 
   const fetchProperties = async () => {
     try {
-      const filter = search ? `title ~ "${search}" || location ~ "${search}"` : '';
-      const records = await pb.collection('properties').getFullList({
-        filter, sort: '-created', $autoCancel: false
-      });
-      setProperties(records);
+     const { data: records } = await api.get("/properties");
+
+const filtered = search
+  ? records.filter(
+      p =>
+        p.title?.toLowerCase().includes(search.toLowerCase()) ||
+        p.location?.toLowerCase().includes(search.toLowerCase())
+    )
+  : records;
+
+setProperties(filtered);
     } catch (err) {
       console.error(err);
       toast.error("Failed to fetch properties");
@@ -40,8 +46,9 @@ const AdminPropertyManagement = () => {
 
   useEffect(() => {
     fetchProperties();
-    pb.collection('properties').subscribe('*', fetchProperties);
-    return () => pb.collection('properties').unsubscribe('*');
+  const interval = setInterval(fetchProperties, 30000);
+
+return () => clearInterval(interval);
   }, [search]);
 
   const handleInputChange = (e) => {
@@ -63,7 +70,7 @@ const AdminPropertyManagement = () => {
   };
 
   const openEditModal = (property) => {
-    setEditingId(property.id);
+   setEditingId(property._id);
     setFormData({
       title: property.title, description: property.description, location: property.location,
       propertyType: property.propertyType, pricePerNight: property.pricePerNight,
@@ -82,14 +89,14 @@ const AdminPropertyManagement = () => {
         bedrooms: Number(formData.bedrooms),
         bathrooms: Number(formData.bathrooms),
         guestCapacity: Number(formData.guestCapacity),
-        hostId: pb.authStore.model?.id || 'admin' // Fallback if needed
+       hostId: "admin"
       };
 
       if (editingId) {
-        await pb.collection('properties').update(editingId, data, { $autoCancel: false });
+        await api.put(`/properties/${editingId}`, data);
         toast.success("Property updated successfully");
       } else {
-        await pb.collection('properties').create(data, { $autoCancel: false });
+        await api.post('/properties', data);
         toast.success("Property created successfully");
       }
       setIsModalOpen(false);
@@ -102,7 +109,7 @@ const AdminPropertyManagement = () => {
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this property?")) return;
     try {
-      await pb.collection('properties').delete(id, { $autoCancel: false });
+      await api.delete(`/properties/${id}`);
       toast.success("Property deleted");
     } catch (err) {
       toast.error("Failed to delete property");
@@ -224,13 +231,11 @@ const AdminPropertyManagement = () => {
               <tr><td colSpan="7" className="text-center py-8 text-muted-foreground">No properties found.</td></tr>
             ) : (
               properties.map(property => (
-                <tr key={property.id}>
+                <tr key={property._id}>
                   <td className="font-medium">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center overflow-hidden shrink-0">
-                        {property.photos?.length > 0 ? (
-                          <img src={pb.files.getUrl(property, property.photos[0])} alt="" className="w-full h-full object-cover" />
-                        ) : <Home className="w-5 h-5 text-muted-foreground" />}
+                      <Home className="w-5 h-5 text-muted-foreground" />
                       </div>
                       <span className="truncate max-w-[200px]">{property.title}</span>
                     </div>
@@ -249,7 +254,7 @@ const AdminPropertyManagement = () => {
                   </td>
                   <td className="text-right">
                     <Button variant="ghost" size="icon" onClick={() => openEditModal(property)}><Edit className="w-4 h-4" /></Button>
-                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDelete(property.id)}><Trash2 className="w-4 h-4" /></Button>
+                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDelete(property._id)}><Trash2 className="w-4 h-4" /></Button>
                   </td>
                 </tr>
               ))

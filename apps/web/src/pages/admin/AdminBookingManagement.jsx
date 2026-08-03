@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api'; 
 import { formatCurrencyINR, formatDate } from '@/lib/bookingUtils.js';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -36,11 +36,28 @@ const AdminBookingManagement = () => {
       
       const filterStr = filter.join(' && ');
 
-      const records = await pb.collection('bookings').getFullList({
-        filter: filterStr, 
-        sort: '-created', 
-        $autoCancel: false
-      });
+    const { data } = await api.get("/bookings");
+
+let records = data;
+
+if (search) {
+  const q = search.toLowerCase();
+  records = records.filter(
+    b =>
+      b.guestFullName?.toLowerCase().includes(q) ||
+      b.propertyName?.toLowerCase().includes(q) ||
+      b._id?.toLowerCase().includes(q) ||
+      b.transactionId?.toLowerCase().includes(q)
+  );
+}
+
+if (statusFilter !== "all") {
+  records = records.filter(
+    b => (b.bookingStatus || b.status) === statusFilter
+  );
+}
+
+setBookings(records);
       setBookings(records);
     } catch (err) {
       console.error(err);
@@ -52,28 +69,19 @@ const AdminBookingManagement = () => {
 
   useEffect(() => {
     fetchBookings();
-    pb.collection('bookings').subscribe('*', fetchBookings);
-    return () => pb.collection('bookings').unsubscribe('*');
+    api.collection('bookings').subscribe('*', fetchBookings);
+    return () => api.collection('bookings').unsubscribe('*');
   }, [search, statusFilter]);
 
   const handleApprove = async (booking) => {
     setActionLoading(true);
     try {
-      await pb.collection('bookings').update(booking.id, { 
+     await api.put(`/bookings/${booking._id}`,{
         status: 'confirmed',
         bookingStatus: 'confirmed',
         paymentStatus: 'verified'
       }, { $autoCancel: false });
       
-      // Send confirmation notification
-      await pb.collection('notifications').create({
-        userId: booking.guestId,
-        type: 'email',
-        message: `Your booking for ${booking.propertyName} has been confirmed. Payment verified.`,
-        bookingId: booking.id,
-        isRead: false
-      }, { $autoCancel: false });
-
       toast.success("Booking approved and verified successfully");
       setIsModalOpen(false);
     } catch (err) {
@@ -84,25 +92,15 @@ const AdminBookingManagement = () => {
   };
 
   const handleRejectSubmit = async () => {
-    if (!selectedBooking) return;
     setActionLoading(true);
     try {
-      await pb.collection('bookings').update(selectedBooking.id, { 
+    await api.put(`/bookings/${selectedBooking._id}`,{
         status: 'cancelled',
         bookingStatus: 'rejected',
         paymentStatus: 'failed',
         notes: `${selectedBooking.notes || ''}\nRejection Reason: ${rejectReason}`
       }, { $autoCancel: false });
       
-      // Send rejection notification
-      await pb.collection('notifications').create({
-        userId: selectedBooking.guestId,
-        type: 'email',
-        message: `Your booking for ${selectedBooking.propertyName} was rejected. Reason: ${rejectReason}`,
-        bookingId: selectedBooking.id,
-        isRead: false
-      }, { $autoCancel: false });
-
       toast.success("Booking rejected");
       setIsRejectDialogOpen(false);
       setIsModalOpen(false);
@@ -213,12 +211,12 @@ const AdminBookingManagement = () => {
                 </tr>
               ) : (
                 bookings.map(booking => (
-                  <tr key={booking.id} className="hover:bg-muted/30 transition-colors group">
+                  <tr key={booking._id} className="hover:bg-muted/30 transition-colors group">
                     <td className="px-6 py-5">
                       <div className="font-bold text-foreground truncate max-w-[250px] mb-1">{booking.propertyName}</div>
                       <div className="text-muted-foreground text-xs font-medium mb-1">{booking.guestFullName}</div>
                       <div className="font-mono text-[10px] bg-muted px-2 py-0.5 rounded text-muted-foreground w-fit">
-                        ID: {booking.id.slice(0,8)}
+                        ID: {booking._id.slice(0,8)}
                       </div>
                     </td>
                     <td className="px-6 py-5">
@@ -347,7 +345,7 @@ const AdminBookingManagement = () => {
           {selectedBooking?.paymentScreenshot && (
              <div className="relative rounded-2xl overflow-hidden bg-black/80 backdrop-blur-md p-4">
                 <img 
-                  src={pb.files.getUrl(selectedBooking, selectedBooking.paymentScreenshot)} 
+                 src={selectedBooking.paymentScreenshot}
                   alt="Payment Screenshot" 
                   className="w-full h-auto max-h-[85vh] object-contain rounded-xl"
                 />

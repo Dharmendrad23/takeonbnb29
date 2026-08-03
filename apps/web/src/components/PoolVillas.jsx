@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import PropertyGrid from './PropertyGrid.jsx';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api';
 
-export default function PoolVillas() {
+export default function MountainVillas() {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -13,29 +12,41 @@ export default function PoolVillas() {
       try {
         setLoading(true);
         setError(null);
-        const records = await pb.collection('properties').getList(1, 8, {
-          filter: 'amenities.name ?~ "pool" && status="Live"',
-          sort: '-created',
-          $autoCancel: false
-        });
-        setProperties(records.items || []);
+
+        const { data } = await api.get("/properties");
+
+        const mountainVillas = (data || [])
+          .filter(item => {
+            const location = (item.location || "").toLowerCase();
+
+            return (
+              location.includes("manali") ||
+              location.includes("himachal") ||
+              location.includes("darjeeling")
+            );
+          })
+          .slice(0, 8);
+
+        setProperties(mountainVillas);
+
       } catch (err) {
-        console.error('Error fetching pool villas:', err);
-        setError('Failed to load villas with private pools.');
+        console.error(err);
+        setError("Failed to load mountain escapes.");
       } finally {
         setLoading(false);
       }
     };
+
     fetchProperties();
   }, []);
 
   return (
-    <PropertyGrid 
-      properties={properties} 
+    <PropertyGrid
+      properties={properties}
       isLoading={loading}
       error={error}
-      title="Villas with Private Pools" 
-      subtitle="Dive into relaxation with your own exclusive oasis." 
+      title="Mountain Escapes"
+      subtitle="Breathe in the crisp air and enjoy panoramic scenic views."
     />
   );
 }

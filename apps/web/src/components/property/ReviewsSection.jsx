@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Star } from 'lucide-react';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';

@@ -6,7 +6,7 @@ import { format } from 'date-fns';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api';
 
 const SearchBar = ({ className }) => {
   const navigate = useNavigate();
@@ -27,20 +27,17 @@ const SearchBar = ({ className }) => {
       try {
         setIsLoadingLocations(true);
         setLocationError(null);
-        const records = await pb.collection('properties').getFullList({
-          filter: 'status="Live"',
-          fields: 'location',
-          $autoCancel: false
-        });
+        const { data } = await api.get("/properties");
 
-        const cityCounts = records.reduce((acc, record) => {
-          const city = record.location?.trim();
-          if (city) {
-            acc[city] = (acc[city] || 0) + 1;
-          }
-          return acc;
-        }, {});
+const cityCounts = (data || []).reduce((acc, record) => {
+  const city = record.location?.trim();
 
+  if (city) {
+    acc[city] = (acc[city] || 0) + 1;
+  }
+
+  return acc;
+}, {});
         const cityArray = Object.entries(cityCounts)
           .map(([name, count]) => ({ name, count }))
           .sort((a, b) => a.name.localeCompare(b.name));

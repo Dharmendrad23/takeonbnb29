@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import GuestDashboardLayout from '@/components/GuestDashboardLayout.jsx';
 import { Heart, MapPin, Star, Trash2 } from 'lucide-react';

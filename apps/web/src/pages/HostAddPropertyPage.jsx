@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { useNavigate } from 'react-router-dom';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import HostDashboardLayout from '@/components/HostDashboardLayout.jsx';
 import { Button } from '@/components/ui/button';
@@ -29,10 +29,12 @@ const HostAddPropertyPage = () => {
         ...formData,
         hostId: currentUser.id,
         pricePerNight: Number(formData.pricePerNight),
-        approvalStatus: 'pending' // Usually requires admin approval
+        status: "Pending",
+        status: "Pending",
+approvalStatus: "pending"// Usually requires admin approval
       };
       
-      await pb.collection('properties').create(data, { $autoCancel: false });
+      await api.post('/properties', data);
       toast.success('Property submitted for review!');
       navigate('/host/properties');
     } catch (err) {

@@ -9,6 +9,7 @@ import adminRouter from "./admin.js";
 import whatsappRouter from "./whatsapp.js";
 import notificationsRouter from "./notifications.js";
 import stripeRouter from "./stripe.js";
+import userRouter from "./userRoutes.js";
 
 export default () => {
   const appRouter = Router();
@@ -24,6 +25,7 @@ appRouter.use("/dashboard", dashboardRouter);
   appRouter.use("/whatsapp", whatsappRouter);
   appRouter.use("/notifications", notificationsRouter);
   appRouter.use("/stripe", stripeRouter);
+  appRouter.use("/users", userRouter);
 
   return appRouter;
 };

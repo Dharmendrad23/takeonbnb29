@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, MapPin, Users, ChevronRight, Luggage, Clock, CheckCircle2, XCircle } from 'lucide-react';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { formatCurrencyINR, formatDate, isPastDate } from '@/lib/bookingUtils.js';
 import { Card } from '@/components/ui/card';

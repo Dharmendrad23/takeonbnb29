@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -32,17 +32,11 @@ const BookingPage = () => {
   useEffect(() => {
     const fetchPropertyAndBookings = async () => {
       try {
-        const propRecord = await pb.collection('properties').getOne(id, {
-          expand: 'hostId',
-          $autoCancel: false
-        });
-        setProperty(propRecord);
+        const { data: propertyData } = await api.get(`/properties/${id}`);
+setProperty(propertyData);
 
-        const bookingsRecord = await pb.collection('bookings').getList(1, 500, {
-          filter: `propertyId="${id}" && (status="pending" || status="confirmed")`,
-          $autoCancel: false
-        });
-        setExistingBookings(bookingsRecord.items);
+const { data: bookingData } = await api.get(`/bookings?propertyId=${id}`);
+setExistingBookings(bookingData || []);
       } catch (err) {
         console.error("Error fetching data:", err);
         toast.error("Failed to load property details.");
@@ -79,7 +73,7 @@ const BookingPage = () => {
     setIsSubmitting(true);
     try {
       const bookingData = {
-        propertyId: property.id,
+        propertyId: property._id,
         guestId: '',
         checkInDate: `${initialDates.checkIn} 14:00:00.000Z`,
         checkOutDate: `${initialDates.checkOut} 11:00:00.000Z`,
@@ -96,9 +90,9 @@ const BookingPage = () => {
         specialRequests: formData.specialRequests
       };
 
-      const record = await pb.collection('bookings').create(bookingData, { $autoCancel: false });
-      
-      toast.success("Booking created successfully!");
+     const response = await api.post("/bookings", bookingData);
+
+const record = response.data.data;
       navigate('/checkout', { state: { booking: record, property } });
 
     } catch (error) {

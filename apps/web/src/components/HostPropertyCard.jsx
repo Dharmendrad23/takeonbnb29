@@ -3,7 +3,7 @@ import { Edit, Trash2, Eye, MapPin, Building, CheckCircle2, Clock } from 'lucide
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api';
 
 const HostPropertyCard = ({ property, onEdit, onDelete }) => {
   const imageUrl = property.coverImage 

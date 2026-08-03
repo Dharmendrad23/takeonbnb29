@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import PropertyGrid from './PropertyGrid.jsx';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api';
 
 export default function BeachVillas() {
   const [properties, setProperties] = useState([]);
@@ -13,29 +12,40 @@ export default function BeachVillas() {
       try {
         setLoading(true);
         setError(null);
-        const records = await pb.collection('properties').getList(1, 8, {
-          filter: '(location ~ "Goa" || location ~ "Kerala") && status="Live"',
-          sort: '-created',
-          $autoCancel: false
-        });
-        setProperties(records.items || []);
+
+        const { data } = await api.get("/properties");
+
+        const beachVillas = (data || [])
+          .filter(item => {
+            const location = (item.location || "").toLowerCase();
+
+            return (
+              location.includes("goa") ||
+              location.includes("kerala")
+            );
+          })
+          .slice(0, 8);
+
+        setProperties(beachVillas);
+
       } catch (err) {
-        console.error('Error fetching beach villas:', err);
-        setError('Failed to load beachfront villas. Please try again.');
+        console.error(err);
+        setError("Failed to load beachfront villas.");
       } finally {
         setLoading(false);
       }
     };
+
     fetchProperties();
   }, []);
 
   return (
-    <PropertyGrid 
-      properties={properties} 
+    <PropertyGrid
+      properties={properties}
       isLoading={loading}
       error={error}
-      title="Beachfront Villas" 
-      subtitle="Step out of your door and directly onto the warm sand." 
+      title="Beachfront Villas"
+      subtitle="Step out of your door and directly onto the warm sand."
     />
   );
 }

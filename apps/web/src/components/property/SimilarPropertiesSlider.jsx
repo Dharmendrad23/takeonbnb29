@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Star, MapPin } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api';
 import { formatCurrency } from '@/lib/bookingUtils.js';
 import PropertyCardSkeleton from '@/components/PropertyCardSkeleton.jsx';
 

@@ -1,9 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Helmet } from 'react-helmet';
 import { useNavigate } from 'react-router-dom';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext.jsx';
-import { usePropertySync } from '@/hooks/usePropertySync.js';
 import HostDashboardLayout from '@/components/HostDashboardLayout.jsx';
 import PropertyCard from '@/components/PropertyCard.jsx';
 import { Button } from '@/components/ui/button';
@@ -15,17 +14,15 @@ const HostPropertiesPage = () => {
   const navigate = useNavigate();
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(null); // track which property id is mid-action
   const [stats, setStats] = useState({ total: 0, draft: 0, pending: 0, approved: 0, live: 0 });
 
   const fetchProperties = useCallback(async () => {
     try {
-      const records = await pb.collection('properties').getFullList({
-        filter: `hostId="${currentUser.id}"`,
-        sort: '-updated',
-        $autoCancel: false
-      });
-      setProperties(records);
-      
+      const { data: records } = await api.get(`/properties?hostId=${currentUser.id}`);
+
+setProperties(records);
+
       const newStats = { total: records.length, draft: 0, pending: 0, approved: 0, live: 0 };
       records.forEach(p => {
         const status = (p.status || p.approvalStatus || '').toString().toLowerCase();
@@ -47,39 +44,49 @@ const HostPropertiesPage = () => {
     fetchProperties();
   }, [fetchProperties]);
 
-  usePropertySync(() => {
-    fetchProperties();
-  });
 
   const handleAction = async (action, property) => {
+   setActionLoading(property._id);
     try {
       if (action === 'edit') {
-        navigate(`/host/edit-property/${property.id}`);
+        navigate(`/host/edit-property/${property._id}`);
+        return; // no refetch needed, we're navigating away
       } else if (action === 'delete') {
-        if (window.confirm('Are you sure you want to delete this property?')) {
-          await pb.collection('properties').delete(property.id, { $autoCancel: false });
-          toast.success('Property deleted');
+        if (!window.confirm('Are you sure you want to delete this property?')) {
+          setActionLoading(null);
+          return;
         }
+        await api.delete(`/properties/${property._id}`);
+        toast.success('Property deleted');
       } else if (action === 'submit') {
-        await pb.collection('properties').update(property.id, { status: 'Submitted' }, { $autoCancel: false });
+       await api.put(`/properties/${property._id}`,{
+  status:"Submitted"
+});
         toast.success('Property submitted for review');
       } else if (action === 'publish') {
-        await pb.collection('properties').update(property.id, { status: 'Live' }, { $autoCancel: false });
-        toast.success('Property is now live!');
+        await api.put(`/properties/${property._id}`,{
+  status:"Live"
+});
       } else if (action === 'unpublish') {
-        await pb.collection('properties').update(property.id, { status: 'Draft' }, { $autoCancel: false });
-        toast.success('Property unpublished and moved to drafts');
+        await api.put(`/properties/${property._id}`,{
+  status:"Draft"
+});
       }
+      // Refresh so the UI reflects the change immediately instead of
+      // waiting on usePropertySync (which may not fire for this record).
+      await fetchProperties();
     } catch (error) {
       console.error(error);
       toast.error(`Failed to ${action} property`);
+    } finally {
+      setActionLoading(null);
     }
   };
 
   return (
     <HostDashboardLayout>
       <Helmet><title>My Properties | Take On BnB</title></Helmet>
-      
+
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold text-foreground tracking-tight">Properties</h1>
@@ -132,12 +139,13 @@ const HostPropertiesPage = () => {
               status: p.status || p.approvalStatus || 'Draft',
             };
             return (
-              <PropertyCard 
-                key={p.id} 
-                property={normalizedProperty} 
+              <PropertyCard
+                key={p._id}
+                property={normalizedProperty}
                 index={idx}
-                isHostView={true} 
+                isHostView={true}
                 onAction={handleAction}
+                actionPending={actionLoading === p._id}
               />
             );
           })}

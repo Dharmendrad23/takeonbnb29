@@ -6,7 +6,7 @@ import {
   ArrowLeft, MapPin, Calendar, Users, CreditCard, 
   CheckCircle2, Clock, XCircle, Building, Phone, Mail, User, FileText, ShieldCheck, MessageSquare
 } from 'lucide-react';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api';
 import { formatCurrency } from '@/lib/bookingUtils.js';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';

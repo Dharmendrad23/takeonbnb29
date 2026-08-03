@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Star, MapPin, AlertCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 
 const SwappingPropertyCard = ({ property, interval = 5000, delay = 0 }) => {

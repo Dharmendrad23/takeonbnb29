@@ -1,7 +1,7 @@
+import api from '@/lib/api';
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import pb from '@/lib/pocketbaseClient.js';
 import { MapPin, Star, BedDouble, Bath, Users, SearchX } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -21,47 +21,22 @@ const SearchResults = ({ criteria }) => {
       const guests = parseInt(criteria.guests, 10) || 1;
       const location = criteria.where ? criteria.where.toLowerCase() : '';
 
-      let filterStr = `status = 'Live' && guestCapacity >= ${guests}`;
-      if (location) {
-        filterStr += ` && (location ~ "${location}" || title ~ "${location}")`;
-      }
+      const { data } = await api.get("/properties");
 
-      if (criteria.checkIn && criteria.checkOut) {
-        const inDate = new Date(criteria.checkIn);
-        const outDate = new Date(criteria.checkOut);
+const filtered = (data || []).filter((property) => {
+  const propertyLocation = (property.location || "").toLowerCase();
+  const propertyTitle = (property.title || "").toLowerCase();
 
-        if (inDate < outDate) {
-          const inStr = inDate.toISOString().split('T')[0];
-          const outStr = outDate.toISOString().split('T')[0];
+  return (
+    (!location ||
+      propertyLocation.includes(location) ||
+      propertyTitle.includes(location)) &&
+    (property.guestCapacity || 0) >= guests
+  );
+});
 
-          const records = await pb.collection('properties').getFullList({
-            filter: filterStr,
-            sort: '-created',
-            $autoCancel: false
-          });
-
-          const bookings = await pb.collection('bookings').getFullList({
-            filter: `status != 'cancelled' && checkInDate < "${outStr} 23:59:59" && checkOutDate > "${inStr} 00:00:00"`,
-            $autoCancel: false
-          });
-
-          const bookedPropertyIds = new Set(bookings.map(b => b.propertyId));
-          const filteredRecords = records.filter(r => !bookedPropertyIds.has(r.id));
-
-          setProperties(filteredRecords);
-          setHasMore(false);
-          return;
-        }
-      }
-
-      const records = await pb.collection('properties').getList(pageNum, 24, {
-        filter: filterStr,
-        sort: '-created',
-        $autoCancel: false
-      });
-
-      setProperties(prev => append ? [...prev, ...records.items] : records.items);
-      setHasMore(records.page < records.totalPages);
+setProperties(filtered);
+setHasMore(false);
     } catch (err) {
       console.error('Search error:', err);
       setError('Failed to fetch search results. Please try again.');
@@ -131,15 +106,20 @@ const SearchResults = ({ criteria }) => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 lg:gap-8">
         {properties.map((property, i) => (
           <motion.div 
-            key={property.id}
+        key={property._id}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: i * 0.05 }}
           >
-            <Link to={`/property/${property.id}`} className="group block">
+            <Link to={`/property/${property._id}`}className="group block">
               <div className="relative aspect-[4/3] rounded-2xl overflow-hidden mb-4 bg-muted">
                 <img 
-                  src={property.coverImage ? pb.files.getUrl(property, property.coverImage) : (property.photos?.[0] ? pb.files.getUrl(property, property.photos[0]) : 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=800&auto=format&fit=crop')} 
+                  src={
+  property.coverImage ||
+  (Array.isArray(property.photos) && property.photos.length > 0
+    ? property.photos[0]
+    : "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=800&auto=format&fit=crop")
+}
                   alt={property.title} 
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
@@ -170,7 +150,7 @@ const SearchResults = ({ criteria }) => {
               </div>
               
               <div className="pt-3 border-t border-border mt-auto">
-                <span className="font-extrabold text-foreground text-lg">${property.pricePerNight}</span>
+                <span className="font-extrabold text-foreground text-lg">₹{property.pricePerNight?.toLocaleString("en-IN")}</span>
                 <span className="text-muted-foreground text-sm font-medium"> / night</span>
               </div>
             </Link>

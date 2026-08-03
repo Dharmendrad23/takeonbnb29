@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext.jsx';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/bookingUtils.js';
 import { validateBookingForm } from '@/lib/validateBookingForm.js';

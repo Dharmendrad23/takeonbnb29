@@ -12,7 +12,7 @@ import UPIPaymentSection from '@/components/UPIPaymentSection.jsx';
 import PaymentVerificationForm from '@/components/PaymentVerificationForm.jsx';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { toast } from 'sonner';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api';
 import apiServerClient from '@/lib/apiServerClient.js';
 import { formatCurrency } from '@/lib/bookingUtils.js';
 
