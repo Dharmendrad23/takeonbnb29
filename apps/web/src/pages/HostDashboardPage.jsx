@@ -15,31 +15,23 @@ const HostDashboardPage = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-   const fetchHostData = async () => {
-  try {
-    setLoading(true);
+    const fetchHostData = async () => {
+      try {
+        setLoading(true);
+        // Fetch host properties
+        const props = await pb.collection('properties').getList(1, 10, {
+          filter: `hostId="${currentUser?.id}"`,
+          sort: '-created',
+          $autoCancel: false
+        });
+        setProperties(props.items);
 
-    const { data } = await api.get(
-      `/properties?hostId=${currentUser.id}`
-    );
+        // Fetch bookings for these properties (simplified aggregate)
+        const bookings = await pb.collection('bookings').getList(1, 1, {
+          filter: `propertyId.hostId="${currentUser?.id}" && status="completed"`,
+          $autoCancel: false
+        });
 
-    setProperties(data);
-
-    setStats({
-      properties: data.length,
-      bookings: 0,
-      revenue: data.reduce(
-        (sum, item) => sum + (item.pricePerNight || 0),
-        0
-      ),
-    });
-
-  } catch (error) {
-    console.error(error);
-  } finally {
-    setLoading(false);
-  }
-};
         // Calculate Revenue (mocking exact aggregate for this demo)
         const totalRev = props.items.reduce((acc, curr) => acc + (curr.totalRevenue || 0), 0);
         const totalBookings = props.items.reduce((acc, curr) => acc + (curr.totalBookings || 0), 0);
