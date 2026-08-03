@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { useAdminAuth } from '@/contexts/AdminAuthContext.jsx';
@@ -9,7 +9,7 @@ import { Loader2, ArrowRight, ShieldCheck, Mail, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 
 const AdminLoginPage = () => {
-  const { login, isAuthenticated } = useAdminAuth();
+  const { login, isAuthenticated, loading } = useAdminAuth();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -17,11 +17,12 @@ const AdminLoginPage = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  if (isAuthenticated) {
-    const from = location.state?.from?.pathname || '/admin';
-    navigate(from, { replace: true });
-    return null;
-  }
+  useEffect(() => {
+    if (!loading && isAuthenticated) {
+      const from = location.state?.from?.pathname || '/admin';
+      navigate(from, { replace: true });
+    }
+  }, [isAuthenticated, loading, location, navigate]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -30,10 +31,9 @@ const AdminLoginPage = () => {
     setIsLoading(true);
     try {
       await login(email, password);
-      const from = location.state?.from?.pathname || '/admin';
-      navigate(from, { replace: true });
+      // Navigation is handled by the useEffect above once isAuthenticated becomes true
     } catch (err) {
-      toast.error("Invalid credentials or unauthorized access.");
+      toast.error(err.message || "Invalid credentials or unauthorized access.");
     } finally {
       setIsLoading(false);
     }
