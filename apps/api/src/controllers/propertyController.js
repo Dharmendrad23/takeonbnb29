@@ -67,4 +67,22 @@ export const deleteProperty = async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
+};export const getProperties = async (req, res) => {
+  try {
+    const filter = {};
+
+    if (req.query.hostId) {
+      filter.hostId = req.query.hostId;
+    }
+
+    const properties = await Property.find(filter).sort({
+      createdAt: -1,
+    });
+
+    res.json(properties);
+  } catch (err) {
+    res.status(500).json({
+      message: err.message,
+    });
+  }
 };
