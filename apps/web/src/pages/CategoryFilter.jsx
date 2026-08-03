@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api.js';
 import { MapPin, Star, Filter, Search } from 'lucide-react';
 import { formatCurrency } from '@/lib/bookingUtils.js';
 import { Button } from '@/components/ui/button';

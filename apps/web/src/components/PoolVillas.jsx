@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import PropertyGrid from './PropertyGrid.jsx';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api.js';
 
 export default function PoolVillas() {
   const [properties, setProperties] = useState([]);
@@ -13,12 +12,17 @@ export default function PoolVillas() {
       try {
         setLoading(true);
         setError(null);
-        const records = await pb.collection('properties').getList(1, 8, {
-          filter: 'amenities.name ?~ "pool" && status="Live"',
-          sort: '-created',
-          $autoCancel: false
-        });
-        setProperties(records.items || []);
+
+        const { data } = await api.get('/properties');
+
+        const filtered = data.filter((p) =>
+          Array.isArray(p.amenities) &&
+          p.amenities.some((a) =>
+            String(a).toLowerCase().includes('pool')
+          )
+        );
+
+        setProperties(filtered.slice(0, 8));
       } catch (err) {
         console.error('Error fetching pool villas:', err);
         setError('Failed to load villas with private pools.');
@@ -26,16 +30,17 @@ export default function PoolVillas() {
         setLoading(false);
       }
     };
+
     fetchProperties();
   }, []);
 
   return (
-    <PropertyGrid 
-      properties={properties} 
+    <PropertyGrid
+      properties={properties}
       isLoading={loading}
       error={error}
-      title="Villas with Private Pools" 
-      subtitle="Dive into relaxation with your own exclusive oasis." 
+      title="Villas with Private Pools"
+      subtitle="Dive into relaxation with your own exclusive oasis."
     />
   );
 }

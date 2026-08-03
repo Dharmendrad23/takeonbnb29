@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, Download, Calendar, Users, MapPin } from 'lucide-react';
 import { motion } from 'framer-motion';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api.js';
 import apiServerClient from '@/lib/apiServerClient.js';
 import { formatCurrencyINR, formatDate } from '@/lib/bookingUtils.js';
 import { useNavigate } from 'react-router-dom';

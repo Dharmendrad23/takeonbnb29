@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Star, MapPin } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api.js';
 import { formatCurrency } from '@/lib/bookingUtils.js';
 import PropertyCardSkeleton from '@/components/PropertyCardSkeleton.jsx';
 
@@ -14,11 +14,16 @@ export const SimilarPropertiesSlider = ({ currentPropertyId, propertyType }) => 
   useEffect(() => {
     const fetchSimilar = async () => {
       try {
-        const records = await pb.collection('properties').getList(1, 6, {
-          filter: `propertyType='${propertyType}' && approvalStatus='approved' && id!='${currentPropertyId}'`,
-          $autoCancel: false
+        const res = await api.get('/properties', {
+          params: {
+            propertyType,
+            approvalStatus: 'approved',
+            excludeId: currentPropertyId,
+            limit: 6
+          }
         });
-        setProperties(records.items);
+        const items = res.data?.items || res.data || [];
+        setProperties(items.filter(p => (p._id || p.id) !== currentPropertyId));
       } catch (err) {
         console.error("Failed to fetch similar properties", err);
       } finally {
@@ -51,13 +56,14 @@ export const SimilarPropertiesSlider = ({ currentPropertyId, propertyType }) => 
       >
         <CarouselContent className="-ml-4">
           {properties.map((property) => {
+            const propertyId = property._id || property.id;
             const imageUrl = property.photos && property.photos.length > 0
-              ? pb.files.getUrl(property, property.photos[0], { thumb: '600x400' })
+              ? api.getImageUrl(property.photos[0])
               : 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=600&q=80';
 
             return (
-              <CarouselItem key={property.id} className="pl-4 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
-                <Link to={`/property/${property.id}`}>
+              <CarouselItem key={propertyId} className="pl-4 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+                <Link to={`/property/${propertyId}`}>
                   <Card className="overflow-hidden border-none shadow-sm hover:shadow-hover transition-all duration-300 group h-full bg-card">
                     <div className="aspect-[4/3] relative overflow-hidden rounded-t-2xl">
                       <img 

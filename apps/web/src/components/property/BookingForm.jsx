@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext.jsx';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api.js';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/bookingUtils.js';
 import { validateBookingForm } from '@/lib/validateBookingForm.js';
@@ -46,12 +46,16 @@ export const BookingForm = ({ propertyId, initialPrice = 0 }) => {
   useEffect(() => {
     const fetchProperties = async () => {
       try {
-        const records = await pb.collection('properties').getFullList({ $autoCancel: false });
-        setProperties(records);
-        if (propertyId) {
-          const activeProp = records.find(p => p.id === propertyId);
-          setSelectedProperty(activeProp);
-        }
+       const { data } = await api.get("/properties");
+
+setProperties(data);
+
+if (propertyId) {
+  const activeProp = data.find(
+    p => (p._id || p.id) === propertyId
+  );
+  setSelectedProperty(activeProp);
+}
       } catch (error) {
         toast.error("Failed to load properties for booking. Please refresh.");
       }
@@ -156,9 +160,12 @@ export const BookingForm = ({ propertyId, initialPrice = 0 }) => {
         paymentStatus: 'pending'
       };
 
-      const record = await pb.collection('bookings').create(bookingData, { $autoCancel: false });
-      
-      setCompletedBooking(record);
+      const { data } = await api.post(
+  "/bookings",
+  bookingData
+);
+
+setCompletedBooking(data);
       setSuccessModalOpen(true);
       
       setFormData(getInitialState());

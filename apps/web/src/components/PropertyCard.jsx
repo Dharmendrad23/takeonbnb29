@@ -4,7 +4,7 @@ import { Heart, Star, MapPin, BedDouble, Bath, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useFavorites } from '@/hooks/useFavorites.js';
 import { Button } from '@/components/ui/button';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api.js';
 
 const PropertyCard = memo(({ property, isHostView = false }) => {
   const navigate = useNavigate();

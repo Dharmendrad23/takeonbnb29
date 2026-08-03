@@ -12,7 +12,7 @@ import UPIPaymentSection from '@/components/UPIPaymentSection.jsx';
 import PaymentVerificationForm from '@/components/PaymentVerificationForm.jsx';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { toast } from 'sonner';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api.js';
 import apiServerClient from '@/lib/apiServerClient.js';
 import { formatCurrency } from '@/lib/bookingUtils.js';
 
@@ -103,15 +103,21 @@ const BookingFlowModal = ({ isOpen, onClose, property, initialDates, initialGues
       formData.append('paymentMethod', 'upi');
       formData.append('bookingStep', 5);
 
-      const record = await pb.collection('bookings').create(formData, { $autoCancel: false });
-      setBookingId(record.id);
+     const { data } = await api.post("/bookings", formData, {
+  headers: {
+    "Content-Type": "multipart/form-data",
+  },
+});
+
+setBookingId(data._id || data.id);
 
       try {
         await apiServerClient.fetch('/bookings/send-booking-confirmation-message', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ bookingId: record.id })
-        });
+        body: JSON.stringify({
+  bookingId: data._id || data.id,
+})
         toast.success('Booking submitted successfully. A confirmation message has been sent.');
       } catch (messageError) {
         console.error('Failed to send booking confirmation message:', messageError);

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api.js';
 import { formatCurrencyINR, formatDate } from '@/lib/bookingUtils.js';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';

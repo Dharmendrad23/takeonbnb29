@@ -38,7 +38,7 @@ export const BookingWidget = ({ property }) => {
     }
     navigate('/checkout', {
       state: {
-        propertyId: property.id,
+        propertyId: property._id || property.id,
         checkInDate: checkIn,
         checkOutDate: checkOut,
         guestCount: guests,

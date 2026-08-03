@@ -15,53 +15,35 @@ const HostDashboardPage = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-   const fetchHostData = async () => {
-  try {
-    setLoading(true);
+  const fetchHostData = async () => {
+    try {
+      setLoading(true);
 
-    const { data } = await api.get(
-      `/properties?hostId=${currentUser.id}`
-    );
+      const { data } = await api.get(
+        `/properties?hostId=${currentUser.id}`
+      );
 
-    setProperties(data);
+      setProperties(data);
 
-    setStats({
-      properties: data.length,
-      bookings: 0,
-      revenue: data.reduce(
-        (sum, item) => sum + (item.pricePerNight || 0),
-        0
-      ),
-    });
-
-  } catch (error) {
-    console.error(error);
-  } finally {
-    setLoading(false);
-  }
-};
-        // Calculate Revenue (mocking exact aggregate for this demo)
-        const totalRev = props.items.reduce((acc, curr) => acc + (curr.totalRevenue || 0), 0);
-        const totalBookings = props.items.reduce((acc, curr) => acc + (curr.totalBookings || 0), 0);
-
-        setStats({
-          properties: props.totalItems,
-          bookings: totalBookings || bookings.totalItems || 0,
-          revenue: totalRev
-        });
-
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (currentUser?.id) {
-      fetchHostData();
+      setStats({
+        properties: data.length,
+        bookings: 0,
+        revenue: data.reduce(
+          (sum, item) => sum + (item.pricePerNight || 0),
+          0
+        ),
+      });
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
     }
-  }, [currentUser]);
+  };
 
+  if (currentUser?.id) {
+    fetchHostData();
+  }
+}, [currentUser]);
   if (loading) {
     return (
       <div className="min-h-screen pt-28 pb-12 flex items-center justify-center bg-muted/20">

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, MapPin, Loader2 } from 'lucide-react';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api.js';
 import { formatCurrency } from '@/lib/bookingUtils.js';
 import { Input } from '@/components/ui/input';
 
@@ -35,11 +35,17 @@ const SearchAutocomplete = () => {
       setIsOpen(true);
 
       try {
-        const records = await pb.collection('properties').getList(1, 5, {
-          filter: `(title ~ "${query}" || location ~ "${query}") && approvalStatus="approved"`,
-          $autoCancel: false
-        });
-        setResults(records.items);
+       const { data } = await api.get("/properties");
+
+const filtered = (data || [])
+  .filter(
+    (p) =>
+      p.title?.toLowerCase().includes(query.toLowerCase()) ||
+      p.location?.toLowerCase().includes(query.toLowerCase())
+  )
+  .slice(0, 5);
+
+setResults(filtered);
       } catch (error) {
         console.error('Search error:', error);
       } finally {
@@ -87,7 +93,7 @@ const SearchAutocomplete = () => {
                     <div className="w-12 h-12 rounded-lg bg-muted overflow-hidden flex-shrink-0">
                       {property.photos?.[0] ? (
                         <img
-                          src={pb.files.getUrl(property, property.photos[0])}
+                          src={property.photos?.[0]}
                           alt={property.title}
                           className="w-full h-full object-cover"
                         />

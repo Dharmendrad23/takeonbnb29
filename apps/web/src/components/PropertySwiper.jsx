@@ -3,7 +3,7 @@ import useEmblaCarousel from 'embla-carousel-react';
 import Autoplay from 'embla-carousel-autoplay';
 import { ChevronLeft, ChevronRight, MapPin, Star, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api.js';
 import { formatCurrencyINR } from '@/lib/bookingUtils.js';
 import { Link } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';

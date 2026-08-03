@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api.js';
 import { toast } from 'sonner';
 
 export const usePaymentAutoDetect = (bookingId) => {

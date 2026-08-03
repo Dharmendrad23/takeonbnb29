@@ -5,7 +5,7 @@ import { Users, Home, Calendar, IndianRupee, Activity, Clock, CheckCircle2, Arro
 import { useRealtimeDashboardStats } from '@/hooks/useRealtimeDashboardStats.js';
 import { formatCurrencyINR, formatDate } from '@/lib/bookingUtils.js';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from 'recharts';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api.js';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 

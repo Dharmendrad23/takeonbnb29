@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import PropertyGrid from './PropertyGrid.jsx';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api.js';
 
 export default function MountainVillas() {
   const [properties, setProperties] = useState([]);
@@ -13,29 +12,40 @@ export default function MountainVillas() {
       try {
         setLoading(true);
         setError(null);
-        const records = await pb.collection('properties').getList(1, 8, {
-          filter: '(location ~ "Manali" || location ~ "Himachal" || location ~ "Darjeeling") && status="Live"',
-          sort: '-created',
-          $autoCancel: false
+
+        const { data } = await api.get("/properties");
+
+        const filtered = data.filter((p) => {
+          const location = (p.location || "").toLowerCase();
+
+          return (
+            location.includes("manali") ||
+            location.includes("himachal") ||
+            location.includes("darjeeling") ||
+            location.includes("mussoorie") ||
+            location.includes("nainital")
+          );
         });
-        setProperties(records.items || []);
+
+        setProperties(filtered.slice(0, 8));
       } catch (err) {
-        console.error('Error fetching mountain villas:', err);
-        setError('Failed to load mountain escapes. Please try again.');
+        console.error("Error fetching mountain villas:", err);
+        setError("Failed to load mountain escapes.");
       } finally {
         setLoading(false);
       }
     };
+
     fetchProperties();
   }, []);
 
   return (
-    <PropertyGrid 
-      properties={properties} 
+    <PropertyGrid
+      properties={properties}
       isLoading={loading}
       error={error}
-      title="Mountain Escapes" 
-      subtitle="Breathe in the crisp air and enjoy panoramic scenic views." 
+      title="Mountain Escapes"
+      subtitle="Breathe in the crisp air and enjoy panoramic scenic views."
     />
   );
 }

@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api.js';
 import { PropertyImageGallery } from '@/components/property/PropertyImageGallery.jsx';
 import { BookingWidget } from '@/components/property/BookingWidget.jsx';
 import { 
@@ -29,11 +29,9 @@ const PropertyDetailPage = () => {
     const fetchProperty = async () => {
       try {
         setLoading(true);
-        const record = await pb.collection('properties').getOne(id, {
-          expand: 'hostId,amenities',
-          $autoCancel: false
-        });
-        setProperty(record);
+      const { data } = await api.get(`/properties/${id}`);
+setProperty(data);
+
       } catch (err) {
         console.error("Error fetching property:", err);
         setError('Property not found or unavailable.');
@@ -65,9 +63,7 @@ const PropertyDetailPage = () => {
       </div>
     );
   }
-
-  const photos = property.photos?.map(file => pb.files.getURL(property, file)) || [];
-
+const photos = property.photos || [];
   return (
     <div className="bg-background min-h-screen pb-24">
       <Helmet>
@@ -96,15 +92,15 @@ const PropertyDetailPage = () => {
               </p>
             </div>
 
-            <AmenitiesGrid amenities={property.expand?.amenities} />
+            <AmenitiesGrid amenities={property.amenities || []} />
             <HouseRulesSection 
               houseRules={property.houseRules} 
               checkInTime={property.checkInTime} 
               checkOutTime={property.checkOutTime} 
             />
-            <ReviewsSection propertyId={property.id} />
+           {/* <ReviewsSection propertyId={property._id} /> */}
             <LocationMap location={property.location} />
-            <HostCard host={property.expand?.hostId} />
+            <HostCard host={property.host} />
           </div>
 
           <div className="w-full lg:w-[33%] hidden lg:block">

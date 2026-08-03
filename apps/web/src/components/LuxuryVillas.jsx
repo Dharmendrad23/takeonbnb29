@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import PropertyGrid from './PropertyGrid.jsx';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api.js';
 
 export default function LuxuryVillas() {
   const [properties, setProperties] = useState([]);
@@ -13,29 +12,33 @@ export default function LuxuryVillas() {
       try {
         setLoading(true);
         setError(null);
-        const records = await pb.collection('properties').getList(1, 8, {
-          filter: 'propertyType="Villas" && status="Live"',
-          sort: '-created',
-          $autoCancel: false
+
+        const { data } = await api.get("/properties");
+
+        const filtered = data.filter((p) => {
+          const type = (p.propertyType || "").toLowerCase();
+          return type === "villa" || type === "villas";
         });
-        setProperties(records.items || []);
+
+        setProperties(filtered.slice(0, 8));
       } catch (err) {
-        console.error('Error fetching luxury villas:', err);
-        setError('Failed to load luxury villas. Please try again later.');
+        console.error("Error fetching luxury villas:", err);
+        setError("Failed to load luxury villas.");
       } finally {
         setLoading(false);
       }
     };
+
     fetchProperties();
   }, []);
 
   return (
-    <PropertyGrid 
-      properties={properties} 
+    <PropertyGrid
+      properties={properties}
       isLoading={loading}
       error={error}
-      title="Luxury Villas" 
-      subtitle="Experience unparalleled opulence and world-class amenities." 
+      title="Luxury Villas"
+      subtitle="Experience unparalleled opulence and world-class amenities."
     />
   );
 }
