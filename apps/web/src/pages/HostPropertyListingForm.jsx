@@ -28,7 +28,7 @@ const HostPropertyListingForm = () => {
   
   // Step 1 State
   const [formData, setFormData] = useState({
-    title: '', description: '', location: '', propertyType: 'Villas',
+    title: '', description: '', location: '', propertyType: 'Villa',
     pricePerNight: '', bedrooms: '', bathrooms: '', guestCapacity: ''
   });
 
@@ -263,9 +263,13 @@ const HostPropertyListingForm = () => {
                     <Select value={formData.propertyType} onValueChange={(val) => handleSelectChange('propertyType', val)}>
                       <SelectTrigger className="h-12 bg-background border-border text-foreground"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Villas">Villas</SelectItem>
-                        <SelectItem value="Hotels">Hotels</SelectItem>
-                        <SelectItem value="Apartments">Apartments</SelectItem>
+                        <SelectItem value="Villa">Villa</SelectItem>
+                        <SelectItem value="Hotel">Hotel</SelectItem>
+                        <SelectItem value="Apartment">Apartment</SelectItem>
+                        <SelectItem value="House">House</SelectItem>
+                        <SelectItem value="Resort">Resort</SelectItem>
+                        <SelectItem value="Homestay">Homestay</SelectItem>
+                        <SelectItem value="Room">Room</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
