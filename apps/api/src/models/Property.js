@@ -34,6 +34,41 @@ const propertySchema = new mongoose.Schema(
       required: true,
       min: 1,
     },
+pricePerNight: {
+  type: Number,
+  required: true,
+  min: 1,
+},
+
+bedrooms: {
+  type: Number,
+  required: true,
+  min: 1,
+},
+
+bathrooms: {
+  type: Number,
+  required: true,
+  min: 1,
+},
+
+guestCapacity: {
+  type: Number,
+  required: true,
+  min: 1,
+},
+
+status: {
+  type: String,
+  enum: ["Submitted", "Live", "Rejected"],
+  default: "Submitted",
+},
+
+amenities: [
+  {
+    type: String,
+  },
+],
 
     amenities: [
       {

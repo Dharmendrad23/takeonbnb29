@@ -1,4 +1,4 @@
-
+import axios from "axios";
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { useAuth } from '@/contexts/AuthContext.jsx';
@@ -19,12 +19,11 @@ const HostDashboardPage = () => {
       try {
         setLoading(true);
         // Fetch host properties
-        const props = await pb.collection('properties').getList(1, 10, {
-          filter: `hostId="${currentUser?.id}"`,
-          sort: '-created',
-          $autoCancel: false
-        });
-        setProperties(props.items);
+       const { data: props } = await axios.get(
+  `http://localhost:3001/properties?hostId=${currentUser.id}`
+);
+
+setProperties(props);
 
         // Fetch bookings for these properties (simplified aggregate)
         const bookings = await pb.collection('bookings').getList(1, 1, {
@@ -37,7 +36,7 @@ const HostDashboardPage = () => {
         const totalBookings = props.items.reduce((acc, curr) => acc + (curr.totalBookings || 0), 0);
 
         setStats({
-          properties: props.totalItems,
+          properties: props.length,
           bookings: totalBookings || bookings.totalItems || 0,
           revenue: totalRev
         });
