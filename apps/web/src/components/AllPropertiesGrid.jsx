@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api.js';
 import SwappingPropertyCard from '@/components/SwappingPropertyCard.jsx';
 import PropertyCardSkeleton from '@/components/PropertyCardSkeleton.jsx';
 import { AlertCircle } from 'lucide-react';
@@ -13,12 +13,8 @@ const AllPropertiesGrid = () => {
     const fetchProperties = async () => {
       try {
         setIsLoading(true);
-        const records = await pb.collection('properties').getList(1, 100, {
-          filter: 'status="Live"',
-          sort: '-created',
-          $autoCancel: false
-        });
-        setProperties(records.items);
+        const { data } = await api.get('/properties?limit=100');
+        setProperties(data.properties || []);
       } catch (err) {
         console.error("Failed to fetch properties:", err);
         setError(err.message);
@@ -69,7 +65,7 @@ const AllPropertiesGrid = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {properties.map((prop, idx) => (
-            <div key={prop.id} className="w-full">
+            <div key={prop._id || prop.id} className="w-full">
               <SwappingPropertyCard 
                 property={prop} 
                 interval={5000 + (idx % 4) * 1000} // Staggered intervals

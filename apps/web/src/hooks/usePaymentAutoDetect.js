@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api.js';
 import { toast } from 'sonner';
 
 export const usePaymentAutoDetect = (bookingId) => {
@@ -14,20 +14,13 @@ export const usePaymentAutoDetect = (bookingId) => {
 
     const checkPaymentStatus = async () => {
       try {
-        const record = await pb.collection('bookings').getOne(bookingId, { $autoCancel: false });
-        
+        const { data } = await api.get(`/bookings/${bookingId}`);
+        const record = data.booking || data;
+
         if (record.paymentStatus === 'verified') {
           setIsVerified(true);
           setBooking(record);
           setIsPolling(false);
-          
-          // Automatically update bookingStatus to confirmed if not already done by the backend hook
-          if (record.bookingStatus !== 'confirmed') {
-            await pb.collection('bookings').update(bookingId, { 
-              bookingStatus: 'confirmed' 
-            }, { $autoCancel: false });
-          }
-          
           toast.success('Payment Confirmed!', {
             description: 'Your booking has been successfully verified and confirmed.'
           });
@@ -37,10 +30,7 @@ export const usePaymentAutoDetect = (bookingId) => {
       }
     };
 
-    // Initial check
     checkPaymentStatus();
-
-    // Poll every 5 seconds
     const intervalId = setInterval(checkPaymentStatus, 5000);
 
     return () => {

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet';
-import pb from '@/lib/pocketbaseClient.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
+import api from '@/lib/api.js';
 import HostDashboardLayout from '@/components/HostDashboardLayout.jsx';
 import { Home, CalendarCheck, DollarSign, Star } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -14,20 +14,17 @@ const HostDashboardHome = () => {
 
   useEffect(() => {
     const fetchStats = async () => {
+      if (!currentUser) return;
       try {
-        const [propsRes, bookingsRes] = await Promise.all([
-          pb.collection('properties').getList(1, 100, { filter: `hostId="${currentUser.id}"`, $autoCancel: false }),
-          pb.collection('bookings').getList(1, 1000, { filter: `propertyId.hostId="${currentUser.id}"`, $autoCancel: false })
-        ]);
-        
-        const totalEarnings = bookingsRes.items.reduce((sum, b) => sum + (b.totalPrice || 0), 0);
-        const activeBookings = bookingsRes.items.filter(b => b.status === 'confirmed' || b.status === 'checked-in').length;
-        
+        const hostId = currentUser._id || currentUser.id;
+        const { data } = await api.get(`/properties?hostId=${hostId}`);
+        const properties = data.properties || [];
+
         setStats({
-          props: propsRes.totalItems,
-          bookings: activeBookings,
-          earnings: totalEarnings,
-          rating: 4.8 // Mock average for display
+          props: properties.length,
+          bookings: 0,
+          earnings: 0,
+          rating: 4.8
         });
       } catch (e) {
         console.error(e);

@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { MapPin, Calendar, Users, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api.js';
 
 const HeroBanner = () => {
   const navigate = useNavigate();
@@ -20,16 +20,10 @@ const HeroBanner = () => {
   useEffect(() => {
     const fetchCities = async () => {
       try {
-        const records = await pb.collection('properties').getFullList({
-          filter: 'status="Live"',
-          fields: 'location',
-          $autoCancel: false,
-        });
-
+        const { data } = await api.get('/properties?limit=500');
         const uniqueCities = Array.from(
-          new Set(records.map(record => record.location?.trim()).filter(Boolean))
+          new Set((data.properties || []).map(r => r.location?.trim()).filter(Boolean))
         ).sort((a, b) => a.localeCompare(b));
-
         setCities(uniqueCities);
       } catch (err) {
         console.error('Failed to load city suggestions:', err);

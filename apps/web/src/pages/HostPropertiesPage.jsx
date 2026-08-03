@@ -1,9 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Helmet } from 'react-helmet';
 import { useNavigate } from 'react-router-dom';
-import pb from '@/lib/pocketbaseClient.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
-import { usePropertySync } from '@/hooks/usePropertySync.js';
+import api from '@/lib/api.js';
 import HostDashboardLayout from '@/components/HostDashboardLayout.jsx';
 import PropertyCard from '@/components/PropertyCard.jsx';
 import { Button } from '@/components/ui/button';
@@ -19,18 +18,16 @@ const HostPropertiesPage = () => {
 
   const fetchProperties = useCallback(async () => {
     try {
-      const records = await pb.collection('properties').getFullList({
-        filter: `hostId="${currentUser.id}"`,
-        sort: '-updated',
-        $autoCancel: false
-      });
+      const hostId = currentUser._id || currentUser.id;
+      const { data } = await api.get(`/properties?hostId=${hostId}`);
+      const records = data.properties || [];
       setProperties(records);
-      
+
       const newStats = { total: records.length, draft: 0, pending: 0, approved: 0, live: 0 };
       records.forEach(p => {
-        const status = (p.status || p.approvalStatus || '').toString().toLowerCase();
+        const status = (p.approvalStatus || '').toString().toLowerCase();
         if (status === 'draft') newStats.draft++;
-        else if (status === 'submitted' || status === 'pending') newStats.pending++;
+        else if (status === 'pending') newStats.pending++;
         else if (status === 'approved') newStats.approved++;
         else if (status === 'live') newStats.live++;
       });
@@ -41,34 +38,35 @@ const HostPropertiesPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [currentUser.id]);
+  }, [currentUser]);
 
   useEffect(() => {
     fetchProperties();
   }, [fetchProperties]);
 
-  usePropertySync(() => {
-    fetchProperties();
-  });
-
   const handleAction = async (action, property) => {
     try {
+      const id = property._id || property.id;
       if (action === 'edit') {
-        navigate(`/host/edit-property/${property.id}`);
+        navigate(`/host/edit-property/${id}`);
       } else if (action === 'delete') {
         if (window.confirm('Are you sure you want to delete this property?')) {
-          await pb.collection('properties').delete(property.id, { $autoCancel: false });
+          await api.delete(`/properties/${id}`);
           toast.success('Property deleted');
+          fetchProperties();
         }
       } else if (action === 'submit') {
-        await pb.collection('properties').update(property.id, { status: 'Submitted' }, { $autoCancel: false });
+        await api.put(`/properties/${id}`, { approvalStatus: 'pending' });
         toast.success('Property submitted for review');
+        fetchProperties();
       } else if (action === 'publish') {
-        await pb.collection('properties').update(property.id, { status: 'Live' }, { $autoCancel: false });
+        await api.put(`/properties/${id}`, { approvalStatus: 'approved', isActive: true });
         toast.success('Property is now live!');
+        fetchProperties();
       } else if (action === 'unpublish') {
-        await pb.collection('properties').update(property.id, { status: 'Draft' }, { $autoCancel: false });
-        toast.success('Property unpublished and moved to drafts');
+        await api.put(`/properties/${id}`, { isActive: false });
+        toast.success('Property unpublished');
+        fetchProperties();
       }
     } catch (error) {
       console.error(error);
@@ -129,11 +127,12 @@ const HostPropertiesPage = () => {
           {properties.map((p, idx) => {
             const normalizedProperty = {
               ...p,
-              status: p.status || p.approvalStatus || 'Draft',
+              id: p._id || p.id,
+              status: p.approvalStatus || 'pending',
             };
             return (
               <PropertyCard 
-                key={p.id} 
+                key={p._id || p.id} 
                 property={normalizedProperty} 
                 index={idx}
                 isHostView={true} 

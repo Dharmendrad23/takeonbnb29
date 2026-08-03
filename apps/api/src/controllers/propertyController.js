@@ -7,10 +7,15 @@ export const getProperties = async (req, res) => {
     const limit = Number(req.query.limit) || 24;
     const skip = (page - 1) * limit;
 
-    const filter = {
-      isActive: true,
-      approvalStatus: "approved",
-    };
+    const filter = {};
+
+    // Host dashboard: return ALL host properties regardless of approval/active status
+    if (req.query.hostId) {
+      filter.hostId = req.query.hostId;
+    } else {
+      filter.isActive = true;
+      filter.approvalStatus = "approved";
+    }
 
     if (req.query.city) {
       filter.city = req.query.city;

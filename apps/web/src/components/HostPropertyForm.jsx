@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FormFieldWrapper } from '@/components/FormFieldWrapper.jsx';
 import { toast } from 'sonner';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 
 const HostPropertyForm = ({ property = null, onClose, onSuccess }) => {
@@ -34,26 +34,30 @@ const HostPropertyForm = ({ property = null, onClose, onSuccess }) => {
     setIsSubmitting(true);
     try {
       const payload = {
-        ...data,
+        title: data.title,
+        description: data.description,
+        location: data.location,
+        propertyType: data.propertyType,
         pricePerNight: Number(data.pricePerNight),
         bedrooms: Number(data.bedrooms),
         bathrooms: Number(data.bathrooms),
-        guestCapacity: Number(data.guestCapacity),
-        hostId: currentUser.id,
-        status: property ? property.status : 'Draft',
+        guests: Number(data.guestCapacity),
+        hostId: currentUser._id || currentUser.id,
+        approvalStatus: 'pending',
       };
 
-      if (property?.id) {
-        await pb.collection('properties').update(property.id, payload, { $autoCancel: false });
+      const id = property?._id || property?.id;
+      if (id) {
+        await api.put(`/properties/${id}`, payload);
         toast.success('Property updated successfully');
       } else {
-        await pb.collection('properties').create(payload, { $autoCancel: false });
+        await api.post('/properties', payload);
         toast.success('Property added successfully');
       }
       onSuccess();
     } catch (error) {
       console.error('Error saving property:', error);
-      toast.error(error.message || 'Failed to save property. Please check all fields.');
+      toast.error(error?.response?.data?.message || error.message || 'Failed to save property. Please check all fields.');
     } finally {
       setIsSubmitting(false);
     }

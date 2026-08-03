@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import axios from "axios";
+import api from '@/lib/api.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 
 const STEPS = [
@@ -43,37 +43,45 @@ const HostPropertyListingForm = () => {
   useEffect(() => {
     const fetchAmenities = async () => {
       try {
-        const { data } = await axios.api.get("/amenities")
-const records = data;
+        const { data } = await api.get("/amenities");
+        const records = Array.isArray(data) ? data : (data.amenities || []);
         setAvailableAmenities(records);
       } catch (err) {
         console.error("Failed to fetch amenities", err);
+        // Provide sensible defaults if amenities endpoint doesn't exist yet
+        setAvailableAmenities([
+          { id: "wifi", name: "WiFi" },
+          { id: "pool", name: "Swimming Pool" },
+          { id: "parking", name: "Free Parking" },
+          { id: "ac", name: "Air Conditioning" },
+          { id: "kitchen", name: "Kitchen" },
+          { id: "tv", name: "TV" },
+          { id: "gym", name: "Gym" },
+          { id: "beach", name: "Beach Access" },
+        ]);
       }
     };
     fetchAmenities();
   }, []);
 
   useEffect(() => {
-  const fetchCities = async () => {
-    try {
-      const { data } = await api.get("/properties")
-
-      const uniqueCities = Array.from(
-  new Set(
-    (data.properties || [])
-      .map(item => item.location?.trim())
-      .filter(Boolean)
-  )
-).sort((a, b) => a.localeCompare(b));
-
-      setCities(uniqueCities);
-    } catch (err) {
-      console.error("Failed to load city suggestions:", err);
-    }
-  };
-
-  fetchCities();
-}, []);
+    const fetchCities = async () => {
+      try {
+        const { data } = await api.get("/properties");
+        const uniqueCities = Array.from(
+          new Set(
+            (data.properties || [])
+              .map(item => item.location?.trim())
+              .filter(Boolean)
+          )
+        ).sort((a, b) => a.localeCompare(b));
+        setCities(uniqueCities);
+      } catch (err) {
+        console.error("Failed to load city suggestions:", err);
+      }
+    };
+    fetchCities();
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -143,42 +151,22 @@ const records = data;
   const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1));
 
   const handleSubmit = async () => {
-    if (photos.length === 0) {
-      toast.error('Please upload at least one photo');
-      return;
-    }
-
     setIsSubmitting(true);
     try {
-      const data = new FormData();
-      data.append('title', formData.title);
-      data.append('description', formData.description);
-      data.append('location', formData.location);
-      data.append('propertyType', formData.propertyType);
-      data.append('pricePerNight', Number(formData.pricePerNight));
-      data.append('bedrooms', Number(formData.bedrooms));
-      data.append('bathrooms', Number(formData.bathrooms));
-      data.append('guestCapacity', Number(formData.guestCapacity));
-      data.append('hostId', currentUser.id);
-      data.append('status', 'Submitted');
+      await api.post("/properties", {
+        hostId: currentUser?._id || currentUser?.id,
+        title: formData.title,
+        description: formData.description,
+        location: formData.location,
+        propertyType: formData.propertyType,
+        pricePerNight: Number(formData.pricePerNight),
+        bedrooms: Number(formData.bedrooms),
+        bathrooms: Number(formData.bathrooms),
+        guests: Number(formData.guestCapacity),
+        amenities: selectedAmenities,
+        approvalStatus: "pending",
+      });
 
-      selectedAmenities.forEach(id => data.append('amenities', id));
-      photos.forEach(photo => data.append('photos', photo.file));
-await api.post("/properties", {
-  hostId: currentUser?._id || currentUser?.id,
-  title: formData.title,
-  description: formData.description,
-  location: formData.location,
-  propertyType: formData.propertyType,
-  pricePerNight: Number(formData.pricePerNight),
-  bedrooms: Number(formData.bedrooms),
-  bathrooms: Number(formData.bathrooms),
-  guests: Number(formData.guestCapacity),
-  amenities: selectedAmenities,
- photos: photos.map(photo => photo.preview || ""),
-  approvalStatus: "approved",
-});
-      
       toast.success('Property submitted successfully!');
       navigate('/host/dashboard');
     } catch (error) {

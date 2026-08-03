@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
-import { toast } from 'sonner';
 
 const NotificationContext = createContext({
   notifications: [],
@@ -24,42 +23,25 @@ export const NotificationProvider = ({ children }) => {
 
     const fetchNotifications = async () => {
       try {
-        const records = await pb.collection('notifications').getList(1, 50, {
-          filter: `userId="${currentUser.id}"`,
-          sort: '-created',
-          $autoCancel: false
-        });
-        setNotifications(records.items);
-        setUnreadCount(records.items.filter(n => !n.isRead).length);
+        const userId = currentUser._id || currentUser.id;
+        const { data } = await api.get(`/notifications?userId=${userId}`);
+        const items = data.notifications || data.items || [];
+        setNotifications(items);
+        setUnreadCount(items.filter(n => !n.isRead).length);
       } catch (e) {
-        console.error('Error fetching notifications:', e);
+        // Notifications endpoint may not exist yet — fail silently
+        console.warn('Could not fetch notifications:', e.message);
       }
     };
 
     fetchNotifications();
-
-    pb.collection('notifications').subscribe('*', (e) => {
-      if (e.record.userId === currentUser.id) {
-        fetchNotifications();
-        if (e.action === 'create' && !e.record.isRead) {
-          toast(e.record.message, {
-            description: 'New update on your account',
-            action: {
-              label: 'View',
-              onClick: () => {}
-            }
-          });
-        }
-      }
-    });
-
-    return () => pb.collection('notifications').unsubscribe('*');
   }, [currentUser]);
 
   const markAsRead = async (id) => {
     try {
-      await pb.collection('notifications').update(id, { isRead: true }, { $autoCancel: false });
-      // Local state is updated automatically via realtime subscription
+      await api.put(`/notifications/${id}`, { isRead: true });
+      setNotifications(prev => prev.map(n => n._id === id || n.id === id ? { ...n, isRead: true } : n));
+      setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (e) {
       console.error('Error marking notification as read:', e);
     }
@@ -68,12 +50,15 @@ export const NotificationProvider = ({ children }) => {
   const markAllAsRead = async () => {
     const unread = notifications.filter(n => !n.isRead);
     for (const n of unread) {
+      const nId = n._id || n.id;
       try {
-        await pb.collection('notifications').update(n.id, { isRead: true }, { $autoCancel: false });
+        await api.put(`/notifications/${nId}`, { isRead: true });
       } catch (e) {
         console.error('Error marking notification as read:', e);
       }
     }
+    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+    setUnreadCount(0);
   };
 
   return (

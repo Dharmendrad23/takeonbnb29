@@ -4,14 +4,14 @@ import { motion } from 'framer-motion';
 import { MapPin, Users, Wifi, Star, Home, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api.js';
 import PropertyCardSkeleton from './PropertyCardSkeleton.jsx';
 
 const PropertyGrid = ({ properties = [], title, subtitle, isLoading = false, error = null }) => {
   const getSafeImage = (property) => {
     if (property?.image) return property.image;
     if (property?.photos && Array.isArray(property.photos) && property.photos.length > 0) {
-      return pb.files.getURL(property, property.photos[0]);
+      return property.photos[0];
     }
     return 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=800';
   };
@@ -57,7 +57,7 @@ const PropertyGrid = ({ properties = [], title, subtitle, isLoading = false, err
 
       return (
         <motion.div
-          key={property?.id || `fallback-${idx}`}
+          key={property?._id || property?.id || `fallback-${idx}`}
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -117,7 +117,7 @@ const PropertyGrid = ({ properties = [], title, subtitle, isLoading = false, err
               </div>
               {!isSample && (
                 <Button asChild variant="outline" size="sm" className="rounded-full hover:bg-primary hover:text-white hover:border-primary transition-colors">
-                  <Link to={`/property/${property?.id || ''}`}>View Details</Link>
+                  <Link to={`/property/${property?._id || property?.id || ''}`}>View Details</Link>
                 </Button>
               )}
             </div>

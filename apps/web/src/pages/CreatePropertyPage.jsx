@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { toast } from 'sonner';
 
@@ -46,11 +46,8 @@ const CreatePropertyPage = () => {
 
   const loadAmenities = async () => {
     try {
-      const records = await pb.collection('amenities').getFullList({
-        sort: 'name',
-        $autoCancel: false
-      });
-      setAmenities(records);
+      const { data } = await api.get('/amenities');
+      setAmenities(Array.isArray(data) ? data : (data.amenities || []));
     } catch (error) {
       console.error('Failed to load amenities:', error);
     }
@@ -146,20 +143,15 @@ const CreatePropertyPage = () => {
 
   const handlePreSubmit = (e) => {
     e.preventDefault();
-    
-    if (!currentUser || !pb.authStore.isValid) {
-      toast.error('Authentication failed. Please log in again.');
-      return;
-    }
 
-    if (currentUser.userType !== 'host') {
-      toast.error('You must be registered as a host to create properties');
+    if (!currentUser) {
+      toast.error('Authentication failed. Please log in again.');
       return;
     }
 
     const fieldsToValidate = ['title', 'description', 'location', 'pricePerNight', 'propertyType', 'bedrooms', 'bathrooms', 'guestCapacity'];
     let isValid = true;
-    
+
     fieldsToValidate.forEach(field => {
       if (!validateField(field, formData[field])) {
         isValid = false;
@@ -171,15 +163,9 @@ const CreatePropertyPage = () => {
       const form = document.getElementById('create-property-form');
       if (form) {
         form.classList.remove('animate-shake');
-        void form.offsetWidth; 
+        void form.offsetWidth;
         form.classList.add('animate-shake');
       }
-      return;
-    }
-
-    if (!formData.photos || formData.photos.length === 0) {
-      setErrors(prev => ({ ...prev, photos: 'At least one photo is required' }));
-      toast.error('Please select at least one photo');
       return;
     }
 
@@ -192,59 +178,28 @@ const CreatePropertyPage = () => {
     setShowRetry(false);
 
     try {
-      const data = new FormData();
-      data.append('hostId', currentUser.id);
-      data.append('title', formData.title.trim());
-      data.append('description', formData.description.trim());
-      data.append('location', formData.location.trim());
-      data.append('propertyType', formData.propertyType);
-      data.append('pricePerNight', parseFloat(formData.pricePerNight));
-      data.append('status', 'Draft');
-      data.append('bedrooms', parseInt(formData.bedrooms));
-      data.append('bathrooms', parseInt(formData.bathrooms));
-      data.append('guestCapacity', parseInt(formData.guestCapacity));
-      
-      formData.selectedAmenities.forEach(id => {
-        data.append('amenities', id);
+      await api.post('/properties', {
+        hostId: currentUser._id || currentUser.id,
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        location: formData.location.trim(),
+        propertyType: formData.propertyType,
+        pricePerNight: parseFloat(formData.pricePerNight),
+        bedrooms: parseInt(formData.bedrooms),
+        bathrooms: parseInt(formData.bathrooms),
+        guests: parseInt(formData.guestCapacity),
+        amenities: formData.selectedAmenities,
+        approvalStatus: 'pending',
       });
 
-      formData.photos.forEach((photo) => {
-        data.append('photos', photo);
-      });
-
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('TIMEOUT')), 30000)
-      );
-      
-      const createPromise = pb.collection('properties').create(data, { $autoCancel: false });
-      
-      const record = await Promise.race([createPromise, timeoutPromise]);
-      
       toast.success('Property created successfully!');
-      
       setTimeout(() => {
         navigate('/host/dashboard');
       }, 1500);
-      
     } catch (error) {
-      console.error('Submission Error full stack:', error);
+      console.error('Submission Error:', error);
       setShowRetry(true);
-      
-      if (error.message === 'TIMEOUT') {
-        toast.error('Failed to create property: Request timed out after 30 seconds');
-      } else if (error.response) {
-        const pbErrors = error.response.data;
-        if (pbErrors && Object.keys(pbErrors).length > 0) {
-          const errorMessages = Object.entries(pbErrors)
-            .map(([field, details]) => `${field}: ${details.message}`)
-            .join(', ');
-          toast.error(`Failed to create property: ${errorMessages}`);
-        } else {
-          toast.error(`Failed to create property: ${error.response.message || 'Validation failed'}`);
-        }
-      } else {
-        toast.error(`Failed to create property: ${error.message || 'Network error'}`);
-      }
+      toast.error(`Failed to create property: ${error?.response?.data?.message || error.message || 'Network error'}`);
     } finally {
       setIsSubmitting(false);
     }

@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { toast } from 'sonner';
 import { validatePropertyForm } from '@/lib/validatePropertyForm.js';
@@ -46,9 +46,12 @@ const EditPropertyPage = () => {
 
   const loadData = async () => {
     try {
-      const propertyData = await pb.collection('properties').getOne(id, { $autoCancel: false });
+      const { data } = await api.get(`/properties/${id}`);
+      const propertyData = data.property || data;
 
-      if (propertyData.hostId !== currentUser.id) {
+      const hostId = propertyData.hostId?._id || propertyData.hostId || '';
+      const userId = currentUser._id || currentUser.id;
+      if (hostId && hostId.toString() !== userId.toString()) {
         toast.error('You can only edit your own properties');
         navigate('/host/dashboard');
         return;
@@ -62,11 +65,11 @@ const EditPropertyPage = () => {
         pricePerNight: propertyData.pricePerNight?.toString() || '',
         bedrooms: propertyData.bedrooms?.toString() || '1',
         bathrooms: propertyData.bathrooms?.toString() || '1',
-        guestCapacity: propertyData.guestCapacity?.toString() || '1',
+        guestCapacity: (propertyData.guests || propertyData.guestCapacity)?.toString() || '1',
         houseRules: propertyData.houseRules || '',
         checkInTime: propertyData.checkInTime || '14:00',
         checkOutTime: propertyData.checkOutTime || '11:00',
-        status: propertyData.status || 'Draft',
+        status: propertyData.approvalStatus || 'pending',
         newPhotos: []
       });
     } catch (error) {
@@ -97,7 +100,7 @@ const EditPropertyPage = () => {
           checkInTime: formData.checkInTime,
           checkOutTime: formData.checkOutTime,
         };
-        await pb.collection('properties').update(id, dataToSave, { $autoCancel: false });
+        await api.put(`/properties/${id}`, dataToSave);
         setSaveStatus('saved');
         setTimeout(() => setSaveStatus(''), 2000);
       } catch (err) {

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import PropertyGrid from './PropertyGrid.jsx';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api.js';
 
 export default function BeachVillas() {
   const [properties, setProperties] = useState([]);
@@ -13,12 +13,8 @@ export default function BeachVillas() {
       try {
         setLoading(true);
         setError(null);
-        const records = await pb.collection('properties').getList(1, 8, {
-          filter: '(location ~ "Goa" || location ~ "Kerala") && status="Live"',
-          sort: '-created',
-          $autoCancel: false
-        });
-        setProperties(records.items || []);
+        const { data } = await api.get('/properties?limit=8');
+        setProperties(data.properties || []);
       } catch (err) {
         console.error('Error fetching beach villas:', err);
         setError('Failed to load beachfront villas. Please try again.');

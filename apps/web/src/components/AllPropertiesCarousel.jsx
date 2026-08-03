@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Home } from 'lucide-react';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api.js';
 import SwappingPropertyCard from '@/components/SwappingPropertyCard.jsx';
 import PropertyCardSkeleton from '@/components/PropertyCardSkeleton.jsx';
 
@@ -11,12 +11,8 @@ const AllPropertiesCarousel = ({ category = 'All' }) => {
   useEffect(() => {
     const fetchProperties = async () => {
       try {
-        const records = await pb.collection('properties').getList(1, 500, {
-          filter: 'status="Live"',
-          sort: '-created',
-          $autoCancel: false
-        });
-        setProperties(records.items);
+        const { data } = await api.get('/properties?limit=500');
+        setProperties(data.properties || []);
       } catch (err) {
         console.error("Failed to fetch properties", err);
       } finally {

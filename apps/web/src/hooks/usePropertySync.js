@@ -1,27 +1,9 @@
 import { useEffect } from 'react';
-import pb from '@/lib/pocketbaseClient.js';
 
 export const usePropertySync = (callback) => {
+  // Realtime sync via PocketBase has been removed.
+  // The parent component should call its own fetch on mount.
   useEffect(() => {
-    let isSubscribed = true;
-
-    const subscribe = async () => {
-      try {
-        await pb.collection('properties').subscribe('*', (e) => {
-          if (isSubscribed && callback) {
-            callback(e);
-          }
-        });
-      } catch (error) {
-        console.error('Failed to subscribe to properties:', error);
-      }
-    };
-
-    subscribe();
-
-    return () => {
-      isSubscribed = false;
-      pb.collection('properties').unsubscribe('*');
-    };
+    // no-op: polling or websocket can be added here if needed
   }, [callback]);
 };

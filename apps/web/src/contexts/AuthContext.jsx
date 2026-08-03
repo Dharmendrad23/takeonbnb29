@@ -1,4 +1,3 @@
-import pb from '@/lib/pocketbaseClient.js';
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '@/lib/api.js';
@@ -185,34 +184,16 @@ return data;
 
     if (args.length === 3) {
       const [identifier, otpId, code] = args;
-      await verifyOTPCode(otpId, code);
-      const filter = identifier.includes('@') ? `email="${identifier}"` : `phone="${identifier}"`;
-      const users = await pb.collection('users').getList(1, 1, { filter, $autoCancel: false });
-      if (users.totalItems === 0) {
-        throw new Error('No account found with this identifier.');
-      }
-      const user = users.items[0];
-      pb.authStore.save('phone_auth_token_' + Date.now(), user);
-      setCurrentUser(user);
-      return user;
+      const data = await verifyOTPCode(otpId, code);
+      setCurrentUser(data.user || data);
+      return data.user || data;
     }
 
     throw new Error('Invalid loginWithOTP call');
   };
 
   const loginWithOAuth2 = async (provider, options = {}) => {
-    try {
-      const authData = await pb.collection('users').authWithOAuth2({
-        provider,
-        scopes: options.scopes || ['email', 'name'],
-        createData: options.createData || {},
-      });
-      setCurrentUser(authData.record);
-      return authData;
-    } catch (error) {
-      console.error('OAuth login error:', error);
-      throw new Error(error.message || 'OAuth login failed');
-    }
+    throw new Error('OAuth login is not supported in this version');
   };
 
   const verifyOTP = async (otpIdOrCode, code) => {
@@ -220,32 +201,17 @@ return data;
       if (!pendingOtpId || !pendingOTPIdentifier) {
         throw new Error('OTP session missing. Please request a new OTP.');
       }
-      const record = await verifyOTPCode(pendingOtpId, otpIdOrCode);
-      const filter = pendingOTPIdentifier.includes('@') ? `email="${pendingOTPIdentifier}"` : `phone="${pendingOTPIdentifier}"`;
-      const users = await pb.collection('users').getList(1, 1, { filter, $autoCancel: false });
-      if (users.totalItems === 0) {
-        throw new Error('No account found with this identifier.');
-      }
-      const user = users.items[0];
-      pb.authStore.save('phone_auth_token_' + Date.now(), user);
-      setCurrentUser(user);
-      return user;
+      const data = await verifyOTPCode(pendingOtpId, otpIdOrCode);
+      setCurrentUser(data.user || data);
+      return data.user || data;
     }
     return await verifyOTPCode(otpIdOrCode, code);
   };
 
   const authWithOTP = async (otpId, code) => {
-    const record = await verifyOTPCode(otpId, code);
-    const identifier = pendingOTPIdentifier || record.phone;
-    const filter = identifier.includes('@') ? `email="${identifier}"` : `phone="${identifier}"`;
-    const users = await pb.collection('users').getList(1, 1, { filter, $autoCancel: false });
-    if (users.totalItems === 0) {
-      throw new Error('No account found with this identifier.');
-    }
-    const user = users.items[0];
-    pb.authStore.save('phone_auth_token_' + Date.now(), user);
-    setCurrentUser(user);
-    return { record: user };
+    const data = await verifyOTPCode(otpId, code);
+    setCurrentUser(data.user || data);
+    return { record: data.user || data };
   };
 
   const verifyPhoneOTP = async (otpId, code) => {

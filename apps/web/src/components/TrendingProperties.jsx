@@ -4,7 +4,7 @@ import useEmblaCarousel from 'embla-carousel-react';
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api.js';
 import PropertyCard from './PropertyCard.jsx';
 import PropertyCardSkeleton from './PropertyCardSkeleton.jsx';
 
@@ -18,12 +18,8 @@ const TrendingProperties = () => {
     const fetchProperties = async () => {
       try {
         setLoading(true);
-        const records = await pb.collection('properties').getList(1, 50, {
-          sort: '-created',
-          filter: 'status="Live"',
-          $autoCancel: false
-        });
-        setProperties(records.items || []);
+        const { data } = await api.get('/properties?limit=50');
+        setProperties(data.properties || []);
       } catch (err) {
         console.error('Error fetching trending properties:', err);
         setError('Failed to load trending properties.');
@@ -33,21 +29,6 @@ const TrendingProperties = () => {
     };
 
     fetchProperties();
-
-    // Real-time subscription
-    pb.collection('properties').subscribe('*', function (e) {
-      if (e.action === 'create' && e.record.status === 'Live') {
-        setProperties(prev => [e.record, ...prev].slice(0, 50));
-      } else if (e.action === 'update') {
-        setProperties(prev => prev.map(p => p.id === e.record.id ? e.record : p));
-      } else if (e.action === 'delete') {
-        setProperties(prev => prev.filter(p => p.id !== e.record.id));
-      }
-    });
-
-    return () => {
-      pb.collection('properties').unsubscribe('*');
-    };
   }, []);
 
   const getSafeProperty = (prop) => {
