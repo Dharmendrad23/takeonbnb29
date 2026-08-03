@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
@@ -16,7 +15,7 @@ const SearchResultsPage = () => {
   const guests = searchParams.get('guests') || '1';
   const typeFilter = searchParams.get('type') || 'All';
   const sortFilter = searchParams.get('sort') || '-created';
-  
+
   const [properties, setProperties] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -24,26 +23,33 @@ const SearchResultsPage = () => {
     const fetchResults = async () => {
       setIsLoading(true);
       try {
-        let filterStr = 'status = "Live"';
-        
+        const clauses = ['status = "Live"'];
+        const params = {};
+
         if (location) {
-          filterStr += ` && (location ~ "${location}" || title ~ "${location}")`;
-        }
-        
-        if (typeFilter !== 'All') {
-          filterStr += ` && propertyType = "${typeFilter}"`;
+          clauses.push('(location ~ {:location} || title ~ {:location})');
+          params.location = location;
         }
 
-        if (guests && parseInt(guests) > 1) {
-          filterStr += ` && guestCapacity >= ${parseInt(guests)}`;
+        if (typeFilter !== 'All') {
+          clauses.push('propertyType = {:propertyType}');
+          params.propertyType = typeFilter;
         }
+
+        const guestsNum = parseInt(guests, 10);
+        if (!Number.isNaN(guestsNum) && guestsNum > 1) {
+          clauses.push('guestCapacity >= {:guests}');
+          params.guests = guestsNum;
+        }
+
+        const filterStr = pb.filter(clauses.join(' && '), params);
 
         const records = await pb.collection('properties').getList(1, 48, {
           filter: filterStr,
           sort: sortFilter,
           $autoCancel: false
         });
-        
+
         setProperties(records.items);
       } catch (err) {
         console.error("Failed to fetch search results", err);
@@ -86,7 +92,7 @@ const SearchResultsPage = () => {
               Review COVID-19 travel restrictions before you book.
             </p>
           </div>
-          
+
           <div className="flex items-center gap-3 flex-wrap">
             <Select value={sortFilter} onValueChange={handleSortChange}>
               <SelectTrigger className="w-[160px] rounded-xl border-border bg-card min-h-[48px]">
@@ -125,7 +131,7 @@ const SearchResultsPage = () => {
            ))}
          </div>
         ) : properties.length === 0 ? (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             className="py-24 text-center bg-card rounded-3xl border border-border shadow-sm"
