@@ -1,4 +1,3 @@
-import pb from '@/lib/pocketbaseClient.js';
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '@/lib/api.js';
@@ -22,76 +21,55 @@ export const AuthProvider = ({ children }) => {
   const isHost = currentUser?.role === "host" || currentUser?.role === "admin";
   const isAuthenticated = !!currentUser;
 
- useEffect(() => {
-  const token = localStorage.getItem("token");
-  const user = localStorage.getItem("user");
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const user = localStorage.getItem("user");
 
-  if (token && user) {
-    api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-    setCurrentUser(JSON.parse(user));
-  }
+    if (token && user) {
+      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      setCurrentUser(JSON.parse(user));
+    }
 
-  setInitialLoading(false);
-}, []);
+    setInitialLoading(false);
+  }, []);
 
   const login = async (email, password) => {
-  try {
-    const { data } = await api.post("/auth/login", {
-      email,
-      password,
-    });
+    try {
+      const { data } = await api.post("/auth/login", { email, password });
 
-    localStorage.setItem("token", data.token);
-    localStorage.setItem("user", JSON.stringify(data.user));
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+      api.defaults.headers.common["Authorization"] = `Bearer ${data.token}`;
+      setCurrentUser(data.user);
 
-    api.defaults.headers.common["Authorization"] =
-      `Bearer ${data.token}`;
+      return { record: data.user };
+    } catch (error) {
+      console.error("Login error:", error);
+      throw new Error(error?.response?.data?.message || "Invalid email or password");
+    }
+  };
 
-    setCurrentUser(data.user);
+  const signup = async (email, password, name, userType = "guest") => {
+    try {
+      const { data } = await api.post("/auth/register", {
+        fullName: name,
+        email,
+        password,
+        role: userType,
+      });
 
-    return {
-      record: data.user,
-    };
-  } catch (error) {
-    console.error("Login error:", error);
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+      api.defaults.headers.common["Authorization"] = `Bearer ${data.token}`;
+      setCurrentUser(data.user);
 
-    throw new Error(
-      error?.response?.data?.message ||
-      "Invalid email or password"
-    );
-  }
-};
+      return { record: data.user };
+    } catch (error) {
+      console.error("Signup error:", error);
+      throw new Error(error?.response?.data?.message || "Failed to create account");
+    }
+  };
 
-const signup = async (email, password, name, userType = "guest") => {
-  try {
-    const { data } = await api.post("/auth/register", {
-      fullName: name,
-      email,
-      password,
-      role: userType,
-    });
-
-    localStorage.setItem("token", data.token);
-    localStorage.setItem("user", JSON.stringify(data.user));
-
-    api.defaults.headers.common["Authorization"] =
-      `Bearer ${data.token}`;
-
-    setCurrentUser(data.user);
-
-    return {
-      record: data.user,
-    };
-
-  } catch (error) {
-    console.error("Signup error:", error);
-
-    throw new Error(
-      error?.response?.data?.message ||
-      "Failed to create account"
-    );
-  }
-};
   // --- OTP Flow ---
   const [pendingOtpId, setPendingOtpId] = useState(null);
   const [pendingOTPIdentifier, setPendingOTPIdentifier] = useState(null);
@@ -106,9 +84,7 @@ const signup = async (email, password, name, userType = "guest") => {
 
     const response = await fetch(`${apiHost}/notifications/send-sms`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ recipientPhone, messageBody }),
     });
 
@@ -120,42 +96,35 @@ const signup = async (email, password, name, userType = "guest") => {
     return response.json();
   };
 
- const requestOTPCode = async (identifier) => {
-  try {
-    const { data } = await api.post("/auth/request-otp", {
-      phone: identifier,
-    });
-
-    return data.otpId;
-
-  } catch (error) {
-    console.error("OTP request error:", error);
-
-    throw new Error(
-      error?.response?.data?.message ||
-      "Failed to request OTP"
-    );
-  }
-};
+  const requestOTPCode = async (identifier) => {
+    try {
+      const { data } = await api.post("/auth/request-otp", { phone: identifier });
+      return data.otpId;
+    } catch (error) {
+      console.error("OTP request error:", error);
+      throw new Error(error?.response?.data?.message || "Failed to request OTP");
+    }
+  };
 
   const verifyOTPCode = async (otpId, code) => {
-  try {
-    const { data } = await api.post("/auth/verify-otp", {
-      otpId,
-      otpCode: code,
-    });
-console.log("OTP Response:", data);
+    try {
+      const { data } = await api.post("/auth/verify-otp", { otpId, otpCode: code });
+      console.log("OTP Response:", data);
 
-return data;
-  } catch (error) {
-    console.error("OTP verify error:", error);
+      // If the server returned a token + user (existing user), log them in
+      if (data.token && data.user) {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(data.user));
+        api.defaults.headers.common["Authorization"] = `Bearer ${data.token}`;
+        setCurrentUser(data.user);
+      }
 
-    throw new Error(
-      error?.response?.data?.message ||
-      "Invalid OTP"
-    );
-  }
-};
+      return data;
+    } catch (error) {
+      console.error("OTP verify error:", error);
+      throw new Error(error?.response?.data?.message || "Invalid OTP");
+    }
+  };
 
   const requestOTP = async (identifier) => {
     return await requestOTPCode(identifier);
@@ -184,35 +153,19 @@ return data;
     }
 
     if (args.length === 3) {
-      const [identifier, otpId, code] = args;
-      await verifyOTPCode(otpId, code);
-      const filter = identifier.includes('@') ? `email="${identifier}"` : `phone="${identifier}"`;
-      const users = await pb.collection('users').getList(1, 1, { filter, $autoCancel: false });
-      if (users.totalItems === 0) {
-        throw new Error('No account found with this identifier.');
+      const [_identifier, otpId, code] = args;
+      const result = await verifyOTPCode(otpId, code);
+      if (result.user) {
+        return result.user;
       }
-      const user = users.items[0];
-      pb.authStore.save('phone_auth_token_' + Date.now(), user);
-      setCurrentUser(user);
-      return user;
+      throw new Error('No account found with this identifier.');
     }
 
     throw new Error('Invalid loginWithOTP call');
   };
 
-  const loginWithOAuth2 = async (provider, options = {}) => {
-    try {
-      const authData = await pb.collection('users').authWithOAuth2({
-        provider,
-        scopes: options.scopes || ['email', 'name'],
-        createData: options.createData || {},
-      });
-      setCurrentUser(authData.record);
-      return authData;
-    } catch (error) {
-      console.error('OAuth login error:', error);
-      throw new Error(error.message || 'OAuth login failed');
-    }
+  const loginWithOAuth2 = async (_provider, _options = {}) => {
+    throw new Error('OAuth2 login is not supported in this version.');
   };
 
   const verifyOTP = async (otpIdOrCode, code) => {
@@ -220,97 +173,63 @@ return data;
       if (!pendingOtpId || !pendingOTPIdentifier) {
         throw new Error('OTP session missing. Please request a new OTP.');
       }
-      const record = await verifyOTPCode(pendingOtpId, otpIdOrCode);
-      const filter = pendingOTPIdentifier.includes('@') ? `email="${pendingOTPIdentifier}"` : `phone="${pendingOTPIdentifier}"`;
-      const users = await pb.collection('users').getList(1, 1, { filter, $autoCancel: false });
-      if (users.totalItems === 0) {
-        throw new Error('No account found with this identifier.');
-      }
-      const user = users.items[0];
-      pb.authStore.save('phone_auth_token_' + Date.now(), user);
-      setCurrentUser(user);
-      return user;
+      return await verifyOTPCode(pendingOtpId, otpIdOrCode);
     }
     return await verifyOTPCode(otpIdOrCode, code);
   };
 
   const authWithOTP = async (otpId, code) => {
-    const record = await verifyOTPCode(otpId, code);
-    const identifier = pendingOTPIdentifier || record.phone;
-    const filter = identifier.includes('@') ? `email="${identifier}"` : `phone="${identifier}"`;
-    const users = await pb.collection('users').getList(1, 1, { filter, $autoCancel: false });
-    if (users.totalItems === 0) {
-      throw new Error('No account found with this identifier.');
+    const result = await verifyOTPCode(otpId, code);
+    if (result.user) {
+      return { record: result.user };
     }
-    const user = users.items[0];
-    pb.authStore.save('phone_auth_token_' + Date.now(), user);
-    setCurrentUser(user);
-    return { record: user };
+    throw new Error('No account found with this identifier.');
   };
 
   const verifyPhoneOTP = async (otpId, code) => {
-    const user = await loginWithOTP(pendingPhone || '', otpId, code);
-    return { record: user };
+    const result = await verifyOTPCode(otpId, code);
+    if (result.user) {
+      return { record: result.user };
+    }
+    return { record: null };
   };
 
-const signupWithOTP = async (
-  phone,
-  password,
-  userType,
-  name = '',
-  email = '',
-  otpId,
-  otpCode
-) => {
-  try {
+  const signupWithOTP = async (phone, password, userType, name = '', email = '', otpId, otpCode) => {
+    try {
+      if (!otpId || !otpCode) {
+        throw new Error("OTP verification is required");
+      }
 
-    if (!otpId || !otpCode) {
-      throw new Error("OTP verification is required");
+      await verifyOTPCode(otpId, otpCode);
+
+      const { data } = await api.post("/auth/register", {
+        fullName: name,
+        email,
+        phone,
+        password,
+        role: userType,
+      });
+
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+      api.defaults.headers.common["Authorization"] = `Bearer ${data.token}`;
+      setCurrentUser(data.user);
+
+      return data.user;
+    } catch (error) {
+      console.error("OTP signup error:", error);
+      throw new Error(error?.response?.data?.message || error.message || "Signup failed");
     }
+  };
 
-    // Verify OTP from MongoDB API
-    await verifyOTPCode(otpId, otpCode);
-
-    // Create user in MongoDB
-    const { data } = await api.post("/auth/register", {
-      fullName: name,
-      email,
-      phone,
-      password,
-      role: userType,
-    });
-
-    localStorage.setItem("token", data.token);
-    localStorage.setItem("user", JSON.stringify(data.user));
-
-    api.defaults.headers.common["Authorization"] =
-      `Bearer ${data.token}`;
-
-    setCurrentUser(data.user);
-
-    return data.user;
-
-  } catch (error) {
-    console.error("OTP signup error:", error);
-
-    throw new Error(
-      error?.response?.data?.message ||
-      error.message ||
-      "Signup failed"
-    );
-  }
-}; const logout = () => {
-  localStorage.removeItem("token");
-  localStorage.removeItem("user");
-
-  delete api.defaults.headers.common["Authorization"];
-
-  setCurrentUser(null);
-
-  toast.success("Logged out successfully");
-
-  navigate("/");
-};
+  const logout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    delete api.defaults.headers.common["Authorization"];
+    setCurrentUser(null);
+    toast.success("Logged out successfully");
+    navigate("/");
+  };
 
   if (initialLoading) {
     return (
@@ -321,8 +240,8 @@ const signupWithOTP = async (
   }
 
   return (
-    <AuthContext.Provider value={{ 
-      currentUser, 
+    <AuthContext.Provider value={{
+      currentUser,
       isHost,
       isAuthenticated,
       login,
@@ -336,7 +255,7 @@ const signupWithOTP = async (
       verifyPhoneOTP,
       signupWithOTP,
       loginWithOTP,
-      logout 
+      logout
     }}>
       {children}
     </AuthContext.Provider>

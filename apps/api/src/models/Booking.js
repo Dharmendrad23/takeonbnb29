@@ -10,7 +10,7 @@ const bookingSchema = new mongoose.Schema(
 
     guestId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Guest",
+      ref: "User",
       required: true,
     },
 
@@ -48,9 +48,22 @@ const bookingSchema = new mongoose.Schema(
         "confirmed",
         "cancelled",
         "completed",
+        "checked-in",
+        "pending_verification",
+        "rejected",
       ],
       default: "pending",
     },
+
+    paymentStatus: {
+      type: String,
+      enum: ["pending", "paid", "verified", "refunded"],
+      default: "pending",
+    },
+
+    guestFullName: { type: String, default: "" },
+    guestEmail: { type: String, default: "" },
+    guestPhone: { type: String, default: "" },
   },
   {
     timestamps: true,

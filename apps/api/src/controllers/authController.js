@@ -279,3 +279,115 @@ export const verifyEmailOTP = async (req, res) => {
     });
   }
 };
+// ===================== REQUEST PHONE/GENERAL OTP =====================
+
+export const requestPhoneOTP = async (req, res) => {
+  try {
+    const { phone, identifier } = req.body;
+    const target = phone || identifier;
+
+    if (!target) {
+      return res.status(400).json({
+        success: false,
+        message: "Phone number or identifier is required",
+      });
+    }
+
+    const otpCode = otpGenerator.generate(6, {
+      upperCaseAlphabets: false,
+      lowerCaseAlphabets: false,
+      specialChars: false,
+      digits: true,
+    });
+
+    await OtpSession.deleteMany({ email: target });
+
+    const session = await OtpSession.create({
+      email: target,
+      otpCode,
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+      attempts: 0,
+      isVerified: false,
+    });
+
+    return res.json({
+      success: true,
+      otpId: session._id,
+      message: "OTP generated successfully",
+      ...(process.env.NODE_ENV !== "production" ? { devOtp: otpCode } : {}),
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// ===================== VERIFY PHONE/GENERAL OTP =====================
+
+export const verifyPhoneOTP = async (req, res) => {
+  try {
+    const { otpId, otpCode, phone, identifier } = req.body;
+
+    if (!otpCode) {
+      return res.status(400).json({ success: false, message: "OTP code is required" });
+    }
+
+    let session;
+    if (otpId) {
+      session = await OtpSession.findById(otpId);
+    } else {
+      const target = phone || identifier;
+      session = await OtpSession.findOne({ email: target });
+    }
+
+    if (!session) {
+      return res.status(400).json({ success: false, message: "OTP session not found" });
+    }
+
+    if (session.otpCode !== String(otpCode).trim()) {
+      return res.status(400).json({ success: false, message: "Invalid OTP" });
+    }
+
+    if (session.expiresAt < new Date()) {
+      return res.status(400).json({ success: false, message: "OTP has expired" });
+    }
+
+    session.isVerified = true;
+    await session.save();
+
+    const target = session.email;
+    const user = await User.findOne({
+      $or: [{ phone: target }, { email: normalizeEmail(target) }],
+    });
+
+    if (user) {
+      const token = createToken(user);
+      const safeUser = await User.findById(user._id).select("-password");
+      return res.json({ success: true, message: "OTP verified", token, user: safeUser });
+    }
+
+    return res.json({ success: true, message: "OTP verified successfully" });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// ===================== UPDATE PROFILE =====================
+
+export const updateProfile = async (req, res) => {
+  try {
+    const { fullName, phone, profileImage } = req.body;
+    const update = {};
+    if (fullName) update.fullName = fullName.trim();
+    if (phone !== undefined) update.phone = phone;
+    if (profileImage !== undefined) update.profileImage = profileImage;
+
+    const user = await User.findByIdAndUpdate(req.user.id, update, { new: true }).select("-password");
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+    return res.json({ success: true, user });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
