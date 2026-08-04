@@ -44,6 +44,7 @@ app.use(helmet());
 const ALLOWED_ORIGINS = [
 	'https://takeonbnb.com',
 	'https://www.takeonbnb.com',
+	'https://takeonbnb29.netlify.app',
 	...(process.env.CORS_ORIGIN
 		? process.env.CORS_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean)
 		: []),
