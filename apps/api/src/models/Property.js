@@ -25,7 +25,6 @@ const propertySchema = new mongoose.Schema(
 
     propertyType: {
       type: String,
-      enum: ["apartment", "house", "villa", "room"],
       required: true,
     },
 
@@ -33,6 +32,59 @@ const propertySchema = new mongoose.Schema(
       type: Number,
       required: true,
       min: 1,
+    },
+    bedrooms: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    bathrooms: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    guestCapacity: {
+      type: Number,
+      default: 1,
+      min: 1,
+    },
+    status: {
+      type: String,
+      default: "Draft",
+    },
+    approvalStatus: {
+      type: String,
+      default: "pending",
+    },
+    propertyCategory: {
+      type: String,
+      default: "All",
+    },
+    houseRules: {
+      type: String,
+      default: "",
+    },
+    checkInTime: {
+      type: String,
+      default: "",
+    },
+    checkOutTime: {
+      type: String,
+      default: "",
+    },
+    coverImage: {
+      type: String,
+      default: "",
+    },
+    rating: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    totalBookings: {
+      type: Number,
+      default: 0,
+      min: 0,
     },
 
     amenities: [
@@ -49,6 +101,7 @@ const propertySchema = new mongoose.Schema(
   },
   {
     timestamps: true,
+    strict: false,
   }
 );
 

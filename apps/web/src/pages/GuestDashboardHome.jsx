@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom';
-import pb from '@/lib/pocketbaseClient.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import GuestDashboardLayout from '@/components/GuestDashboardLayout.jsx';
 import { Calendar, Heart, Luggage, IndianRupee, ArrowRight, MapPin, Clock } from 'lucide-react';
@@ -9,6 +8,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { formatCurrencyINR, formatDate, isPastDate } from '@/lib/bookingUtils.js';
 import { Badge } from '@/components/ui/badge';
+import { listBookings, listFavorites, listProperties } from '@/lib/dataApi.js';
+import { getEntityId, getPropertyImage } from '@/lib/propertyMappers.js';
 
 const GuestDashboardHome = () => {
   const { currentUser } = useAuth();
@@ -20,15 +21,18 @@ const GuestDashboardHome = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [bookingsRes, favsRes] = await Promise.all([
-          pb.collection('bookings').getFullList({ 
-            filter: `guestId="${currentUser.id}"`, 
-            expand: 'propertyId',
-            sort: '-created',
-            $autoCancel: false 
-          }),
-          pb.collection('favorites').getList(1, 1, { filter: `guestId="${currentUser.id}"`, $autoCancel: false })
+        const [bookingsRaw, properties, favorites] = await Promise.all([
+          listBookings({ guestId: currentUser.id }),
+          listProperties(),
+          listFavorites({ guestId: currentUser.id }),
         ]);
+        const propertyMap = new Map(properties.map((property) => [getEntityId(property), property]));
+        const bookingsRes = bookingsRaw
+          .map((booking) => ({
+            ...booking,
+            property: booking.property || propertyMap.get(String(booking.propertyId)) || null,
+          }))
+          .sort((left, right) => new Date(right.createdAt || right.created || 0) - new Date(left.createdAt || left.created || 0));
         
         let totalSpent = 0;
         let upcoming = [];
@@ -46,7 +50,7 @@ const GuestDashboardHome = () => {
           totalBookings: bookingsRes.length,
           upcoming: upcoming.length,
           totalSpent,
-          saved: favsRes.totalItems
+          saved: favorites.length
         });
 
         setRecentBookings(bookingsRes.slice(0, 3));
@@ -60,14 +64,8 @@ const GuestDashboardHome = () => {
     
     fetchData();
 
-    // Real-time sync
-    pb.collection('bookings').subscribe('*', function (e) {
-      if (e.record.guestId === currentUser.id) {
-        fetchData();
-      }
-    });
-
-    return () => pb.collection('bookings').unsubscribe('*');
+    const intervalId = window.setInterval(fetchData, 15000);
+    return () => window.clearInterval(intervalId);
   }, [currentUser]);
 
   const StatCard = ({ icon: Icon, label, value, bgClass, iconClass }) => (
@@ -145,10 +143,10 @@ const GuestDashboardHome = () => {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {upcomingTrips.map(trip => (
-                  <Link key={trip.id} to={`/guest/bookings/${trip.id}`} className="block group">
+                  <Link key={getEntityId(trip)} to={`/guest/bookings/${getEntityId(trip)}`} className="block group">
                     <div className="relative aspect-video rounded-2xl overflow-hidden mb-3 bg-muted">
-                      {trip.expand?.propertyId?.coverImage && (
-                        <img src={pb.files.getUrl(trip.expand.propertyId, trip.expand.propertyId.coverImage)} alt="Property" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      {getPropertyImage(trip.property) && (
+                        <img src={getPropertyImage(trip.property)} alt="Property" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                       )}
                       <div className="absolute bottom-3 left-3 bg-background/90 backdrop-blur px-3 py-1.5 rounded-lg text-sm font-bold shadow-sm">
                         {formatDate(trip.checkInDate)}
@@ -176,7 +174,7 @@ const GuestDashboardHome = () => {
             ) : recentBookings.length > 0 ? (
               <div className="space-y-4">
                 {recentBookings.map(booking => {
-                  const property = booking.expand?.propertyId;
+                  const property = booking.property;
                   const status = booking.bookingStatus || booking.status;
                   const badgeClass = status === 'confirmed' ? 'badge-confirmed' : 
                                      status === 'pending_verification' || status === 'pending' ? 'badge-pending' : 
@@ -184,14 +182,14 @@ const GuestDashboardHome = () => {
                   
                   return (
                     <Link 
-                      key={booking.id} 
-                      to={`/guest/bookings/${booking.id}`}
+                      key={getEntityId(booking)} 
+                      to={`/guest/bookings/${getEntityId(booking)}`}
                       className="flex items-center gap-4 p-4 rounded-2xl bg-card border border-border hover:bg-muted/50 transition-colors group"
                     >
                       <div className="w-20 h-20 rounded-xl overflow-hidden shrink-0 bg-muted">
                         {(property?.coverImage || property?.photos?.[0]) ? (
                           <img 
-                            src={pb.files.getUrl(property, property.coverImage || property.photos[0])} 
+                            src={getPropertyImage(property)} 
                             alt={property?.title}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                           />

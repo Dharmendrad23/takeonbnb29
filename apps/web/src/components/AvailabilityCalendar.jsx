@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import pb from '@/lib/pocketbaseClient';
 import { parseISO, eachDayOfInterval } from 'date-fns';
+import { listBookings } from '@/lib/dataApi.js';
 
 const AvailabilityCalendar = ({ propertyId }) => {
   const [bookedDates, setBookedDates] = useState([]);
@@ -14,18 +14,17 @@ const AvailabilityCalendar = ({ propertyId }) => {
 
   const loadBookedDates = async () => {
     try {
-      const bookings = await pb.collection('bookings').getFullList({
-        filter: `propertyId="${propertyId}" && (status="pending" || status="confirmed")`,
-        $autoCancel: false
-      });
+      const bookings = await listBookings({ propertyId });
 
       const dates = [];
-      bookings.forEach(booking => {
-        const start = parseISO(booking.checkInDate);
-        const end = parseISO(booking.checkOutDate);
-        const range = eachDayOfInterval({ start, end });
-        dates.push(...range);
-      });
+      bookings
+        .filter((booking) => booking.status === 'pending' || booking.status === 'confirmed')
+        .forEach((booking) => {
+          const start = parseISO(booking.checkInDate);
+          const end = parseISO(booking.checkOutDate);
+          const range = eachDayOfInterval({ start, end });
+          dates.push(...range);
+        });
 
       setBookedDates(dates);
     } catch (error) {

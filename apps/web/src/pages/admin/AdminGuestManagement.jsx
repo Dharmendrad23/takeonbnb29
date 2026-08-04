@@ -6,8 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import pb from '@/lib/pocketbaseClient.js';
 import { toast } from 'sonner';
+import { listUsers, updateUser } from '@/lib/dataApi.js';
+import { getEntityId } from '@/lib/propertyMappers.js';
 
 const AdminGuestManagement = () => {
   const [users, setUsers] = useState([]);
@@ -18,10 +19,7 @@ const AdminGuestManagement = () => {
 
   const fetchUsers = async () => {
     try {
-      const filter = search ? `name ~ "${search}" || email ~ "${search}"` : '';
-      const records = await pb.collection('users').getFullList({
-        filter, sort: '-created', $autoCancel: false
-      });
+      const records = await listUsers({ sort: '-createdAt', search });
       setUsers(records);
     } catch (err) {
       console.error(err);
@@ -33,15 +31,16 @@ const AdminGuestManagement = () => {
 
   useEffect(() => {
     fetchUsers();
-    pb.collection('users').subscribe('*', fetchUsers);
-    return () => pb.collection('users').unsubscribe('*');
+    const intervalId = setInterval(fetchUsers, 15000);
+    return () => clearInterval(intervalId);
   }, [search]);
 
   const handleToggleStatus = async (id, currentStatus) => {
     if (!window.confirm(`Are you sure you want to ${currentStatus ? 'suspend' : 'activate'} this user?`)) return;
     try {
-      await pb.collection('users').update(id, { verified: !currentStatus }, { $autoCancel: false });
+      await updateUser(id, { verified: !currentStatus });
       toast.success(`User account ${!currentStatus ? 'activated' : 'suspended'}`);
+      fetchUsers();
     } catch (err) {
       toast.error("Failed to update user status");
     }
@@ -88,7 +87,7 @@ const AdminGuestManagement = () => {
               <tr><td colSpan="6" className="text-center py-8 text-muted-foreground">No users found.</td></tr>
             ) : (
               users.map(user => (
-                <tr key={user.id}>
+                <tr key={getEntityId(user)}>
                   <td>
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold shrink-0">
@@ -96,7 +95,7 @@ const AdminGuestManagement = () => {
                       </div>
                       <div>
                         <p className="font-medium">{user.name || 'Unnamed User'}</p>
-                        <p className="text-xs text-muted-foreground font-mono">{user.id.slice(0,8)}</p>
+                        <p className="text-xs text-muted-foreground font-mono">{getEntityId(user).slice(0,8)}</p>
                       </div>
                     </div>
                   </td>
@@ -106,7 +105,7 @@ const AdminGuestManagement = () => {
                     </div>
                   </td>
                   <td><Badge variant="secondary" className="capitalize">{user.userType || 'guest'}</Badge></td>
-                  <td className="text-sm text-muted-foreground">{new Date(user.created).toLocaleDateString()}</td>
+                  <td className="text-sm text-muted-foreground">{new Date(user.createdAt || user.created).toLocaleDateString()}</td>
                   <td>
                     <div className="flex items-center gap-2">
                       <Switch 
@@ -152,7 +151,7 @@ const AdminGuestManagement = () => {
                 </div>
                 <div className="flex items-center justify-between py-2 border-b border-border">
                   <span className="text-muted-foreground flex items-center gap-2"><CalendarIcon className="w-4 h-4"/> Joined</span>
-                  <span className="font-medium">{new Date(selectedUser.created).toLocaleDateString()}</span>
+                  <span className="font-medium">{new Date(selectedUser.createdAt || selectedUser.created).toLocaleDateString()}</span>
                 </div>
                 <div className="flex items-center justify-between py-2 border-b border-border">
                   <span className="text-muted-foreground flex items-center gap-2"><ShieldAlert className="w-4 h-4"/> Account Status</span>

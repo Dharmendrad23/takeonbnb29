@@ -6,6 +6,7 @@ import bookingsRouter from "./bookingsMongo.js";
 import propertyRouter from "./propertyRoutes.js";
 import dashboardRouter from "./dashboard.js";
 import adminRouter from "./admin.js";
+import compatCollectionsRouter from "./compatCollections.js";
 import whatsappRouter from "./whatsapp.js";
 import notificationsRouter from "./notifications.js";
 import stripeRouter from "./stripe.js";
@@ -19,7 +20,8 @@ export default () => {
   appRouter.use("/otp", otpRouter);
   appRouter.use("/bookings", bookingsRouter);
   appRouter.use("/properties", propertyRouter);
-appRouter.use("/dashboard", dashboardRouter);
+  appRouter.use("/", compatCollectionsRouter);
+  appRouter.use("/dashboard", dashboardRouter);
   appRouter.use("/admin", adminRouter);
   appRouter.use("/whatsapp", whatsappRouter);
   appRouter.use("/notifications", notificationsRouter);

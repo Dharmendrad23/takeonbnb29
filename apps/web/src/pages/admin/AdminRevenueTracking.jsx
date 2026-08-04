@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { IndianRupee, TrendingUp, Download, PieChart as PieChartIcon, Activity } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import pb from '@/lib/pocketbaseClient.js';
 import { formatCurrencyINR } from '@/lib/bookingUtils.js';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { listBookings } from '@/lib/dataApi.js';
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--blue-500, 217 91% 60%))', 'hsl(var(--purple-500, 270 90% 65%))', 'hsl(var(--emerald-500, 142 71% 45%))'];
 
@@ -22,14 +22,11 @@ const AdminRevenueTracking = () => {
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
-        const bookings = await pb.collection('bookings').getFullList({ 
-          filter: `status != 'cancelled' && bookingStatus != 'rejected'`,
-          sort: 'created', 
-          $autoCancel: false 
-        });
+        const bookings = await listBookings();
+        const activeBookings = bookings.filter((booking) => booking.status !== 'cancelled' && booking.bookingStatus !== 'rejected');
 
         let total = 0;
-        bookings.forEach(b => total += (b.totalPrice || b.totalAmount || 0));
+        activeBookings.forEach(b => total += (b.totalPrice || b.totalAmount || 0));
         
         // Mock data logic for rich visuals
         const baseRev = total / 6;

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
-import pb from '@/lib/pocketbaseClient.js';
 import { MapPin, Star, Filter, Search } from 'lucide-react';
 import { formatCurrency } from '@/lib/bookingUtils.js';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { listProperties } from '@/lib/dataApi.js';
+import { getEntityId, getPropertyImage, isLiveProperty } from '@/lib/propertyMappers.js';
 
 const CategoryFilter = () => {
   const location = useLocation();
@@ -33,39 +34,44 @@ const CategoryFilter = () => {
   const fetchProperties = async () => {
     setIsLoading(true);
     try {
-      let filterParts = [`approvalStatus = "approved"`];
-      
+      let records = await listProperties();
+      records = records.filter((property) => isLiveProperty(property));
+
       if (currentCategory) {
-        filterParts.push(`propertyCategory = "${currentCategory}"`);
+        records = records.filter(
+          (property) => String(property.propertyCategory || '').toLowerCase() === currentCategory.toLowerCase()
+        );
       }
-      
+
       if (searchTerm) {
-        filterParts.push(`(title ~ "${searchTerm}" || location ~ "${searchTerm}")`);
+        const query = searchTerm.toLowerCase();
+        records = records.filter((property) => {
+          const title = String(property.title || '').toLowerCase();
+          const locationValue = String(property.location || '').toLowerCase();
+          return title.includes(query) || locationValue.includes(query);
+        });
       }
-      
+
       if (searchLocation) {
-        filterParts.push(`location ~ "${searchLocation}"`);
+        const locationQuery = searchLocation.toLowerCase();
+        records = records.filter((property) =>
+          String(property.location || '').toLowerCase().includes(locationQuery)
+        );
       }
-      
+
       if (minPrice) {
-        filterParts.push(`pricePerNight >= ${minPrice}`);
+        records = records.filter((property) => Number(property.pricePerNight || 0) >= Number(minPrice));
       }
-      
+
       if (maxPrice) {
-        filterParts.push(`pricePerNight <= ${maxPrice}`);
+        records = records.filter((property) => Number(property.pricePerNight || 0) <= Number(maxPrice));
       }
 
-      const filterStr = filterParts.join(' && ');
-
-      const records = await pb.collection('properties').getList(currentPage, 20, {
-        filter: filterStr,
-        expand: 'amenities',
-        sort: '-created',
-        $autoCancel: false
-      });
-      
-      setProperties(records.items);
-      setTotalPages(records.totalPages);
+      const total = records.length;
+      const nextTotalPages = Math.max(1, Math.ceil(total / 20));
+      const startIndex = (currentPage - 1) * 20;
+      setProperties(records.slice(startIndex, startIndex + 20));
+      setTotalPages(nextTotalPages);
     } catch (error) {
       console.error("Error fetching properties:", error);
     } finally {
@@ -163,11 +169,11 @@ const CategoryFilter = () => {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-10">
               {properties.map(property => (
-                <Link key={property.id} to={`/property/${property.id}`} className="group flex flex-col">
+                <Link key={getEntityId(property)} to={`/property/${getEntityId(property)}`} className="group flex flex-col">
                   <div className="relative aspect-square rounded-2xl overflow-hidden mb-4 bg-muted">
-                    {property.photos?.length > 0 ? (
+                    {getPropertyImage(property) ? (
                       <img 
-                        src={pb.files.getUrl(property, property.photos[0])} 
+                        src={getPropertyImage(property)} 
                         alt={property.title} 
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />

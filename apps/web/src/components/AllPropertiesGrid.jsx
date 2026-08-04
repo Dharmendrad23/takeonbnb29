@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import pb from '@/lib/pocketbaseClient.js';
 import SwappingPropertyCard from '@/components/SwappingPropertyCard.jsx';
 import PropertyCardSkeleton from '@/components/PropertyCardSkeleton.jsx';
 import { AlertCircle } from 'lucide-react';
+import apiServerClient from '@/lib/apiServerClient.js';
+import { getEntityId, isLiveProperty } from '@/lib/propertyMappers.js';
 
 const AllPropertiesGrid = () => {
   const [properties, setProperties] = useState([]);
@@ -13,12 +14,24 @@ const AllPropertiesGrid = () => {
     const fetchProperties = async () => {
       try {
         setIsLoading(true);
-        const records = await pb.collection('properties').getList(1, 100, {
-          filter: 'status="Live"',
-          sort: '-created',
-          $autoCancel: false
-        });
-        setProperties(records.items);
+        const response = await apiServerClient.fetch('/properties');
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch properties');
+        }
+
+        const records = await response.json();
+        const nextProperties = (Array.isArray(records) ? records : [])
+          .filter(isLiveProperty)
+          .sort((left, right) => {
+            const leftDate = new Date(left?.createdAt || left?.created || 0).getTime();
+            const rightDate = new Date(right?.createdAt || right?.created || 0).getTime();
+            return rightDate - leftDate;
+          })
+          .slice(0, 100);
+
+        setProperties(nextProperties);
+        setError(null);
       } catch (err) {
         console.error("Failed to fetch properties:", err);
         setError(err.message);
@@ -69,7 +82,7 @@ const AllPropertiesGrid = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {properties.map((prop, idx) => (
-            <div key={prop.id} className="w-full">
+            <div key={getEntityId(prop)} className="w-full">
               <SwappingPropertyCard 
                 property={prop} 
                 interval={5000 + (idx % 4) * 1000} // Staggered intervals

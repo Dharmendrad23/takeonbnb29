@@ -3,9 +3,10 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMont
 import { ChevronLeft, ChevronRight, Ban, Calendar as CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import pb from '@/lib/pocketbaseClient.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { toast } from 'sonner';
+import { createUnavailableDate, listBookings, listProperties, listUnavailableDates } from '@/lib/dataApi.js';
+import { getEntityId } from '@/lib/propertyMappers.js';
 
 const HostBookingCalendar = () => {
   const { currentUser } = useAuth();
@@ -25,12 +26,10 @@ const HostBookingCalendar = () => {
   useEffect(() => {
     const fetchProps = async () => {
       try {
-        const records = await pb.collection('properties').getFullList({
-          filter: `hostId="${currentUser.id}"`,
-          $autoCancel: false
-        });
+        const hostId = currentUser?.id || currentUser?._id || '';
+        const records = (await listProperties()).filter((property) => String(property.hostId || '') === hostId);
         setProperties(records);
-        if (records.length > 0) setSelectedPropertyId(records[0].id);
+        if (records.length > 0) setSelectedPropertyId(getEntityId(records[0]));
       } catch (e) {
         console.error("Props fetch error", e);
       }
@@ -44,16 +43,10 @@ const HostBookingCalendar = () => {
     setIsLoading(true);
     try {
       const [bookRes, blockRes] = await Promise.all([
-        pb.collection('bookings').getFullList({
-          filter: `propertyId="${selectedPropertyId}" && (status="confirmed" || status="checked-in" || status="pending")`,
-          $autoCancel: false
-        }),
-        pb.collection('unavailable_dates').getFullList({
-          filter: `propertyId="${selectedPropertyId}"`,
-          $autoCancel: false
-        })
+        listBookings({ propertyId: selectedPropertyId }),
+        listUnavailableDates({ propertyId: selectedPropertyId }),
       ]);
-      setBookings(bookRes);
+      setBookings(bookRes.filter((booking) => ['confirmed', 'checked-in', 'pending'].includes(String(booking.status || '').toLowerCase())));
       setBlockedDates(blockRes);
     } catch (e) {
       console.error("Calendar data error", e);
@@ -64,13 +57,8 @@ const HostBookingCalendar = () => {
 
   useEffect(() => {
     fetchCalendarData();
-    // Real-time
-    pb.collection('bookings').subscribe('*', fetchCalendarData);
-    pb.collection('unavailable_dates').subscribe('*', fetchCalendarData);
-    return () => {
-      pb.collection('bookings').unsubscribe('*');
-      pb.collection('unavailable_dates').unsubscribe('*');
-    };
+    const intervalId = window.setInterval(fetchCalendarData, 15000);
+    return () => window.clearInterval(intervalId);
   }, [selectedPropertyId]);
 
   const handleDayClick = (day) => {
@@ -92,16 +80,17 @@ const HostBookingCalendar = () => {
     if (!selectionStart || !selectionEnd) return;
     setIsBlocking(true);
     try {
-      await pb.collection('unavailable_dates').create({
+      await createUnavailableDate({
         propertyId: selectedPropertyId,
         startDate: format(selectionStart, "yyyy-MM-dd"),
         endDate: format(selectionEnd, "yyyy-MM-dd"),
         reason: 'Host Blocked'
-      }, { $autoCancel: false });
+      });
       
       toast.success("Dates blocked successfully");
       setSelectionStart(null);
       setSelectionEnd(null);
+      fetchCalendarData();
     } catch (e) {
       toast.error("Failed to block dates");
       console.error(e);
@@ -190,7 +179,7 @@ const HostBookingCalendar = () => {
                 <SelectValue placeholder="Select property" />
               </SelectTrigger>
               <SelectContent>
-                {properties.map(p => <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>)}
+                {properties.map(p => <SelectItem key={getEntityId(p)} value={getEntityId(p)}>{p.title}</SelectItem>)}
               </SelectContent>
             </Select>
           )}

@@ -1,35 +1,48 @@
 
 import React, { useState, useEffect } from 'react';
 import { Star } from 'lucide-react';
-import pb from '@/lib/pocketbaseClient.js';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
+import apiServerClient from '@/lib/apiServerClient.js';
+import { normalizeReviews } from '@/lib/propertyMappers.js';
 
-export const ReviewsSection = ({ propertyId }) => {
+export const ReviewsSection = ({ propertyId, reviews: initialReviews = [] }) => {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!propertyId) return;
-    
     const fetchReviews = async () => {
+      if (initialReviews.length > 0) {
+        setReviews(normalizeReviews(initialReviews));
+        setLoading(false);
+        return;
+      }
+
+      if (!propertyId) {
+        setReviews([]);
+        setLoading(false);
+        return;
+      }
+
       try {
-        const res = await pb.collection('reviews').getList(1, 6, {
-          filter: `propertyId="${propertyId}"`,
-          expand: 'guestId',
-          sort: '-created',
-          $autoCancel: false
-        });
-        setReviews(res.items);
+        const response = await apiServerClient.fetch(`/properties/${propertyId}`);
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch property reviews');
+        }
+
+        const property = await response.json();
+        setReviews(normalizeReviews(Array.isArray(property?.reviews) ? property.reviews.slice(0, 6) : []));
       } catch (e) {
         console.error("Reviews fetch err:", e);
+        setReviews([]);
       } finally {
         setLoading(false);
       }
     };
     fetchReviews();
-  }, [propertyId]);
+  }, [initialReviews, propertyId]);
 
   if (loading) return <div className="py-8"><div className="h-40 bg-muted animate-pulse rounded-2xl"></div></div>;
   if (reviews.length === 0) return (
@@ -53,13 +66,13 @@ export const ReviewsSection = ({ propertyId }) => {
           <div key={review.id}>
             <div className="flex items-center gap-4 mb-4">
               <Avatar className="w-12 h-12">
-                <AvatarImage src={review.expand?.guestId?.avatar ? pb.files.getURL(review.expand.guestId, review.expand.guestId.avatar) : ''} />
-                <AvatarFallback>{review.expand?.guestId?.name?.[0] || 'G'}</AvatarFallback>
+                <AvatarImage src={review.guest.avatarUrl} />
+                <AvatarFallback>{review.guest.name?.[0] || 'G'}</AvatarFallback>
               </Avatar>
               <div>
-                <div className="font-semibold text-foreground">{review.expand?.guestId?.name || 'Guest'}</div>
+                <div className="font-semibold text-foreground">{review.guest.name || 'Guest'}</div>
                 <div className="text-sm text-muted-foreground flex items-center gap-1">
-                  {format(new Date(review.created), 'MMMM yyyy')} · 
+                  {review.createdAt ? format(new Date(review.createdAt), 'MMMM yyyy') : 'Recent stay'} · 
                   <span className="flex"><Star className="w-3 h-3 fill-foreground" /> {review.rating}</span>
                 </div>
               </div>

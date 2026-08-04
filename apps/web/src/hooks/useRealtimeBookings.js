@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import pb from '@/lib/pocketbaseClient.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
+import { listBookings } from '@/lib/dataApi.js';
 
 export const useRealtimeBookings = (options = {}) => {
   const [bookings, setBookings] = useState([]);
@@ -19,26 +19,25 @@ export const useRealtimeBookings = (options = {}) => {
     const fetchBookings = async () => {
       try {
         const parsedOptions = JSON.parse(optionsString);
-        
-        let defaultFilter = '';
-        if (currentUser.userType === 'guest') {
-          defaultFilter = `guestId="${currentUser.id}"`;
-        } else if (currentUser.userType === 'host') {
-          defaultFilter = `propertyId.hostId="${currentUser.id}"`;
-        }
-        
-        const finalFilter = parsedOptions.filter 
-          ? `(${defaultFilter}) && (${parsedOptions.filter})` 
-          : defaultFilter;
+        const records = await listBookings();
+        let filteredRecords = records;
 
-        const records = await pb.collection('bookings').getFullList({
-          filter: finalFilter,
-          sort: parsedOptions.sort || '-created',
-          expand: parsedOptions.expand || 'propertyId,guestId',
-          $autoCancel: false
-        });
-        
-        setBookings(records);
+        if (currentUser.userType === 'guest' || currentUser.role === 'guest') {
+          filteredRecords = filteredRecords.filter(
+            (booking) => String(booking.guestId || booking.guest?._id || booking.guest?.id || '') === currentUser.id
+          );
+        } else if (currentUser.userType === 'host' || currentUser.role === 'host') {
+          filteredRecords = filteredRecords.filter((booking) => {
+            const property = booking.property || booking.propertyId;
+            return String(property?.hostId || property?.host?._id || property?.host?.id || '') === currentUser.id;
+          });
+        }
+
+        if (parsedOptions.status) {
+          filteredRecords = filteredRecords.filter((booking) => booking.status === parsedOptions.status);
+        }
+
+        setBookings(filteredRecords);
       } catch (err) {
         console.error('Failed to fetch realtime bookings:', err);
       } finally {
@@ -47,15 +46,8 @@ export const useRealtimeBookings = (options = {}) => {
     };
 
     fetchBookings();
-
-    // Subscribe to any changes in the bookings collection
-    pb.collection('bookings').subscribe('*', (e) => {
-      // Re-fetch to ensure sorting and filtering remains perfectly accurate
-      // Performance is fine for typical user-scoped lists
-      fetchBookings();
-    });
-
-    return () => pb.collection('bookings').unsubscribe('*');
+    const intervalId = window.setInterval(fetchBookings, 15000);
+    return () => window.clearInterval(intervalId);
   }, [currentUser, optionsString]);
 
   return { bookings, loading };

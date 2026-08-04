@@ -3,11 +3,11 @@ import useEmblaCarousel from 'embla-carousel-react';
 import Autoplay from 'embla-carousel-autoplay';
 import { ChevronLeft, ChevronRight, MapPin, Star, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import pb from '@/lib/pocketbaseClient.js';
 import { formatCurrencyINR } from '@/lib/bookingUtils.js';
 import { Link } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
 import { motion } from 'framer-motion';
+import { getEntityId, getPropertyImage } from '@/lib/propertyMappers.js';
 
 const PropertySwiper = ({ properties = [], loading = false }) => {
   const [emblaRef, emblaApi] = useEmblaCarousel(
@@ -58,15 +58,15 @@ const PropertySwiper = ({ properties = [], loading = false }) => {
       <div className="embla" ref={emblaRef}>
         <div className="embla__container">
           {properties.map((property) => (
-            <div key={property.id} className="embla__slide">
+            <div key={getEntityId(property)} className="embla__slide">
               <motion.div 
                 whileHover={{ y: -5 }}
                 className="relative bg-card rounded-[2rem] overflow-hidden border border-border shadow-sm hover:shadow-xl transition-shadow h-full flex flex-col"
               >
                 <div className="relative aspect-[4/3] bg-muted w-full shrink-0">
-                  {property.coverImage ? (
+                  {getPropertyImage(property) ? (
                     <img 
-                      src={pb.files.getUrl(property, property.coverImage)} 
+                     src={getPropertyImage(property)} 
                       alt={property.title} 
                       className="w-full h-full object-cover"
                     />
@@ -107,7 +107,7 @@ const PropertySwiper = ({ properties = [], loading = false }) => {
                       </p>
                     </div>
                     <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl px-6 h-12 shadow-sm hover:shadow-brand transition-all">
-                      <Link to={`/property/${property.id}`}>View Details</Link>
+                      <Link to={`/property/${getEntityId(property)}`}>View Details</Link>
                     </Button>
                   </div>
                 </div>

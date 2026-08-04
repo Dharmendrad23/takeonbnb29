@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { useNavigate } from 'react-router-dom';
-import pb from '@/lib/pocketbaseClient.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import HostDashboardLayout from '@/components/HostDashboardLayout.jsx';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import { createProperty } from '@/lib/dataApi.js';
 
 const HostAddPropertyPage = () => {
   const { currentUser } = useAuth();
@@ -27,12 +27,12 @@ const HostAddPropertyPage = () => {
     try {
       const data = {
         ...formData,
-        hostId: currentUser.id,
+        hostId: currentUser.id || currentUser._id,
         pricePerNight: Number(formData.pricePerNight),
         approvalStatus: 'pending' // Usually requires admin approval
       };
       
-      await pb.collection('properties').create(data, { $autoCancel: false });
+      await createProperty(data);
       toast.success('Property submitted for review!');
       navigate('/host/properties');
     } catch (err) {

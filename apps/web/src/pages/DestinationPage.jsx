@@ -2,8 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
-import pb from '@/lib/pocketbaseClient.js';
 import PropertyGrid from '@/components/PropertyGrid.jsx';
+import { listProperties } from '@/lib/dataApi.js';
+import { isLiveProperty } from '@/lib/propertyMappers.js';
 
 const DestinationPage = () => {
   const { location } = useParams();
@@ -17,14 +18,14 @@ const DestinationPage = () => {
     const fetchDestinationProperties = async () => {
       try {
         setLoading(true);
-        const records = await pb.collection('properties').getList(1, 20, {
-          filter: `location ~ "${formattedLocation}" && status="Live"`,
-          sort: '-created',
-          $autoCancel: false
+        const records = await listProperties();
+        const matchingRecords = records.filter((property) => {
+          const locationValue = String(property.location || '').toLowerCase();
+          return isLiveProperty(property) && locationValue.includes(formattedLocation.toLowerCase());
         });
         
-        if (records.items.length > 0) {
-          setProperties(records.items);
+        if (matchingRecords.length > 0) {
+          setProperties(matchingRecords.slice(0, 20));
         } else {
           // Provide 4 sample placeholders if none exist
           const samples = Array.from({length: 4}).map((_, i) => ({

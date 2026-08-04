@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { 
-  Share, 
   Share2,
   Heart, 
   MapPin, 
@@ -26,11 +25,39 @@ import {
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
-import pb from '@/lib/pocketbaseClient.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
+import {
+  getEntityId,
+  getHostAvatarUrl,
+  getHostFromProperty,
+  getHostName,
+  getPropertyRating,
+  getPropertyReviewCount,
+  normalizePropertyType,
+} from '@/lib/propertyMappers.js';
+
+const getWishlistStorageKey = (userId) => `wishlist:${userId}`;
+
+const getWishlistedIds = (userId) => {
+  if (!userId) {
+    return [];
+  }
+
+  try {
+    const storedValue = localStorage.getItem(getWishlistStorageKey(userId));
+    const parsedValue = JSON.parse(storedValue || '[]');
+    return Array.isArray(parsedValue) ? parsedValue : [];
+  } catch (error) {
+    console.error('Failed to read wishlist from local storage', error);
+    return [];
+  }
+};
 
 export const PropertyHeader = ({ property }) => {
   const { currentUser } = useAuth();
+  const propertyId = getEntityId(property);
+  const reviewCount = getPropertyReviewCount(property);
+  const rating = getPropertyRating(property);
   
   const handleShare = async () => {
     try {
@@ -46,14 +73,27 @@ export const PropertyHeader = ({ property }) => {
       toast.error('Please login to save favorites');
       return;
     }
+
+    if (!propertyId) {
+      toast.error('This property cannot be saved right now');
+      return;
+    }
+
+    const wishlistedIds = getWishlistedIds(currentUser.id);
+    const isSaved = wishlistedIds.includes(propertyId);
+    const nextWishlistedIds = isSaved
+      ? wishlistedIds.filter((id) => id !== propertyId)
+      : [...wishlistedIds, propertyId];
+
     try {
-      await pb.collection('favorites').create({
-        propertyId: property.id,
-        guestId: currentUser.id
-      }, { $autoCancel: false });
-      toast.success('Saved to wishlist!');
-    } catch (e) {
-      toast.info('Removed from wishlist');
+      localStorage.setItem(
+        getWishlistStorageKey(currentUser.id),
+        JSON.stringify(nextWishlistedIds)
+      );
+      toast[isSaved ? 'info' : 'success'](isSaved ? 'Removed from wishlist' : 'Saved to wishlist!');
+    } catch (error) {
+      console.error('Wishlist storage error:', error);
+      toast.error('Failed to update wishlist');
     }
   };
 
@@ -66,8 +106,8 @@ export const PropertyHeader = ({ property }) => {
         <div className="flex flex-wrap items-center gap-3 text-muted-foreground text-sm font-medium">
           <span className="flex items-center gap-1 text-foreground">
             <Star className="w-4 h-4 fill-foreground text-foreground" />
-            <span className="font-semibold">{property?.rating || 4.9}</span>
-            <span className="underline cursor-pointer">· {property?.totalBookings || 12} reviews</span>
+            <span className="font-semibold">{rating}</span>
+            <span className="underline cursor-pointer">· {reviewCount || 0} reviews</span>
           </span>
           <span>·</span>
           <span className="flex items-center gap-1">
@@ -89,11 +129,13 @@ export const PropertyHeader = ({ property }) => {
 };
 
 export const PropertyInfoCards = ({ property }) => {
+  const host = getHostFromProperty(property);
+
   return (
     <div className="py-8 border-b border-border">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-xl font-semibold mb-1">Entire {property?.propertyType?.toLowerCase() || 'place'} hosted by {property?.expand?.hostId?.name || 'Host'}</h2>
+          <h2 className="text-xl font-semibold mb-1">Entire {normalizePropertyType(property?.propertyType)} hosted by {getHostName(host)}</h2>
           <div className="flex items-center gap-2 text-foreground/80 text-sm mt-2">
             <span className="flex items-center gap-1"><Users className="w-4 h-4" /> {property?.guestCapacity || 2} guests</span> · 
             <span className="flex items-center gap-1"><Bed className="w-4 h-4" /> {property?.bedrooms || 1} bedrooms</span> · 
@@ -101,8 +143,8 @@ export const PropertyInfoCards = ({ property }) => {
           </div>
         </div>
         <Avatar className="w-14 h-14 border border-border">
-          <AvatarImage src={property?.expand?.hostId?.avatar ? pb.files.getURL(property.expand.hostId, property.expand.hostId.avatar) : ''} />
-          <AvatarFallback className="bg-primary/10 text-primary font-bold">{property?.expand?.hostId?.name?.[0] || 'H'}</AvatarFallback>
+          <AvatarImage src={getHostAvatarUrl(host)} />
+          <AvatarFallback className="bg-primary/10 text-primary font-bold">{getHostName(host)[0] || 'H'}</AvatarFallback>
         </Avatar>
       </div>
       
@@ -189,16 +231,19 @@ export const HouseRulesSection = ({ houseRules, checkInTime, checkOutTime }) => 
 };
 
 export const HostCard = ({ host }) => {
+  const hostName = getHostName(host);
+  const joinedAt = host?.createdAt || host?.created;
+
   return (
     <div className="py-8 border-b border-border">
       <div className="flex items-center gap-4 mb-6">
         <Avatar className="w-16 h-16 border border-border">
-          <AvatarImage src={host?.avatar ? pb.files.getURL(host, host.avatar) : ''} />
-          <AvatarFallback className="bg-primary/10 text-primary text-xl font-bold">{host?.name?.[0] || 'H'}</AvatarFallback>
+          <AvatarImage src={getHostAvatarUrl(host)} />
+          <AvatarFallback className="bg-primary/10 text-primary text-xl font-bold">{hostName[0] || 'H'}</AvatarFallback>
         </Avatar>
         <div>
-          <h2 className="text-2xl font-semibold">Hosted by {host?.name || 'Superhost'}</h2>
-          <p className="text-muted-foreground text-sm">Joined in {host?.created ? new Date(host.created).getFullYear() : '2022'}</p>
+          <h2 className="text-2xl font-semibold">Hosted by {hostName || 'Superhost'}</h2>
+          <p className="text-muted-foreground text-sm">Joined in {joinedAt ? new Date(joinedAt).getFullYear() : '2022'}</p>
         </div>
       </div>
       <div className="flex items-center gap-6 text-foreground mb-6">

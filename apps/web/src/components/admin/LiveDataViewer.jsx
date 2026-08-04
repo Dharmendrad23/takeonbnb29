@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Download, Search, ChevronLeft, ChevronRight, AlertCircle, RefreshCw } from 'lucide-react';
-import pb from '@/lib/pocketbaseClient.js';
+import api from '@/lib/api.js';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -24,13 +24,18 @@ const LiveDataViewer = ({ collectionName, refreshTrigger }) => {
     setLoading(true);
     setError(null);
     try {
-      const records = await pb.collection(collectionName).getList(page, perPage, {
-        sort: `${sortConfig.direction === 'desc' ? '-' : ''}${sortConfig.key}`,
-        $autoCancel: false
+      const response = await api.get(`/${collectionName}`, {
+        params: {
+          page,
+          perPage,
+          sort: `${sortConfig.direction === 'desc' ? '-' : ''}${sortConfig.key}`,
+        },
       });
-      setData(records.items);
-      setTotalPages(records.totalPages);
-      setTotalRecords(records.totalItems);
+      const records = response.data;
+      const items = Array.isArray(records) ? records : records.items || [];
+      setData(items);
+      setTotalPages(Array.isArray(records) ? Math.max(1, Math.ceil(items.length / perPage)) : records.totalPages || 1);
+      setTotalRecords(Array.isArray(records) ? items.length : records.totalItems || items.length);
     } catch (err) {
       console.error('Error fetching data:', err);
       setError(err.message || 'Failed to fetch collection data.');
@@ -45,32 +50,8 @@ const LiveDataViewer = ({ collectionName, refreshTrigger }) => {
 
   useEffect(() => {
     if (!collectionName) return;
-
-    // Set up realtime subscription
-    const subscribeToCollection = async () => {
-      try {
-        await pb.collection(collectionName).subscribe('*', function (e) {
-          if (e.action === 'create') {
-            setData(prev => [e.record, ...prev].slice(0, perPage));
-            setTotalRecords(prev => prev + 1);
-            toast.success(`New record added to ${collectionName}`);
-          } else if (e.action === 'update') {
-            setData(prev => prev.map(item => item.id === e.record.id ? e.record : item));
-          } else if (e.action === 'delete') {
-            setData(prev => prev.filter(item => item.id !== e.record.id));
-            setTotalRecords(prev => Math.max(0, prev - 1));
-          }
-        });
-      } catch (err) {
-        console.error('Realtime subscription failed:', err);
-      }
-    };
-
-    subscribeToCollection();
-
-    return () => {
-      pb.collection(collectionName).unsubscribe('*').catch(console.error);
-    };
+    const intervalId = setInterval(fetchData, 15000);
+    return () => clearInterval(intervalId);
   }, [collectionName]);
 
   const handleSort = (key) => {

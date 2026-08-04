@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Home } from 'lucide-react';
-import pb from '@/lib/pocketbaseClient.js';
 import SwappingPropertyCard from '@/components/SwappingPropertyCard.jsx';
 import PropertyCardSkeleton from '@/components/PropertyCardSkeleton.jsx';
+import apiServerClient from '@/lib/apiServerClient.js';
+import { isLiveProperty } from '@/lib/propertyMappers.js';
 
 const AllPropertiesCarousel = ({ category = 'All' }) => {
   const [properties, setProperties] = useState([]);
@@ -11,12 +12,23 @@ const AllPropertiesCarousel = ({ category = 'All' }) => {
   useEffect(() => {
     const fetchProperties = async () => {
       try {
-        const records = await pb.collection('properties').getList(1, 500, {
-          filter: 'status="Live"',
-          sort: '-created',
-          $autoCancel: false
-        });
-        setProperties(records.items);
+        const response = await apiServerClient.fetch('/properties');
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch properties');
+        }
+
+        const records = await response.json();
+        const nextProperties = (Array.isArray(records) ? records : [])
+          .filter(isLiveProperty)
+          .sort((left, right) => {
+            const leftDate = new Date(left?.createdAt || left?.created || 0).getTime();
+            const rightDate = new Date(right?.createdAt || right?.created || 0).getTime();
+            return rightDate - leftDate;
+          })
+          .slice(0, 500);
+
+        setProperties(nextProperties);
       } catch (err) {
         console.error("Failed to fetch properties", err);
       } finally {
@@ -29,7 +41,8 @@ const AllPropertiesCarousel = ({ category = 'All' }) => {
 
   const filteredProperties = useMemo(() => {
     if (category === 'All') return properties;
-    return properties.filter(p => p.propertyType === category);
+    const normalizedCategory = String(category).toLowerCase();
+    return properties.filter((property) => String(property?.propertyType || '').toLowerCase() === normalizedCategory);
   }, [properties, category]);
 
   // Distribute properties into 3 columns for independent swapping

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import pb from '@/lib/pocketbaseClient.js';
+import { createBooking, createFavorite, deleteFavorite, getProperty, listFavorites, listProperties, listReviews } from '@/lib/dataApi.js';
+import { getEntityId } from '@/lib/propertyMappers.js';
 import { toast } from 'sonner';
 
 export const usePropertyDetail = (propertyId) => {
@@ -27,47 +28,35 @@ export const usePropertyDetail = (propertyId) => {
       setNotFound(false);
       
       try {
-        // Fetch property with relations
-        const propRecord = await pb.collection('properties').getOne(propertyId, {
-          expand: 'amenities,hostId',
-          $autoCancel: false,
-        });
+        const propRecord = await getProperty(propertyId);
         
         setProperty(propRecord);
 
-        // Fetch reviews safely
         try {
-          const reviewRecords = await pb.collection('reviews').getList(1, 10, {
-            filter: `propertyId = "${propertyId}"`,
-            expand: 'guestId',
-            sort: '-created',
-            $autoCancel: false,
-          });
-          setReviews(reviewRecords.items);
+          const reviewRecords = await listReviews({ propertyId });
+          setReviews(reviewRecords.slice(0, 10));
         } catch (rErr) {
           console.warn('Could not fetch reviews:', rErr);
         }
 
-        // Fetch similar properties safely
         try {
-          const similarRecords = await pb.collection('properties').getList(1, 5, {
-            filter: `id != "${propertyId}" && propertyType = "${propRecord.propertyType}"`,
-            sort: '-rating',
-            $autoCancel: false,
-          });
-          setSimilarProperties(similarRecords.items);
+          const similarRecords = await listProperties();
+          setSimilarProperties(
+            similarRecords
+              .filter((candidate) => getEntityId(candidate) !== propertyId)
+              .filter((candidate) => candidate.propertyType === propRecord.propertyType)
+              .slice(0, 5)
+          );
         } catch (sErr) {
           console.warn('Could not fetch similar properties:', sErr);
         }
 
-        // Check wishlist status if logged in
-        if (pb.authStore.isValid) {
+        const savedUser = window.localStorage.getItem('authUser');
+        if (savedUser) {
           try {
-            const favs = await pb.collection('favorites').getList(1, 1, {
-              filter: `propertyId = "${propertyId}" && guestId = "${pb.authStore.model.id}"`,
-              $autoCancel: false,
-            });
-            setIsWishlisted(favs.items.length > 0);
+            const currentUser = JSON.parse(savedUser);
+            const favorites = await listFavorites({ propertyId, guestId: currentUser.id });
+            setIsWishlisted(favorites.length > 0);
           } catch (fErr) {
             console.warn('Could not fetch favorites:', fErr);
           }
@@ -90,27 +79,26 @@ export const usePropertyDetail = (propertyId) => {
   }, [propertyId]);
 
   const toggleWishlist = async () => {
-    if (!pb.authStore.isValid) {
+    const savedUser = window.localStorage.getItem('authUser');
+    if (!savedUser) {
       toast.error('Please log in to save to wishlist');
       return;
     }
 
     try {
+      const currentUser = JSON.parse(savedUser);
       if (isWishlisted) {
-        const favs = await pb.collection('favorites').getList(1, 1, {
-          filter: `propertyId = "${propertyId}" && guestId = "${pb.authStore.model.id}"`,
-          $autoCancel: false,
-        });
-        if (favs.items.length > 0) {
-          await pb.collection('favorites').delete(favs.items[0].id, { $autoCancel: false });
+        const favorites = await listFavorites({ propertyId, guestId: currentUser.id });
+        if (favorites.length > 0) {
+          await deleteFavorite(getEntityId(favorites[0]));
         }
         setIsWishlisted(false);
         toast.success('Removed from wishlist');
       } else {
-        await pb.collection('favorites').create({
+        await createFavorite({
           propertyId: propertyId,
-          guestId: pb.authStore.model.id,
-        }, { $autoCancel: false });
+          guestId: currentUser.id,
+        });
         setIsWishlisted(true);
         toast.success('Added to wishlist');
       }
@@ -131,16 +119,18 @@ export const usePropertyDetail = (propertyId) => {
 
   const submitBooking = async (bookingData) => {
     try {
-      const record = await pb.collection('bookings').create({
+      const currentUser = window.localStorage.getItem('authUser');
+      const user = currentUser ? JSON.parse(currentUser) : null;
+      const record = await createBooking({
         propertyId: propertyId,
-        guestId: pb.authStore.model?.id || null, 
+        guestId: user?.id || null, 
         checkInDate: bookingData.checkIn,
         checkOutDate: bookingData.checkOut,
         guestCount: bookingData.guests,
         totalPrice: bookingData.totalPrice,
         specialRequests: `Name: ${bookingData.name}, Phone: ${bookingData.phone}, Email: ${bookingData.email}. Inquiry sent to takeonbnb@gmail.com`,
         status: 'pending'
-      }, { $autoCancel: false });
+      });
       
       toast.success('Booking inquiry sent successfully! We will contact you shortly.');
       return record;

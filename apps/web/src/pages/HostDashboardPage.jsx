@@ -2,11 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { useAuth } from '@/contexts/AuthContext.jsx';
-import api from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Home, IndianRupee, Users, Calendar, PlusCircle, TrendingUp, AlertCircle } from 'lucide-react';
+import { Home, IndianRupee, Calendar, PlusCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { listBookings, listProperties } from '@/lib/dataApi.js';
+import { getEntityId } from '@/lib/propertyMappers.js';
 
 const HostDashboardPage = () => {
   const { currentUser } = useAuth();
@@ -15,41 +16,37 @@ const HostDashboardPage = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-   const fetchHostData = async () => {
-  try {
-    setLoading(true);
+    const fetchHostData = async () => {
+      try {
+        setLoading(true);
+        const hostId = getEntityId(currentUser);
+        const [allProperties, allBookings] = await Promise.all([
+          listProperties(),
+          listBookings(),
+        ]);
 
-    const { data } = await api.get(
-      `/properties?hostId=${currentUser.id}`
-    );
-
-    setProperties(data);
-
-    setStats({
-      properties: data.length,
-      bookings: 0,
-      revenue: data.reduce(
-        (sum, item) => sum + (item.pricePerNight || 0),
-        0
-      ),
-    });
-
-  } catch (error) {
-    console.error(error);
-  } finally {
-    setLoading(false);
-  }
-};
-        // Calculate Revenue (mocking exact aggregate for this demo)
-        const totalRev = props.items.reduce((acc, curr) => acc + (curr.totalRevenue || 0), 0);
-        const totalBookings = props.items.reduce((acc, curr) => acc + (curr.totalBookings || 0), 0);
-
-        setStats({
-          properties: props.totalItems,
-          bookings: totalBookings || bookings.totalItems || 0,
-          revenue: totalRev
+        const hostProperties = allProperties.filter((property) => {
+          const propertyHostId = property.host?._id || property.host?.id || property.hostId?._id || property.hostId?.id || property.hostId;
+          return String(propertyHostId || '') === String(hostId || '');
         });
 
+        const hostBookings = allBookings.filter((booking) => {
+          const property = booking.property || booking.propertyId;
+          const propertyHostId = property?.host?._id || property?.host?.id || property?.hostId?._id || property?.hostId?.id || property?.hostId;
+          return String(propertyHostId || '') === String(hostId || '');
+        });
+
+        const totalRevenue = hostBookings.reduce(
+          (sum, booking) => sum + Number(booking.totalAmount || booking.totalPrice || 0),
+          0
+        );
+
+        setProperties(hostProperties);
+        setStats({
+          properties: hostProperties.length,
+          bookings: hostBookings.length,
+          revenue: totalRevenue,
+        });
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
       } finally {
@@ -174,7 +171,7 @@ const HostDashboardPage = () => {
                 </thead>
                 <tbody className="divide-y divide-border">
                   {properties.map((prop) => (
-                    <tr key={prop.id} className="hover:bg-muted/50 transition-colors">
+                    <tr key={getEntityId(prop)} className="hover:bg-muted/50 transition-colors">
                       <td className="px-6 py-4 font-medium text-foreground">{prop.title}</td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${

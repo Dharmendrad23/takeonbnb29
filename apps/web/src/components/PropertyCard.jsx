@@ -4,27 +4,35 @@ import { Heart, Star, MapPin, BedDouble, Bath, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useFavorites } from '@/hooks/useFavorites.js';
 import { Button } from '@/components/ui/button';
-import pb from '@/lib/pocketbaseClient.js';
+import {
+  getEntityId,
+  getPropertyImage,
+  getPropertyPrice,
+  getPropertyRating,
+} from '@/lib/propertyMappers.js';
 
 const PropertyCard = memo(({ property, isHostView = false }) => {
   const navigate = useNavigate();
   const { favorites, toggleFavorite } = useFavorites();
-  const isFavorite = favorites.includes(property.id);
+  const propertyId = getEntityId(property);
+  const isFavorite = favorites.includes(propertyId);
+  const rating = getPropertyRating(property);
+  const price = getPropertyPrice(property);
 
   const handleFavoriteClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    toggleFavorite(property.id);
+    toggleFavorite(propertyId);
   };
 
   const handleCardClick = () => {
-    navigate(isHostView ? `/host/edit-property/${property.id}` : `/property/${property.id}`);
+    navigate(isHostView ? `/host/edit-property/${propertyId}` : `/property/${propertyId}`);
   };
 
   const handleBookNow = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    navigate(`/property/${property.id}?book=true`);
+    navigate(`/property/${propertyId}?book=true`);
   };
 
   const formatPrice = (price) => {
@@ -34,12 +42,6 @@ const PropertyCard = memo(({ property, isHostView = false }) => {
       maximumFractionDigits: 0
     }).format(price);
   };
-
-  const imageUrl = property.coverImage 
-    ? pb.files.getUrl(property, property.coverImage)
-    : property.photos?.length > 0 
-      ? pb.files.getUrl(property, property.photos[0]) 
-      : 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80';
 
   return (
     <motion.div
@@ -52,7 +54,7 @@ const PropertyCard = memo(({ property, isHostView = false }) => {
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-muted">
         <img 
-          src={imageUrl} 
+          src={getPropertyImage(property)} 
           alt={property.title} 
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
           loading="lazy"
@@ -74,10 +76,10 @@ const PropertyCard = memo(({ property, isHostView = false }) => {
         )}
 
         {/* Rating Badge */}
-        {!isHostView && property.rating && (
+        {!isHostView && rating > 0 && (
           <div className="absolute top-4 left-4 bg-background/90 backdrop-blur-md px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm z-10">
             <Star className="w-4 h-4 fill-primary text-primary" />
-            <span className="font-bold text-sm text-foreground">{property.rating.toFixed(1)}</span>
+            <span className="font-bold text-sm text-foreground">{rating.toFixed(1)}</span>
           </div>
         )}
       </div>
@@ -104,7 +106,7 @@ const PropertyCard = memo(({ property, isHostView = false }) => {
             <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-0.5">Price</span>
             <div className="flex items-baseline gap-1">
               <span className="text-xl font-extrabold text-foreground tracking-tight">
-                {formatPrice(property.pricePerNight)}
+                {formatPrice(price)}
               </span>
               <span className="text-sm text-muted-foreground font-medium">/ night</span>
             </div>

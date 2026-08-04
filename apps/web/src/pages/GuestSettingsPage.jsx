@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Helmet } from 'react-helmet';
-import pb from '@/lib/pocketbaseClient.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import GuestDashboardLayout from '@/components/GuestDashboardLayout.jsx';
 import { User, Lock, Bell, Shield, Save, Loader2 } from 'lucide-react';
@@ -8,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
+import { updateUser } from '@/lib/dataApi.js';
 
 const GuestSettingsPage = () => {
   const { currentUser } = useAuth();
@@ -26,7 +26,7 @@ const GuestSettingsPage = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await pb.collection('users').update(currentUser.id, formData, { $autoCancel: false });
+      await updateUser(currentUser.id, formData);
       toast.success('Profile updated successfully');
     } catch (error) {
       toast.error('Failed to update profile');

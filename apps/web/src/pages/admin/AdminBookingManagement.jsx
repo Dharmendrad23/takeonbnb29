@@ -5,10 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import pb from '@/lib/pocketbaseClient.js';
 import { formatCurrencyINR, formatDate } from '@/lib/bookingUtils.js';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
+import { createNotification, listBookings, updateBooking } from '@/lib/dataApi.js';
+import { getEntityId } from '@/lib/propertyMappers.js';
 
 const AdminBookingManagement = () => {
   const [bookings, setBookings] = useState([]);
@@ -26,22 +27,19 @@ const AdminBookingManagement = () => {
 
   const fetchBookings = async () => {
     try {
-      let filter = [];
-      if (search) {
-        filter.push(`(guestFullName ~ "${search}" || propertyName ~ "${search}" || id ~ "${search}" || transactionId ~ "${search}")`);
-      }
-      if (statusFilter !== 'all') {
-        filter.push(`bookingStatus = "${statusFilter}"`);
-      }
-      
-      const filterStr = filter.join(' && ');
-
-      const records = await pb.collection('bookings').getFullList({
-        filter: filterStr, 
-        sort: '-created', 
-        $autoCancel: false
+      const records = await listBookings({ sort: '-createdAt' });
+      const normalizedSearch = search.trim().toLowerCase();
+      const filtered = records.filter((booking) => {
+        const matchesStatus = statusFilter === 'all' || booking.bookingStatus === statusFilter;
+        const matchesSearch =
+          !normalizedSearch ||
+          [booking.guestFullName, booking.propertyName, getEntityId(booking), booking.transactionId]
+            .filter(Boolean)
+            .some((value) => String(value).toLowerCase().includes(normalizedSearch));
+        return matchesStatus && matchesSearch;
       });
-      setBookings(records);
+      
+      setBookings(filtered);
     } catch (err) {
       console.error(err);
       toast.error("Failed to fetch bookings");
@@ -52,30 +50,31 @@ const AdminBookingManagement = () => {
 
   useEffect(() => {
     fetchBookings();
-    pb.collection('bookings').subscribe('*', fetchBookings);
-    return () => pb.collection('bookings').unsubscribe('*');
+    const intervalId = setInterval(fetchBookings, 15000);
+    return () => clearInterval(intervalId);
   }, [search, statusFilter]);
 
   const handleApprove = async (booking) => {
     setActionLoading(true);
     try {
-      await pb.collection('bookings').update(booking.id, { 
+      await updateBooking(getEntityId(booking), { 
         status: 'confirmed',
         bookingStatus: 'confirmed',
         paymentStatus: 'verified'
-      }, { $autoCancel: false });
+      });
       
       // Send confirmation notification
-      await pb.collection('notifications').create({
+      await createNotification({
         userId: booking.guestId,
         type: 'email',
         message: `Your booking for ${booking.propertyName} has been confirmed. Payment verified.`,
-        bookingId: booking.id,
+        bookingId: getEntityId(booking),
         isRead: false
-      }, { $autoCancel: false });
+      });
 
       toast.success("Booking approved and verified successfully");
       setIsModalOpen(false);
+      fetchBookings();
     } catch (err) {
       toast.error("Failed to approve booking");
     } finally {
@@ -87,27 +86,28 @@ const AdminBookingManagement = () => {
     if (!selectedBooking) return;
     setActionLoading(true);
     try {
-      await pb.collection('bookings').update(selectedBooking.id, { 
+      await updateBooking(getEntityId(selectedBooking), { 
         status: 'cancelled',
         bookingStatus: 'rejected',
         paymentStatus: 'failed',
         notes: `${selectedBooking.notes || ''}\nRejection Reason: ${rejectReason}`
-      }, { $autoCancel: false });
+      });
       
       // Send rejection notification
-      await pb.collection('notifications').create({
+      await createNotification({
         userId: selectedBooking.guestId,
         type: 'email',
         message: `Your booking for ${selectedBooking.propertyName} was rejected. Reason: ${rejectReason}`,
-        bookingId: selectedBooking.id,
+        bookingId: getEntityId(selectedBooking),
         isRead: false
-      }, { $autoCancel: false });
+      });
 
       toast.success("Booking rejected");
       setIsRejectDialogOpen(false);
       setIsModalOpen(false);
       setRejectReason('');
       setSelectedBooking(null);
+      fetchBookings();
     } catch (err) {
       toast.error("Failed to reject booking");
     } finally {
@@ -347,7 +347,7 @@ const AdminBookingManagement = () => {
           {selectedBooking?.paymentScreenshot && (
              <div className="relative rounded-2xl overflow-hidden bg-black/80 backdrop-blur-md p-4">
                 <img 
-                  src={pb.files.getUrl(selectedBooking, selectedBooking.paymentScreenshot)} 
+                  src={selectedBooking.paymentScreenshotUrl || selectedBooking.paymentScreenshot} 
                   alt="Payment Screenshot" 
                   className="w-full h-auto max-h-[85vh] object-contain rounded-xl"
                 />

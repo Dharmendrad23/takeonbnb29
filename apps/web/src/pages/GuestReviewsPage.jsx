@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
-import pb from '@/lib/pocketbaseClient.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import GuestDashboardLayout from '@/components/GuestDashboardLayout.jsx';
 import { Star, MessageSquare, Edit2, Trash2 } from 'lucide-react';
@@ -8,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDate } from '@/lib/bookingUtils.js';
 import { toast } from 'sonner';
+import { deleteReview, listProperties, listReviews } from '@/lib/dataApi.js';
+import { getEntityId } from '@/lib/propertyMappers.js';
 
 const GuestReviewsPage = () => {
   const { currentUser } = useAuth();
@@ -16,13 +17,17 @@ const GuestReviewsPage = () => {
 
   const fetchReviews = async () => {
     try {
-      const records = await pb.collection('reviews').getFullList({
-        filter: `guestId="${currentUser.id}"`,
-        expand: 'propertyId',
-        sort: '-created',
-        $autoCancel: false
-      });
-      setReviews(records);
+      const [records, properties] = await Promise.all([
+        listReviews({ guestId: currentUser.id }),
+        listProperties(),
+      ]);
+      const propertyMap = new Map(properties.map((property) => [getEntityId(property), property]));
+      setReviews(
+        records.map((review) => ({
+          ...review,
+          property: propertyMap.get(String(review.propertyId)) || null,
+        }))
+      );
     } catch (e) {
       console.error("Error fetching reviews:", e);
     } finally {
@@ -37,8 +42,8 @@ const GuestReviewsPage = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this review?')) {
       try {
-        await pb.collection('reviews').delete(id, { $autoCancel: false });
-        setReviews(prev => prev.filter(r => r.id !== id));
+        await deleteReview(id);
+        setReviews(prev => prev.filter(r => getEntityId(r) !== id));
         toast.success('Review deleted successfully');
       } catch (e) {
         toast.error('Failed to delete review');
@@ -72,9 +77,9 @@ const GuestReviewsPage = () => {
       ) : (
         <div className="space-y-6">
           {reviews.map(review => {
-            const property = review.expand?.propertyId;
+            const property = review.property;
             return (
-              <div key={review.id} className="bg-card border border-border p-6 rounded-2xl shadow-sm">
+              <div key={getEntityId(review)} className="bg-card border border-border p-6 rounded-2xl shadow-sm">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
                   <div>
                     <h3 className="font-bold text-lg text-foreground">{property?.title || 'Unknown Property'}</h3>
@@ -95,7 +100,7 @@ const GuestReviewsPage = () => {
                   <Button variant="outline" size="sm" className="rounded-lg font-bold border-border hover:bg-muted">
                     <Edit2 className="w-4 h-4 mr-2" /> Edit
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => handleDelete(review.id)} className="rounded-lg font-bold border-destructive/30 text-destructive hover:bg-destructive hover:text-destructive-foreground">
+                  <Button variant="outline" size="sm" onClick={() => handleDelete(getEntityId(review))} className="rounded-lg font-bold border-destructive/30 text-destructive hover:bg-destructive hover:text-destructive-foreground">
                     <Trash2 className="w-4 h-4 mr-2" /> Delete
                   </Button>
                 </div>

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
-import pb from '@/lib/pocketbaseClient.js';
 import PropertyCard from '@/components/PropertyCard.jsx';
 import PropertyCardSkeleton from '@/components/PropertyCardSkeleton.jsx';
 import { Button } from '@/components/ui/button';
+import { listProperties } from '@/lib/dataApi.js';
+import { getEntityId, isLiveProperty } from '@/lib/propertyMappers.js';
 
 const PropertyList = () => {
   const [properties, setProperties] = useState([]);
@@ -14,19 +15,17 @@ const PropertyList = () => {
   const fetchProperties = async (pageNum = 1, append = false) => {
     try {
       setIsLoading(true);
-      const records = await pb.collection('properties').getList(pageNum, 24, {
-        filter: 'approvalStatus = "approved"',
-        sort: '-created',
-        $autoCancel: false
-      });
+      const records = (await listProperties()).filter((property) => isLiveProperty(property));
+      const startIndex = (pageNum - 1) * 24;
+      const pageItems = records.slice(startIndex, startIndex + 24);
       
       if (append) {
-        setProperties(prev => [...prev, ...records.items]);
+        setProperties(prev => [...prev, ...pageItems]);
       } else {
-        setProperties(records.items);
+        setProperties(pageItems);
       }
       
-      setHasMore(records.page < records.totalPages);
+      setHasMore(startIndex + 24 < records.length);
     } catch (err) {
       console.error("Failed to fetch properties", err);
     } finally {
@@ -36,16 +35,9 @@ const PropertyList = () => {
 
   useEffect(() => {
     fetchProperties(1, false);
-
-    // Real-time subscription
-    pb.collection('properties').subscribe('*', function (e) {
-      fetchProperties(1, false);
-    });
-
     const interval = setInterval(() => fetchProperties(1, false), 30000);
 
     return () => {
-      pb.collection('properties').unsubscribe('*');
       clearInterval(interval);
     };
   }, []);
@@ -79,7 +71,7 @@ const PropertyList = () => {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-x-6 gap-y-10">
               {properties.map((property, index) => (
-                <PropertyCard key={property.id} property={property} index={index} />
+                <PropertyCard key={getEntityId(property)} property={property} index={index} />
               ))}
             </div>
             

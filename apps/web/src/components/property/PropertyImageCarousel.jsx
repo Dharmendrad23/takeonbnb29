@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
 import { ChevronLeft, ChevronRight, Image as ImageIcon } from 'lucide-react';
-import pb from '@/lib/pocketbaseClient.js';
 import { cn } from '@/lib/utils.js';
+import { getPropertyPhotos } from '@/lib/propertyMappers.js';
 
 // Helper to shuffle array
 const shuffleArray = (array) => {
@@ -21,14 +21,8 @@ const PropertyImageCarousel = ({ property, alt, className }) => {
   const [shuffledImages, setShuffledImages] = useState([]);
 
   useEffect(() => {
-    if (property?.photos && property.photos.length > 0) {
-      const urls = property.photos.map(photo => pb.files.getUrl(property, photo));
-      setShuffledImages(shuffleArray(urls));
-    } else if (property?.coverImage) {
-      setShuffledImages([pb.files.getUrl(property, property.coverImage)]);
-    } else {
-      setShuffledImages([]);
-    }
+    const images = getPropertyPhotos(property);
+    setShuffledImages(images.length > 0 ? shuffleArray(images) : []);
   }, [property]);
 
   const scrollPrev = useCallback((e) => {

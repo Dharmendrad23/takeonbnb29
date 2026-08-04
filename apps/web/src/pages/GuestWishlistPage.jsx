@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom';
-import pb from '@/lib/pocketbaseClient.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import GuestDashboardLayout from '@/components/GuestDashboardLayout.jsx';
 import { Heart, MapPin, Star, Trash2 } from 'lucide-react';
@@ -9,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatCurrencyINR } from '@/lib/bookingUtils.js';
 import { toast } from 'sonner';
+import { deleteFavorite, listFavorites, listProperties } from '@/lib/dataApi.js';
+import { getEntityId, getPropertyImage } from '@/lib/propertyMappers.js';
 
 const GuestWishlistPage = () => {
   const { currentUser } = useAuth();
@@ -17,13 +18,17 @@ const GuestWishlistPage = () => {
 
   const fetchFavorites = async () => {
     try {
-      const records = await pb.collection('favorites').getFullList({
-        filter: `guestId="${currentUser.id}"`,
-        expand: 'propertyId',
-        sort: '-created',
-        $autoCancel: false
-      });
-      setFavorites(records);
+      const [records, properties] = await Promise.all([
+        listFavorites({ guestId: currentUser.id }),
+        listProperties(),
+      ]);
+      const propertyMap = new Map(properties.map((property) => [getEntityId(property), property]));
+      setFavorites(
+        records.map((favorite) => ({
+          ...favorite,
+          property: propertyMap.get(String(favorite.propertyId)) || null,
+        }))
+      );
     } catch (e) {
       console.error("Error fetching favorites:", e);
     } finally {
@@ -37,8 +42,8 @@ const GuestWishlistPage = () => {
 
   const handleRemove = async (id) => {
     try {
-      await pb.collection('favorites').delete(id, { $autoCancel: false });
-      setFavorites(prev => prev.filter(f => f.id !== id));
+      await deleteFavorite(id);
+      setFavorites(prev => prev.filter(f => getEntityId(f) !== id));
       toast.success('Removed from wishlist');
     } catch (e) {
       toast.error('Failed to remove from wishlist');
@@ -85,21 +90,21 @@ const GuestWishlistPage = () => {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {favorites.map(fav => {
-            const property = fav.expand?.propertyId;
+            const property = fav.property;
             if (!property) return null;
             
             return (
-              <div key={fav.id} className="group relative bg-card border border-border rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col">
+              <div key={getEntityId(fav)} className="group relative bg-card border border-border rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col">
                 <div className="relative aspect-[4/3] bg-muted overflow-hidden">
-                  {property.coverImage && (
+                  {getPropertyImage(property) && (
                     <img 
-                      src={pb.files.getUrl(property, property.coverImage)} 
+                     src={getPropertyImage(property)} 
                       alt={property.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   )}
                   <button 
-                    onClick={() => handleRemove(fav.id)}
+                   onClick={() => handleRemove(getEntityId(fav))}
                     className="absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur rounded-full flex items-center justify-center text-destructive hover:bg-destructive hover:text-white transition-colors shadow-sm"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -126,7 +131,7 @@ const GuestWishlistPage = () => {
                       <span className="text-muted-foreground text-sm font-medium"> / night</span>
                     </div>
                     <Button asChild size="sm" className="rounded-lg font-bold bg-primary hover:bg-primary/90 text-primary-foreground">
-                      <Link to={`/property/${property.id}`}>View</Link>
+                      <Link to={`/property/${getEntityId(property)}`}>View</Link>
                     </Button>
                   </div>
                 </div>

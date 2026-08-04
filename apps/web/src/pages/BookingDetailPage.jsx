@@ -6,7 +6,6 @@ import {
   ArrowLeft, MapPin, Calendar, Users, CreditCard, 
   CheckCircle2, Clock, XCircle, Building, Phone, Mail, User, FileText, ShieldCheck, MessageSquare
 } from 'lucide-react';
-import pb from '@/lib/pocketbaseClient.js';
 import { formatCurrency } from '@/lib/bookingUtils.js';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +13,8 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { getBooking } from '@/lib/dataApi.js';
+import { getEntityId, getHostAvatarUrl, getHostName, getPropertyImage } from '@/lib/propertyMappers.js';
 
 const BookingDetailPage = () => {
   const { id } = useParams();
@@ -24,10 +25,7 @@ const BookingDetailPage = () => {
   useEffect(() => {
     const fetchBooking = async () => {
       try {
-        const record = await pb.collection('bookings').getOne(id, {
-          expand: 'propertyId,propertyId.hostId',
-          $autoCancel: false
-        });
+        const record = await getBooking(id);
         setBooking(record);
       } catch (error) {
         console.error('Error fetching booking details:', error);
@@ -65,8 +63,8 @@ const BookingDetailPage = () => {
     );
   }
 
-  const property = booking.expand?.propertyId;
-  const host = property?.expand?.hostId;
+  const property = booking.property || booking.propertyId;
+  const host = property?.host || property?.hostId || booking.host || null;
   
   const getStatusConfig = (status) => {
     switch (status) {
@@ -126,7 +124,7 @@ const BookingDetailPage = () => {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h1 className="text-3xl font-extrabold text-foreground tracking-tight">Booking Details</h1>
-              <p className="text-muted-foreground mt-1 font-mono">Confirmation #{booking.id.slice(0, 8).toUpperCase()}</p>
+              <p className="text-muted-foreground mt-1 font-mono">Confirmation #{getEntityId(booking).slice(0, 8).toUpperCase()}</p>
             </div>
             <Badge variant="outline" className={`${statusConfig.color} text-sm px-4 py-1.5 rounded-full shadow-sm`}>
               <StatusIcon className="w-4 h-4 mr-2" />
@@ -143,10 +141,10 @@ const BookingDetailPage = () => {
             {/* Property Card */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
               <Card className="overflow-hidden border-border rounded-3xl shadow-sm">
-                {property?.coverImage || (property?.photos && property.photos[0]) ? (
+                {getPropertyImage(property) ? (
                   <div className="h-64 w-full relative">
                     <img 
-                      src={pb.files.getUrl(property, property.coverImage || property.photos[0])} 
+                      src={getPropertyImage(property)} 
                       alt={property.title}
                       className="w-full h-full object-cover"
                     />
@@ -278,15 +276,15 @@ const BookingDetailPage = () => {
                       {host ? (
                         <div className="flex items-center gap-4">
                           <Avatar className="w-16 h-16 border-2 border-border">
-                            {host.avatar ? (
-                              <AvatarImage src={pb.files.getUrl(host, host.avatar)} alt={host.name} />
+                            {getHostAvatarUrl(host) ? (
+                              <AvatarImage src={getHostAvatarUrl(host)} alt={getHostName(host)} />
                             ) : (
-                              <AvatarFallback className="bg-primary/10 text-primary font-bold text-xl">{host.name?.charAt(0) || 'H'}</AvatarFallback>
+                              <AvatarFallback className="bg-primary/10 text-primary font-bold text-xl">{getHostName(host)?.charAt(0) || 'H'}</AvatarFallback>
                             )}
                           </Avatar>
                           <div>
-                            <p className="font-bold text-lg text-foreground">{host.name}</p>
-                            <p className="text-sm text-muted-foreground">Joined {new Date(host.created).getFullYear()}</p>
+                            <p className="font-bold text-lg text-foreground">{getHostName(host)}</p>
+                            <p className="text-sm text-muted-foreground">Joined {new Date(host.createdAt || host.created || Date.now()).getFullYear()}</p>
                           </div>
                         </div>
                       ) : (
@@ -356,7 +354,7 @@ const BookingDetailPage = () => {
                     <div className="relative">
                       <div className="absolute -left-[31px] top-1 w-4 h-4 rounded-full bg-primary ring-4 ring-background" />
                       <p className="font-semibold text-sm text-foreground">Booking Submitted</p>
-                      <p className="text-xs text-muted-foreground">{formatDate(booking.created)}</p>
+                      <p className="text-xs text-muted-foreground">{formatDate(booking.createdAt || booking.created)}</p>
                     </div>
                     <div className="relative">
                       <div className={`absolute -left-[31px] top-1 w-4 h-4 rounded-full ring-4 ring-background ${statusConfig.step >= 2 ? 'bg-primary' : 'bg-muted'}`} />

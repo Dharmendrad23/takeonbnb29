@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
-import pb from '@/lib/pocketbaseClient.js';
 import { CheckCircle2, Download, Home, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatCurrency, formatDate } from '@/lib/bookingUtils.js';
+import { getBooking } from '@/lib/dataApi.js';
+import { getEntityId } from '@/lib/propertyMappers.js';
 
 const BookingConfirmationPage = () => {
   const { bookingId } = useParams();
@@ -13,7 +14,7 @@ const BookingConfirmationPage = () => {
   useEffect(() => {
     const fetchBooking = async () => {
       try {
-        const record = await pb.collection('bookings').getOne(bookingId, { $autoCancel: false });
+        const record = await getBooking(bookingId);
         setBooking(record);
       } catch (err) {
         console.error(err);
@@ -41,7 +42,7 @@ const BookingConfirmationPage = () => {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-border pb-6 mb-6">
             <div>
               <p className="text-sm text-muted-foreground uppercase tracking-wide font-bold mb-1">Confirmation Code</p>
-              <p className="font-mono text-xl font-bold">{booking.id.toUpperCase()}</p>
+              <p className="font-mono text-xl font-bold">{getEntityId(booking).toUpperCase()}</p>
             </div>
             <BadgeStatus status={booking.status} />
           </div>

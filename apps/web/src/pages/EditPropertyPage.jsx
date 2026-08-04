@@ -9,11 +9,12 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import pb from '@/lib/pocketbaseClient.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { toast } from 'sonner';
 import { validatePropertyForm } from '@/lib/validatePropertyForm.js';
 import { Loader2, Save } from 'lucide-react';
+import { getProperty, updateProperty } from '@/lib/dataApi.js';
+import { getEntityId } from '@/lib/propertyMappers.js';
 
 const EditPropertyPage = () => {
   const { id } = useParams();
@@ -46,9 +47,9 @@ const EditPropertyPage = () => {
 
   const loadData = async () => {
     try {
-      const propertyData = await pb.collection('properties').getOne(id, { $autoCancel: false });
+      const propertyData = await getProperty(id);
 
-      if (propertyData.hostId !== currentUser.id) {
+      if ((propertyData.hostId?._id || propertyData.hostId?.id || propertyData.hostId) !== getEntityId(currentUser)) {
         toast.error('You can only edit your own properties');
         navigate('/host/dashboard');
         return;
@@ -97,7 +98,7 @@ const EditPropertyPage = () => {
           checkInTime: formData.checkInTime,
           checkOutTime: formData.checkOutTime,
         };
-        await pb.collection('properties').update(id, dataToSave, { $autoCancel: false });
+        await updateProperty(id, dataToSave);
         setSaveStatus('saved');
         setTimeout(() => setSaveStatus(''), 2000);
       } catch (err) {
@@ -164,7 +165,7 @@ const EditPropertyPage = () => {
         data.append('status', 'Submitted');
       }
 
-      await pb.collection('properties').update(id, data, { $autoCancel: false });
+      await updateProperty(id, data);
       toast.success(submitForReview ? 'Property submitted for review!' : 'Property details updated successfully');
       navigate('/host/properties');
     } catch (error) {

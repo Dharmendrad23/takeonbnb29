@@ -3,12 +3,13 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
-import pb from '@/lib/pocketbaseClient.js';
 import PropertyCard from '@/components/PropertyCard.jsx';
 import PropertyCardSkeleton from '@/components/PropertyCardSkeleton.jsx';
 import { Search, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { listProperties } from '@/lib/dataApi.js';
+import { getEntityId, isLiveProperty } from '@/lib/propertyMappers.js';
 
 const SearchResultsPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -24,27 +25,37 @@ const SearchResultsPage = () => {
     const fetchResults = async () => {
       setIsLoading(true);
       try {
-        let filterStr = 'status = "Live"';
-        
+        let records = await listProperties();
+        records = records.filter((property) => isLiveProperty(property));
+
         if (location) {
-          filterStr += ` && (location ~ "${location}" || title ~ "${location}")`;
+          const query = location.toLowerCase();
+          records = records.filter((property) => {
+            const locationValue = String(property.location || '').toLowerCase();
+            const title = String(property.title || '').toLowerCase();
+            return locationValue.includes(query) || title.includes(query);
+          });
         }
         
         if (typeFilter !== 'All') {
-          filterStr += ` && propertyType = "${typeFilter}"`;
+          records = records.filter(
+            (property) => String(property.propertyType || '').toLowerCase() === typeFilter.toLowerCase()
+          );
         }
 
         if (guests && parseInt(guests) > 1) {
-          filterStr += ` && guestCapacity >= ${parseInt(guests)}`;
+          records = records.filter((property) => Number(property.guestCapacity || 0) >= parseInt(guests));
         }
 
-        const records = await pb.collection('properties').getList(1, 48, {
-          filter: filterStr,
-          sort: sortFilter,
-          $autoCancel: false
-        });
+        if (sortFilter === 'pricePerNight') {
+          records = [...records].sort((a, b) => Number(a.pricePerNight || 0) - Number(b.pricePerNight || 0));
+        } else if (sortFilter === '-pricePerNight') {
+          records = [...records].sort((a, b) => Number(b.pricePerNight || 0) - Number(a.pricePerNight || 0));
+        } else if (sortFilter === '-rating') {
+          records = [...records].sort((a, b) => Number(b.rating || 0) - Number(a.rating || 0));
+        }
         
-        setProperties(records.items);
+        setProperties(records.slice(0, 48));
       } catch (err) {
         console.error("Failed to fetch search results", err);
       } finally {
@@ -142,7 +153,7 @@ const SearchResultsPage = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-10">
             {properties.map((property, index) => (
-              <PropertyCard key={property.id} property={property} index={index} />
+              <PropertyCard key={getEntityId(property)} property={property} index={index} />
             ))}
           </div>
         )}

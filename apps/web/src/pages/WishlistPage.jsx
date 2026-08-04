@@ -5,9 +5,10 @@ import Footer from '@/components/Footer';
 import PropertyCard from '@/components/PropertyCard';
 import EmptyState from '@/components/EmptyState';
 import { Heart } from 'lucide-react';
-import pb from '@/lib/pocketbaseClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { listFavorites, listProperties } from '@/lib/dataApi.js';
+import { getEntityId } from '@/lib/propertyMappers.js';
 
 const WishlistPage = () => {
   const { currentUser } = useAuth();
@@ -20,21 +21,16 @@ const WishlistPage = () => {
 
   const loadWishlist = async () => {
     try {
-      const favorites = await pb.collection('favorites').getFullList({
-        filter: `guestId="${currentUser.id}"`,
-        expand: 'propertyId',
-        $autoCancel: false
-      });
-
-      const propertyIds = favorites.map(f => f.propertyId);
-      
-      if (propertyIds.length > 0) {
-        const propertiesData = await pb.collection('properties').getFullList({
-          filter: propertyIds.map(id => `id="${id}"`).join(' || '),
-          $autoCancel: false
-        });
-        setProperties(propertiesData);
-      }
+      const [favorites, propertiesData] = await Promise.all([
+        listFavorites({ guestId: currentUser.id }),
+        listProperties(),
+      ]);
+      const propertyMap = new Map(propertiesData.map((property) => [getEntityId(property), property]));
+      setProperties(
+        favorites
+          .map((favorite) => propertyMap.get(String(favorite.propertyId)))
+          .filter(Boolean)
+      );
     } catch (error) {
       console.error('Failed to load wishlist:', error);
       toast.error('Failed to load wishlist');
@@ -86,7 +82,7 @@ const WishlistPage = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {properties.map((property) => (
-                <PropertyCard key={property.id} property={property} />
+                <PropertyCard key={getEntityId(property)} property={property} />
               ))}
             </div>
           )}

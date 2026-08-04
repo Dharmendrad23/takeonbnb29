@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import pb from '@/lib/pocketbaseClient.js';
 import PropertyCard from '@/components/PropertyCard.jsx';
 import PropertyCardSkeleton from '@/components/PropertyCardSkeleton.jsx';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils.js';
+import { listProperties } from '@/lib/dataApi.js';
+import { getEntityId, isLiveProperty } from '@/lib/propertyMappers.js';
 
 // Helper to chunk arrays for multi-row carousel
 const chunkArray = (arr, size) => {
@@ -46,12 +47,15 @@ const LocationCarouselSection = ({ location, title, subtitle }) => {
   useEffect(() => {
     const fetchProperties = async () => {
       try {
-        const records = await pb.collection('properties').getList(1, 50, {
-          filter: `location ~ "${location}" && status="Live"`,
-          sort: '-created',
-          $autoCancel: false
-        });
-        setProperties(records.items);
+        const records = await listProperties();
+        setProperties(
+          records
+            .filter((property) => isLiveProperty(property))
+            .filter((property) =>
+              String(property.location || '').toLowerCase().includes(String(location).toLowerCase())
+            )
+            .slice(0, 50)
+        );
       } catch (err) {
         console.error(`Failed to fetch properties for ${location}`, err);
       } finally {
@@ -202,7 +206,7 @@ const LocationCarouselSection = ({ location, title, subtitle }) => {
                     className="pl-4 sm:pl-6 min-w-0 flex-[0_0_85%] sm:flex-[0_0_45%] md:flex-[0_0_40%] lg:flex-[0_0_30%] xl:flex-[0_0_25%] 2xl:flex-[0_0_20%] flex flex-col gap-6"
                   >
                     {chunk.map((property) => (
-                      <PropertyCard property={property} key={property.id} />
+                      <PropertyCard property={property} key={getEntityId(property)} />
                     ))}
                   </div>
                 ))

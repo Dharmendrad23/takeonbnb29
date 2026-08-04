@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
-import pb from '@/lib/pocketbaseClient.js';
 import apiServerClient from '@/lib/apiServerClient.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import GuestDashboardLayout from '@/components/GuestDashboardLayout.jsx';
@@ -11,6 +10,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import { listBookings, listProperties } from '@/lib/dataApi.js';
+import { getEntityId } from '@/lib/propertyMappers.js';
 
 const GuestPaymentHistoryPage = () => {
   const { currentUser } = useAuth();
@@ -22,14 +23,23 @@ const GuestPaymentHistoryPage = () => {
   useEffect(() => {
     const fetchPayments = async () => {
       try {
-        const records = await pb.collection('bookings').getFullList({
-          filter: `guestId="${currentUser.id}" && status != 'cancelled' && bookingStatus != 'rejected'`,
-          sort: '-created',
-          $autoCancel: false
-        });
+        const [records, properties] = await Promise.all([
+          listBookings({ guestId: currentUser.id }),
+          listProperties(),
+        ]);
+        const propertyMap = new Map(properties.map((property) => [getEntityId(property), property]));
+        const filteredRecords = records
+          .filter((booking) => booking.status !== 'cancelled' && booking.bookingStatus !== 'rejected')
+          .map((booking) => {
+            const property = booking.property || propertyMap.get(String(booking.propertyId));
+            return {
+              ...booking,
+              propertyName: booking.propertyName || property?.title || 'Property',
+            };
+          });
         
-        setPayments(records);
-        const total = records.reduce((sum, r) => sum + (r.totalAmount || r.totalPrice || 0), 0);
+        setPayments(filteredRecords);
+        const total = filteredRecords.reduce((sum, r) => sum + (r.totalAmount || r.totalPrice || 0), 0);
         setTotalSpent(total);
       } catch (e) {
         console.error("Error fetching payments:", e);

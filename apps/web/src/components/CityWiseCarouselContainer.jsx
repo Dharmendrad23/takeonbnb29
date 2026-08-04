@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import pb from '@/lib/pocketbaseClient.js';
 import CityCarouselSection from '@/components/CityCarouselSection.jsx';
 import PropertyCardSkeleton from '@/components/PropertyCardSkeleton.jsx';
+import { listProperties } from '@/lib/dataApi.js';
+import { isLiveProperty } from '@/lib/propertyMappers.js';
 
 const CityWiseCarouselContainer = () => {
   const [groupedProperties, setGroupedProperties] = useState({});
@@ -11,14 +12,9 @@ const CityWiseCarouselContainer = () => {
   useEffect(() => {
     const fetchAndGroupProperties = async () => {
       try {
-        // Fetch up to 500 live properties
-        const records = await pb.collection('properties').getList(1, 500, {
-          filter: 'status="Live"',
-          sort: '-created',
-          $autoCancel: false
-        });
-
-        const properties = records.items;
+        const properties = (await listProperties())
+          .filter((property) => isLiveProperty(property))
+          .slice(0, 500);
         
         // Group by city
         const grouped = properties.reduce((acc, property) => {

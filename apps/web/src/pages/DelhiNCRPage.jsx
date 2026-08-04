@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import SharedDestinationLayout from '@/components/SharedDestinationLayout.jsx';
-import pb from '@/lib/pocketbaseClient.js';
+import { listProperties } from '@/lib/dataApi.js';
+import { isLiveProperty } from '@/lib/propertyMappers.js';
 
 const whyVisit = [
   {
@@ -27,12 +28,16 @@ const DelhiNCRPage = () => {
   useEffect(() => {
     const fetchProperties = async () => {
       try {
-        const records = await pb.collection('properties').getList(1, 50, {
-          filter: '(location ~ "Delhi" || location ~ "Gurugram" || location ~ "Noida") && approvalStatus="approved"',
-          expand: 'amenities',
-          $autoCancel: false
-        });
-        setProperties(records.items);
+        const records = await listProperties();
+        setProperties(
+          records.filter((property) => {
+            const location = String(property.location || '').toLowerCase();
+            return (
+              isLiveProperty(property) &&
+              (location.includes('delhi') || location.includes('gurugram') || location.includes('noida'))
+            );
+          })
+        );
       } catch (error) {
         console.error("Failed to fetch Delhi NCR properties:", error);
       }

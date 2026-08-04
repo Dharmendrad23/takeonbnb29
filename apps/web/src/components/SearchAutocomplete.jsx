@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, MapPin, Loader2 } from 'lucide-react';
-import pb from '@/lib/pocketbaseClient.js';
 import { formatCurrency } from '@/lib/bookingUtils.js';
 import { Input } from '@/components/ui/input';
+import { listProperties } from '@/lib/dataApi.js';
+import { getEntityId, getPropertyImage, isLiveProperty } from '@/lib/propertyMappers.js';
 
 const SearchAutocomplete = () => {
   const [query, setQuery] = useState('');
@@ -35,11 +36,18 @@ const SearchAutocomplete = () => {
       setIsOpen(true);
 
       try {
-        const records = await pb.collection('properties').getList(1, 5, {
-          filter: `(title ~ "${query}" || location ~ "${query}") && approvalStatus="approved"`,
-          $autoCancel: false
-        });
-        setResults(records.items);
+        const records = await listProperties();
+        const searchQuery = query.trim().toLowerCase();
+        setResults(
+          records
+            .filter((property) => isLiveProperty(property))
+            .filter((property) => {
+              const title = String(property.title || '').toLowerCase();
+              const location = String(property.location || '').toLowerCase();
+              return title.includes(searchQuery) || location.includes(searchQuery);
+            })
+            .slice(0, 5)
+        );
       } catch (error) {
         console.error('Search error:', error);
       } finally {
@@ -79,15 +87,15 @@ const SearchAutocomplete = () => {
           {results.length > 0 ? (
             <ul className="max-h-[400px] overflow-y-auto py-2">
               {results.map((property) => (
-                <li key={property.id}>
+                <li key={getEntityId(property)}>
                   <button
-                    onClick={() => handleSelect(property.id)}
+                    onClick={() => handleSelect(getEntityId(property))}
                     className="w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors flex items-center gap-4"
                   >
                     <div className="w-12 h-12 rounded-lg bg-muted overflow-hidden flex-shrink-0">
-                      {property.photos?.[0] ? (
+                      {getPropertyImage(property) ? (
                         <img
-                          src={pb.files.getUrl(property, property.photos[0])}
+                          src={getPropertyImage(property)}
                           alt={property.title}
                           className="w-full h-full object-cover"
                         />

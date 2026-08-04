@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Helmet } from 'react-helmet';
 import { useNavigate } from 'react-router-dom';
-import pb from '@/lib/pocketbaseClient.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { usePropertySync } from '@/hooks/usePropertySync.js';
 import HostDashboardLayout from '@/components/HostDashboardLayout.jsx';
@@ -9,6 +8,8 @@ import PropertyCard from '@/components/PropertyCard.jsx';
 import { Button } from '@/components/ui/button';
 import { Plus, Home, FileText, Clock, CheckCircle, Globe } from 'lucide-react';
 import { toast } from 'sonner';
+import { deleteProperty, listProperties, updateProperty } from '@/lib/dataApi.js';
+import { getEntityId } from '@/lib/propertyMappers.js';
 
 const HostPropertiesPage = () => {
   const { currentUser } = useAuth();
@@ -19,11 +20,10 @@ const HostPropertiesPage = () => {
 
   const fetchProperties = useCallback(async () => {
     try {
-      const records = await pb.collection('properties').getFullList({
-        filter: `hostId="${currentUser.id}"`,
-        sort: '-updated',
-        $autoCancel: false
-      });
+      const hostId = currentUser?.id || currentUser?._id || '';
+      const records = (await listProperties())
+        .filter((property) => String(property.hostId || '') === hostId)
+        .sort((left, right) => new Date(right.updatedAt || right.updated || 0) - new Date(left.updatedAt || left.updated || 0));
       setProperties(records);
       
       const newStats = { total: records.length, draft: 0, pending: 0, approved: 0, live: 0 };
@@ -54,21 +54,25 @@ const HostPropertiesPage = () => {
   const handleAction = async (action, property) => {
     try {
       if (action === 'edit') {
-        navigate(`/host/edit-property/${property.id}`);
+        navigate(`/host/edit-property/${getEntityId(property)}`);
       } else if (action === 'delete') {
         if (window.confirm('Are you sure you want to delete this property?')) {
-          await pb.collection('properties').delete(property.id, { $autoCancel: false });
+          await deleteProperty(getEntityId(property));
           toast.success('Property deleted');
+          fetchProperties();
         }
       } else if (action === 'submit') {
-        await pb.collection('properties').update(property.id, { status: 'Submitted' }, { $autoCancel: false });
+        await updateProperty(getEntityId(property), { status: 'Submitted' });
         toast.success('Property submitted for review');
+        fetchProperties();
       } else if (action === 'publish') {
-        await pb.collection('properties').update(property.id, { status: 'Live' }, { $autoCancel: false });
+        await updateProperty(getEntityId(property), { status: 'Live' });
         toast.success('Property is now live!');
+        fetchProperties();
       } else if (action === 'unpublish') {
-        await pb.collection('properties').update(property.id, { status: 'Draft' }, { $autoCancel: false });
+        await updateProperty(getEntityId(property), { status: 'Draft' });
         toast.success('Property unpublished and moved to drafts');
+        fetchProperties();
       }
     } catch (error) {
       console.error(error);
@@ -133,7 +137,7 @@ const HostPropertiesPage = () => {
             };
             return (
               <PropertyCard 
-                key={p.id} 
+                key={getEntityId(p)} 
                 property={normalizedProperty} 
                 index={idx}
                 isHostView={true} 

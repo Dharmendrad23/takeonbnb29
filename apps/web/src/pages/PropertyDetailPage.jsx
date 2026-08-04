@@ -2,7 +2,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
-import pb from '@/lib/pocketbaseClient.js';
 import { PropertyImageGallery } from '@/components/property/PropertyImageGallery.jsx';
 import { BookingWidget } from '@/components/property/BookingWidget.jsx';
 import { 
@@ -17,6 +16,8 @@ import { ReviewsSection } from '@/components/property/ReviewsSection.jsx';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { getProperty } from '@/lib/dataApi.js';
+import { getPropertyPhotos } from '@/lib/propertyMappers.js';
 
 const PropertyDetailPage = () => {
   const { id } = useParams();
@@ -29,10 +30,7 @@ const PropertyDetailPage = () => {
     const fetchProperty = async () => {
       try {
         setLoading(true);
-        const record = await pb.collection('properties').getOne(id, {
-          expand: 'hostId,amenities',
-          $autoCancel: false
-        });
+        const record = await getProperty(id);
         setProperty(record);
       } catch (err) {
         console.error("Error fetching property:", err);
@@ -66,7 +64,7 @@ const PropertyDetailPage = () => {
     );
   }
 
-  const photos = property.photos?.map(file => pb.files.getURL(property, file)) || [];
+  const photos = getPropertyPhotos(property);
 
   return (
     <div className="bg-background min-h-screen pb-24">
@@ -96,15 +94,15 @@ const PropertyDetailPage = () => {
               </p>
             </div>
 
-            <AmenitiesGrid amenities={property.expand?.amenities} />
+            <AmenitiesGrid amenities={property.amenities} />
             <HouseRulesSection 
               houseRules={property.houseRules} 
               checkInTime={property.checkInTime} 
               checkOutTime={property.checkOutTime} 
             />
-            <ReviewsSection propertyId={property.id} />
+            <ReviewsSection propertyId={property.id || property._id} />
             <LocationMap location={property.location} />
-            <HostCard host={property.expand?.hostId} />
+            <HostCard host={property.host || property.hostId} />
           </div>
 
           <div className="w-full lg:w-[33%] hidden lg:block">

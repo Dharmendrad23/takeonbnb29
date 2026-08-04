@@ -7,9 +7,10 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import pb from '@/lib/pocketbaseClient.js';
 import { formatCurrency } from '@/lib/bookingUtils.js';
 import { toast } from 'sonner';
+import { createProperty, deleteProperty, listProperties, updateProperty } from '@/lib/dataApi.js';
+import { getEntityId, getPropertyImage } from '@/lib/propertyMappers.js';
 
 const AdminPropertyManagement = () => {
   const [properties, setProperties] = useState([]);
@@ -25,10 +26,7 @@ const AdminPropertyManagement = () => {
 
   const fetchProperties = async () => {
     try {
-      const filter = search ? `title ~ "${search}" || location ~ "${search}"` : '';
-      const records = await pb.collection('properties').getFullList({
-        filter, sort: '-created', $autoCancel: false
-      });
+      const records = await listProperties({ sort: '-createdAt', search });
       setProperties(records);
     } catch (err) {
       console.error(err);
@@ -40,8 +38,8 @@ const AdminPropertyManagement = () => {
 
   useEffect(() => {
     fetchProperties();
-    pb.collection('properties').subscribe('*', fetchProperties);
-    return () => pb.collection('properties').unsubscribe('*');
+    const intervalId = setInterval(fetchProperties, 15000);
+    return () => clearInterval(intervalId);
   }, [search]);
 
   const handleInputChange = (e) => {
@@ -63,7 +61,7 @@ const AdminPropertyManagement = () => {
   };
 
   const openEditModal = (property) => {
-    setEditingId(property.id);
+    setEditingId(getEntityId(property));
     setFormData({
       title: property.title, description: property.description, location: property.location,
       propertyType: property.propertyType, pricePerNight: property.pricePerNight,
@@ -82,17 +80,18 @@ const AdminPropertyManagement = () => {
         bedrooms: Number(formData.bedrooms),
         bathrooms: Number(formData.bathrooms),
         guestCapacity: Number(formData.guestCapacity),
-        hostId: pb.authStore.model?.id || 'admin' // Fallback if needed
+        hostId: 'admin'
       };
 
       if (editingId) {
-        await pb.collection('properties').update(editingId, data, { $autoCancel: false });
+        await updateProperty(editingId, data);
         toast.success("Property updated successfully");
       } else {
-        await pb.collection('properties').create(data, { $autoCancel: false });
+        await createProperty(data);
         toast.success("Property created successfully");
       }
       setIsModalOpen(false);
+      fetchProperties();
     } catch (err) {
       console.error(err);
       toast.error("Failed to save property");
@@ -102,8 +101,9 @@ const AdminPropertyManagement = () => {
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this property?")) return;
     try {
-      await pb.collection('properties').delete(id, { $autoCancel: false });
+      await deleteProperty(id);
       toast.success("Property deleted");
+      fetchProperties();
     } catch (err) {
       toast.error("Failed to delete property");
     }
@@ -224,12 +224,12 @@ const AdminPropertyManagement = () => {
               <tr><td colSpan="7" className="text-center py-8 text-muted-foreground">No properties found.</td></tr>
             ) : (
               properties.map(property => (
-                <tr key={property.id}>
+              <tr key={getEntityId(property)}>
                   <td className="font-medium">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center overflow-hidden shrink-0">
-                        {property.photos?.length > 0 ? (
-                          <img src={pb.files.getUrl(property, property.photos[0])} alt="" className="w-full h-full object-cover" />
+                        {getPropertyImage(property) ? (
+                          <img src={getPropertyImage(property)} alt="" className="w-full h-full object-cover" />
                         ) : <Home className="w-5 h-5 text-muted-foreground" />}
                       </div>
                       <span className="truncate max-w-[200px]">{property.title}</span>

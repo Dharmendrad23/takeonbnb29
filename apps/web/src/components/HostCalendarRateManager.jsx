@@ -6,8 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import pb from '@/lib/pocketbaseClient.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
+import { createPropertyRate, deletePropertyRate, listProperties, listPropertyRates } from '@/lib/dataApi.js';
+import { getEntityId } from '@/lib/propertyMappers.js';
 
 const HostCalendarRateManager = () => {
   const { currentUser } = useAuth();
@@ -26,9 +27,10 @@ const HostCalendarRateManager = () => {
   useEffect(() => {
     const fetchProps = async () => {
       try {
-        const records = await pb.collection('properties').getFullList({ filter: `hostId="${currentUser.id}"`, $autoCancel: false });
+        const hostId = currentUser?.id || currentUser?._id || '';
+        const records = (await listProperties()).filter((property) => String(property.hostId || '') === hostId);
         setProperties(records);
-        if (records.length > 0) setSelectedPropertyId(records[0].id);
+        if (records.length > 0) setSelectedPropertyId(getEntityId(records[0]));
       } catch (e) {
         console.error(e);
       }
@@ -40,12 +42,8 @@ const HostCalendarRateManager = () => {
     if (!selectedPropertyId) return;
     setIsLoading(true);
     try {
-      const records = await pb.collection('property_rates').getFullList({
-        filter: `propertyId="${selectedPropertyId}"`,
-        sort: 'startDate',
-        $autoCancel: false
-      });
-      setRates(records);
+      const records = await listPropertyRates({ propertyId: selectedPropertyId });
+      setRates(records.sort((left, right) => new Date(left.startDate) - new Date(right.startDate)));
     } catch (e) {
       console.error(e);
     } finally {
@@ -70,12 +68,12 @@ const HostCalendarRateManager = () => {
 
     setIsSaving(true);
     try {
-      await pb.collection('property_rates').create({
+      await createPropertyRate({
         propertyId: selectedPropertyId,
         startDate: new Date(formData.startDate).toISOString(),
         endDate: new Date(formData.endDate).toISOString(),
         pricePerNight: Number(formData.pricePerNight)
-      }, { $autoCancel: false });
+      });
       
       toast.success('Custom rate applied successfully');
       setFormData({ startDate: '', endDate: '', pricePerNight: '' });
@@ -90,7 +88,7 @@ const HostCalendarRateManager = () => {
 
   const handleDeleteRate = async (id) => {
     try {
-      await pb.collection('property_rates').delete(id, { $autoCancel: false });
+      await deletePropertyRate(id);
       toast.success('Rate rule removed');
       fetchRates();
     } catch (error) {
@@ -111,7 +109,7 @@ const HostCalendarRateManager = () => {
               <SelectValue placeholder="Select Property" />
             </SelectTrigger>
             <SelectContent>
-              {properties.map(p => <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>)}
+              {properties.map(p => <SelectItem key={getEntityId(p)} value={getEntityId(p)}>{p.title}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
@@ -173,7 +171,7 @@ const HostCalendarRateManager = () => {
         ) : (
           <div className="space-y-3">
             {rates.map(rate => (
-              <div key={rate.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-background border border-border rounded-xl hover:border-primary/30 transition-colors gap-4">
+              <div key={getEntityId(rate)} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-background border border-border rounded-xl hover:border-primary/30 transition-colors gap-4">
                 <div>
                   <div className="font-semibold text-foreground text-sm mb-1">
                     {format(new Date(rate.startDate), 'MMM dd, yyyy')} - {format(new Date(rate.endDate), 'MMM dd, yyyy')}
@@ -182,7 +180,7 @@ const HostCalendarRateManager = () => {
                     <IndianRupee className="w-3.5 h-3.5 mr-0.5" /> {rate.pricePerNight.toLocaleString('en-IN')} / night
                   </div>
                 </div>
-                <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10 hover:text-destructive shrink-0" onClick={() => handleDeleteRate(rate.id)}>
+                <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10 hover:text-destructive shrink-0" onClick={() => handleDeleteRate(getEntityId(rate))}>
                   <Trash2 className="w-4 h-4" />
                 </Button>
               </div>

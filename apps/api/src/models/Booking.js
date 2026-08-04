@@ -9,9 +9,10 @@ const bookingSchema = new mongoose.Schema(
     },
 
     guestId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Guest",
-      required: true,
+      type: String,
+      ref: "User",
+      required: false,
+      default: "",
     },
 
     checkInDate: {
@@ -54,6 +55,7 @@ const bookingSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
+    strict: false,
   }
 );
 

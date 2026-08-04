@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
-import pb from '@/lib/pocketbaseClient.js';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { createUser } from '@/lib/dataApi.js';
 
 const RegisterPage = () => {
   const [formData, setFormData] = useState({ name: '', email: '', password: '', passwordConfirm: '' });
@@ -22,10 +22,10 @@ const RegisterPage = () => {
     
     setIsLoading(true);
     try {
-      await pb.collection('users').create({
+      await createUser({
         ...formData,
         userType: 'guest'
-      }, { $autoCancel: false });
+      });
       
       toast.success("Account created! Please log in.");
       navigate('/login');

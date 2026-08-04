@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { Check, X, Search, FileText, MapPin, Users, Bath, Bed } from 'lucide-react';
-import pb from '@/lib/pocketbaseClient.js';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
@@ -9,6 +8,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/bookingUtils.js';
+import { createNotification, listProperties, updateProperty } from '@/lib/dataApi.js';
+import { getEntityId, getHostName, getPropertyImage } from '@/lib/propertyMappers.js';
 
 const AdminPropertyApprovalPage = () => {
   const [properties, setProperties] = useState([]);
@@ -23,17 +24,8 @@ const AdminPropertyApprovalPage = () => {
   const fetchPendingProperties = async () => {
     setIsLoading(true);
     try {
-      const filterStr = search 
-        ? `status="Submitted" && (title ~ "${search}" || location ~ "${search}")`
-        : `status="Submitted"`;
-
-      const records = await pb.collection('properties').getList(1, 50, {
-        filter: filterStr,
-        expand: 'hostId',
-        sort: '-created',
-        $autoCancel: false
-      });
-      setProperties(records.items);
+      const records = await listProperties({ sort: '-createdAt', search });
+      setProperties(records.filter((property) => property.status === 'Submitted'));
     } catch (error) {
       console.error(error);
       toast.error("Failed to load pending properties");
@@ -48,10 +40,10 @@ const AdminPropertyApprovalPage = () => {
 
   const handleApprove = async (id) => {
     try {
-      await pb.collection('properties').update(id, {
+      await updateProperty(id, {
         status: 'Approved',
         approvalStatus: 'approved'
-      }, { $autoCancel: false });
+      });
       toast.success("Property Approved successfully");
       fetchPendingProperties();
     } catch (error) {
@@ -73,11 +65,17 @@ const AdminPropertyApprovalPage = () => {
     }
 
     try {
-      await pb.collection('properties').update(selectedProperty.id, {
+      await updateProperty(getEntityId(selectedProperty), {
         status: 'Draft', // Return to draft so host can fix
         approvalStatus: 'rejected',
         rejectionReason: rejectionReason
-      }, { $autoCancel: false });
+      });
+      await createNotification({
+        userId: getEntityId(selectedProperty.host || selectedProperty.hostId),
+        type: 'email',
+        message: `Your property "${selectedProperty.title}" was rejected. Reason: ${rejectionReason}`,
+        isRead: false,
+      });
       
       toast.success("Property Rejected");
       setRejectionModalOpen(false);
@@ -119,13 +117,13 @@ const AdminPropertyApprovalPage = () => {
       ) : (
         <div className="grid grid-cols-1 gap-6">
           {properties.map(property => (
-            <Card key={property.id} className="bg-card border-border overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+            <Card key={getEntityId(property)} className="bg-card border-border overflow-hidden shadow-sm hover:shadow-md transition-shadow">
               <div className="flex flex-col md:flex-row">
                 {/* Image Section */}
                 <div className="w-full md:w-72 h-48 md:h-auto bg-muted shrink-0 relative">
-                  {property.photos?.length > 0 ? (
+                  {getPropertyImage(property) ? (
                     <img 
-                      src={pb.files.getUrl(property, property.photos[0])} 
+                      src={getPropertyImage(property)} 
                       alt={property.title} 
                       className="w-full h-full object-cover" 
                     />
@@ -166,14 +164,14 @@ const AdminPropertyApprovalPage = () => {
                   <div className="flex items-center justify-between mt-auto pt-4 border-t border-border">
                     <div className="text-sm">
                       <span className="text-muted-foreground">Host: </span>
-                      <span className="font-bold text-foreground">{property.expand?.hostId?.name || property.expand?.hostId?.email || 'Unknown'}</span>
+                      <span className="font-bold text-foreground">{getHostName(property.host || property.hostId) || 'Unknown'}</span>
                     </div>
                     
                     <div className="flex items-center gap-2">
                       <Button variant="outline" className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive h-10 px-6 rounded-xl" onClick={() => openRejectionModal(property)}>
                         <X className="w-4 h-4 mr-2" /> Reject
                       </Button>
-                      <Button className="bg-success hover:bg-success/90 text-success-foreground h-10 px-6 rounded-xl shadow-sm" onClick={() => handleApprove(property.id)}>
+                      <Button className="bg-success hover:bg-success/90 text-success-foreground h-10 px-6 rounded-xl shadow-sm" onClick={() => handleApprove(getEntityId(property))}>
                         <Check className="w-4 h-4 mr-2" /> Approve
                       </Button>
                     </div>

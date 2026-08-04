@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
-import pb from '@/lib/pocketbaseClient.js';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatCurrency, calculateTotalPrice, checkDateOverlap } from '@/lib/bookingUtils.js';
 import { toast } from 'sonner';
+import { createBooking, getProperty, listBookings } from '@/lib/dataApi.js';
+import { getEntityId, getPropertyImage } from '@/lib/propertyMappers.js';
 
 const BookingPage = () => {
   const { id } = useParams(); // propertyId
@@ -32,17 +33,11 @@ const BookingPage = () => {
   useEffect(() => {
     const fetchPropertyAndBookings = async () => {
       try {
-        const propRecord = await pb.collection('properties').getOne(id, {
-          expand: 'hostId',
-          $autoCancel: false
-        });
+        const propRecord = await getProperty(id);
         setProperty(propRecord);
 
-        const bookingsRecord = await pb.collection('bookings').getList(1, 500, {
-          filter: `propertyId="${id}" && (status="pending" || status="confirmed")`,
-          $autoCancel: false
-        });
-        setExistingBookings(bookingsRecord.items);
+        const bookingsRecord = await listBookings({ propertyId: id });
+        setExistingBookings(bookingsRecord.filter((booking) => booking.status === 'pending' || booking.status === 'confirmed'));
       } catch (err) {
         console.error("Error fetching data:", err);
         toast.error("Failed to load property details.");
@@ -79,7 +74,7 @@ const BookingPage = () => {
     setIsSubmitting(true);
     try {
       const bookingData = {
-        propertyId: property.id,
+        propertyId: getEntityId(property),
         guestId: '',
         checkInDate: `${initialDates.checkIn} 14:00:00.000Z`,
         checkOutDate: `${initialDates.checkOut} 11:00:00.000Z`,
@@ -96,7 +91,7 @@ const BookingPage = () => {
         specialRequests: formData.specialRequests
       };
 
-      const record = await pb.collection('bookings').create(bookingData, { $autoCancel: false });
+      const record = await createBooking(bookingData);
       
       toast.success("Booking created successfully!");
       navigate('/checkout', { state: { booking: record, property } });
@@ -160,8 +155,8 @@ const BookingPage = () => {
           <div>
             <div className="bg-card p-6 rounded-3xl shadow-soft border border-border sticky top-28">
               <div className="flex gap-4 mb-6 pb-6 border-b border-border">
-                {property.photos?.[0] ? (
-                  <img src={pb.files.getUrl(property, property.photos[0])} alt="Property" className="w-24 h-24 rounded-xl object-cover" />
+                {getPropertyImage(property) ? (
+                  <img src={getPropertyImage(property)} alt="Property" className="w-24 h-24 rounded-xl object-cover" />
                 ) : (
                   <div className="w-24 h-24 rounded-xl bg-muted flex items-center justify-center text-xs text-muted-foreground">No Image</div>
                 )}

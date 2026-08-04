@@ -1,9 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { format, differenceInCalendarDays } from "date-fns";
 import {
-  Search,
   Eye,
-  Calendar,
   User
 } from "lucide-react";
 
@@ -31,12 +29,12 @@ const HostBookingsTable = ({
   const filteredBookings = useMemo(() => {
     return bookings.filter((booking) => {
       const guest =
-        booking.expand?.guestId?.name ||
+        booking.guest?.name ||
         booking.guestFullName ||
         "";
 
       const property =
-        booking.expand?.propertyId?.title ||
+        booking.property?.title ||
         booking.propertyName ||
         "";
 
@@ -182,12 +180,12 @@ const HostBookingsTable = ({
             ) : (
               filteredBookings.map((booking) => {
                 const guest =
-                  booking.expand?.guestId?.name ||
+                  booking.guest?.name ||
                   booking.guestFullName ||
                   "Guest";
 
                 const property =
-                  booking.expand?.propertyId?.title ||
+                  booking.property?.title ||
                   booking.propertyName ||
                   "Property";
 

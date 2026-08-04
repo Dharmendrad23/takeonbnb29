@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import pb from '@/lib/pocketbaseClient.js';
 import { toast } from 'sonner';
+import { loginUser } from '@/lib/dataApi.js';
 
 const AdminAuthContext = createContext();
 
@@ -11,28 +11,36 @@ export const AdminAuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      if (pb.authStore.isValid && pb.authStore.model?.collectionName === 'admin_users') {
-        try {
-          const authData = await pb.collection('admin_users').authRefresh({ $autoCancel: false });
-          setAdminUser(authData.record);
-        } catch (error) {
-          console.error("Admin session expired:", error);
-          pb.authStore.clear();
-          setAdminUser(null);
+    const savedUser = window.localStorage.getItem('authUser');
+
+    if (savedUser) {
+      try {
+        const parsedUser = JSON.parse(savedUser);
+        if (parsedUser?.role === 'admin' || parsedUser?.role === 'manager') {
+          setAdminUser(parsedUser);
         }
+      } catch (error) {
+        console.error('Failed to restore admin session:', error);
+        window.localStorage.removeItem('authToken');
+        window.localStorage.removeItem('authUser');
       }
-      setLoading(false);
-    };
-    checkAuth();
+    }
+
+    setLoading(false);
   }, []);
 
   const login = async (email, password) => {
     try {
-      const authData = await pb.collection('admin_users').authWithPassword(email, password, { $autoCancel: false });
-      setAdminUser(authData.record);
-      toast.success(`Welcome back, ${authData.record.name || 'Admin'}`);
-      return authData;
+      const authData = await loginUser({ email, password });
+      if (authData?.user?.role !== 'admin' && authData?.user?.role !== 'manager') {
+        throw new Error('Admin access required');
+      }
+
+      window.localStorage.setItem('authToken', authData.token);
+      window.localStorage.setItem('authUser', JSON.stringify(authData.user));
+      setAdminUser(authData.user);
+      toast.success(`Welcome back, ${authData.user.name || 'Admin'}`);
+      return { record: authData.user, token: authData.token };
     } catch (error) {
       console.error("Admin login failed:", error);
       throw error;
@@ -40,7 +48,8 @@ export const AdminAuthProvider = ({ children }) => {
   };
 
   const logoutAdmin = () => {
-    pb.authStore.clear();
+    window.localStorage.removeItem('authToken');
+    window.localStorage.removeItem('authUser');
     setAdminUser(null);
     toast.success("Successfully logged out");
   };

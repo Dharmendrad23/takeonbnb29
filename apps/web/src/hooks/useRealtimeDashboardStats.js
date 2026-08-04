@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import pb from '@/lib/pocketbaseClient.js';
+import { listBookings, listProperties, listUsers } from '@/lib/dataApi.js';
 
 export const useRealtimeDashboardStats = () => {
   const [stats, setStats] = useState({
@@ -16,9 +16,9 @@ export const useRealtimeDashboardStats = () => {
     const fetchStats = async () => {
       try {
         const [props, bookings, users] = await Promise.all([
-          pb.collection('properties').getList(1, 1, { $autoCancel: false }),
-          pb.collection('bookings').getFullList({ $autoCancel: false }),
-          pb.collection('users').getList(1, 1, { $autoCancel: false })
+          listProperties(),
+          listBookings(),
+          listUsers()
         ]);
 
         const revenue = bookings.reduce((sum, b) => sum + (b.totalPrice || 0), 0);
@@ -26,9 +26,9 @@ export const useRealtimeDashboardStats = () => {
         const pending = bookings.filter(b => b.status === 'pending').length;
 
         setStats({
-          totalProperties: props.totalItems,
+          totalProperties: props.length,
           totalBookings: bookings.length,
-          totalUsers: users.totalItems,
+          totalUsers: users.length,
           totalRevenue: revenue,
           activeBookings: active,
           pendingBookings: pending
@@ -41,16 +41,8 @@ export const useRealtimeDashboardStats = () => {
     };
 
     fetchStats();
-
-    pb.collection('properties').subscribe('*', fetchStats);
-    pb.collection('bookings').subscribe('*', fetchStats);
-    pb.collection('users').subscribe('*', fetchStats);
-
-    return () => {
-      pb.collection('properties').unsubscribe('*');
-      pb.collection('bookings').unsubscribe('*');
-      pb.collection('users').unsubscribe('*');
-    };
+    const intervalId = window.setInterval(fetchStats, 30000);
+    return () => window.clearInterval(intervalId);
   }, []);
 
   return { stats, isLoading };

@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet';
-import pb from '@/lib/pocketbaseClient.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import GuestDashboardLayout from '@/components/GuestDashboardLayout.jsx';
 import PropertyCard from '@/components/PropertyCard.jsx';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Heart } from 'lucide-react';
+import { listFavorites, listProperties } from '@/lib/dataApi.js';
+import { getEntityId } from '@/lib/propertyMappers.js';
 
 const GuestFavoritesPage = () => {
   const { currentUser } = useAuth();
@@ -15,12 +16,16 @@ const GuestFavoritesPage = () => {
   useEffect(() => {
     const fetchFavorites = async () => {
       try {
-        const records = await pb.collection('favorites').getFullList({
-          filter: `guestId="${currentUser.id}"`,
-          expand: 'propertyId',
-          $autoCancel: false
-        });
-        setFavorites(records.map(r => r.expand?.propertyId).filter(Boolean));
+        const [favoriteRecords, properties] = await Promise.all([
+          listFavorites({ guestId: currentUser.id }),
+          listProperties(),
+        ]);
+        const propertyMap = new Map(properties.map((property) => [getEntityId(property), property]));
+        setFavorites(
+          favoriteRecords
+            .map((favorite) => propertyMap.get(String(favorite.propertyId)))
+            .filter(Boolean)
+        );
       } catch (err) {
         console.error(err);
       } finally {
@@ -55,7 +60,7 @@ const GuestFavoritesPage = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {favorites.map((property, idx) => (
-            <PropertyCard key={property.id} property={property} index={idx} />
+            <PropertyCard key={getEntityId(property)} property={property} index={idx} />
           ))}
         </div>
       )}

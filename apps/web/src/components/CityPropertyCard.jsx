@@ -2,14 +2,10 @@ import React, { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { Star, MapPin, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import pb from '@/lib/pocketbaseClient.js';
+import { getEntityId, getPropertyImage } from '@/lib/propertyMappers.js';
 
 const CityPropertyCard = memo(({ property }) => {
-  const imageUrl = property.coverImage 
-    ? pb.files.getUrl(property, property.coverImage)
-    : (property.photos && property.photos.length > 0) 
-      ? pb.files.getUrl(property, property.photos[0]) 
-      : null;
+  const imageUrl = getPropertyImage(property);
 
   const formatINR = (amount) => {
     return new Intl.NumberFormat('en-IN', {
@@ -30,7 +26,7 @@ const CityPropertyCard = memo(({ property }) => {
       className="group flex flex-col h-full w-full bg-card rounded-2xl border border-border overflow-hidden hover-card-effect select-none"
     >
       <Link 
-        to={`/property/${property.id}`} 
+        to={`/property/${getEntityId(property)}`} 
         className="flex flex-col h-full cursor-pointer outline-none"
         draggable={false}
       >

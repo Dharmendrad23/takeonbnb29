@@ -12,9 +12,9 @@ import UPIPaymentSection from '@/components/UPIPaymentSection.jsx';
 import PaymentVerificationForm from '@/components/PaymentVerificationForm.jsx';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { toast } from 'sonner';
-import pb from '@/lib/pocketbaseClient.js';
-import apiServerClient from '@/lib/apiServerClient.js';
 import { formatCurrency } from '@/lib/bookingUtils.js';
+import { createBooking } from '@/lib/dataApi.js';
+import { getEntityId } from '@/lib/propertyMappers.js';
 
 const BookingFlowModal = ({ isOpen, onClose, property, initialDates, initialGuests }) => {
   const { currentUser } = useAuth();
@@ -67,56 +67,37 @@ const BookingFlowModal = ({ isOpen, onClose, property, initialDates, initialGues
   const handlePaymentSubmit = async (verificationData) => {
     setLoading(true);
     try {
-      const formData = new FormData();
-      formData.append('propertyId', property.id);
-      if (currentUser?.id) {
-        formData.append('guestId', currentUser.id);
-      }
-      formData.append('guestFullName', verificationData.guestName);
-      formData.append('guestEmail', guestDetails.email);
-      formData.append('guestMobileNumber', verificationData.phone);
-      formData.append('specialRequests', guestDetails.specialRequests);
-      formData.append('propertyName', property.title);
-      
       const checkInISO = new Date(checkIn);
       checkInISO.setHours(14, 0, 0, 0);
-      formData.append('checkInDate', checkInISO.toISOString());
       
       const checkOutISO = new Date(checkOut);
       checkOutISO.setHours(11, 0, 0, 0);
-      formData.append('checkOutDate', checkOutISO.toISOString());
-      
-      formData.append('guestCount', guests);
-      formData.append('totalPrice', total);
-      formData.append('totalAmount', total);
-      
-      // UPI specifics
-      formData.append('upiId', 'dharmendrashah1439-1@okhdfcbank');
-      formData.append('transactionId', verificationData.transactionId);
-      if (verificationData.screenshot) {
-        formData.append('paymentScreenshot', verificationData.screenshot);
-      }
-      
-      formData.append('status', 'pending'); 
-      formData.append('bookingStatus', 'pending_verification');
-      formData.append('paymentStatus', 'pending');
-      formData.append('paymentMethod', 'upi');
-      formData.append('bookingStep', 5);
 
-      const record = await pb.collection('bookings').create(formData, { $autoCancel: false });
-      setBookingId(record.id);
+      const plainBookingData = {
+        propertyId: getEntityId(property),
+        guestId: currentUser?.id || '',
+        guestFullName: verificationData.guestName,
+        guestEmail: guestDetails.email,
+        guestMobileNumber: verificationData.phone,
+        specialRequests: guestDetails.specialRequests,
+        propertyName: property.title,
+        checkInDate: checkInISO.toISOString(),
+        checkOutDate: checkOutISO.toISOString(),
+        guestCount: guests,
+        totalPrice: total,
+        totalAmount: total,
+        upiId: 'dharmendrashah1439-1@okhdfcbank',
+        transactionId: verificationData.transactionId,
+        status: 'pending',
+        bookingStatus: 'pending_verification',
+        paymentStatus: 'pending',
+        paymentMethod: 'upi',
+        bookingStep: 5,
+      };
 
-      try {
-        await apiServerClient.fetch('/bookings/send-booking-confirmation-message', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ bookingId: record.id })
-        });
-        toast.success('Booking submitted successfully. A confirmation message has been sent.');
-      } catch (messageError) {
-        console.error('Failed to send booking confirmation message:', messageError);
-        toast.success('Booking submitted successfully. We will follow up with confirmation shortly.');
-      }
+      const record = await createBooking(plainBookingData);
+      setBookingId(getEntityId(record));
+      toast.success('Booking submitted successfully. We will follow up with confirmation shortly.');
       
       setStep(4); // Success step
     } catch (error) {

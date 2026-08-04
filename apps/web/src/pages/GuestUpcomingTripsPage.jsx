@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom';
-import pb from '@/lib/pocketbaseClient.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import GuestDashboardLayout from '@/components/GuestDashboardLayout.jsx';
 import { Calendar, MapPin, Users, Clock, Navigation, MessageSquare, Luggage } from 'lucide-react';
@@ -9,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDate, isPastDate } from '@/lib/bookingUtils.js';
 import { differenceInDays, parseISO } from 'date-fns';
+import { listBookings, listProperties, listUsers } from '@/lib/dataApi.js';
+import { getEntityId, getPropertyImage } from '@/lib/propertyMappers.js';
 
 const GuestUpcomingTripsPage = () => {
   const { currentUser } = useAuth();
@@ -18,14 +19,26 @@ const GuestUpcomingTripsPage = () => {
   useEffect(() => {
     const fetchTrips = async () => {
       try {
-        const records = await pb.collection('bookings').getFullList({
-          filter: `guestId="${currentUser.id}" && status != 'cancelled' && bookingStatus != 'rejected'`,
-          expand: 'propertyId,propertyId.hostId',
-          sort: 'checkInDate',
-          $autoCancel: false
-        });
-        
-        const upcoming = records.filter(r => !isPastDate(r.checkInDate));
+        const [records, properties, users] = await Promise.all([
+          listBookings({ guestId: currentUser.id }),
+          listProperties(),
+          listUsers(),
+        ]);
+        const propertyMap = new Map(properties.map((property) => [getEntityId(property), property]));
+        const userMap = new Map(users.map((user) => [getEntityId(user), user]));
+        const upcoming = records
+          .filter((record) => record.status !== 'cancelled' && record.bookingStatus !== 'rejected')
+          .map((record) => {
+            const property = record.property || propertyMap.get(String(record.propertyId)) || null;
+            const host = property?.hostId ? userMap.get(String(property.hostId)) || null : null;
+            return {
+              ...record,
+              property,
+              host,
+            };
+          })
+          .filter(r => !isPastDate(r.checkInDate))
+          .sort((left, right) => new Date(left.checkInDate) - new Date(right.checkInDate));
         setTrips(upcoming);
       } catch (e) {
         console.error("Error fetching upcoming trips:", e);
@@ -65,17 +78,17 @@ const GuestUpcomingTripsPage = () => {
       ) : (
         <div className="space-y-8">
           {trips.map(trip => {
-            const property = trip.expand?.propertyId;
-            const host = property?.expand?.hostId;
+            const property = trip.property;
+            const host = trip.host;
             const daysUntil = differenceInDays(parseISO(trip.checkInDate), new Date());
             
             return (
               <div key={trip.id} className="bg-card border border-border rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all">
                 <div className="flex flex-col md:flex-row">
                   <div className="w-full md:w-1/3 h-64 md:h-auto relative bg-muted">
-                    {property?.coverImage && (
+                    {getPropertyImage(property) && (
                       <img 
-                        src={pb.files.getUrl(property, property.coverImage)} 
+                        src={getPropertyImage(property)} 
                         alt={property.title}
                         className="w-full h-full object-cover"
                       />

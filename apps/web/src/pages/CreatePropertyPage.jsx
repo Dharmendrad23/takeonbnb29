@@ -11,9 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import pb from '@/lib/pocketbaseClient.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { toast } from 'sonner';
+import { createProperty, listAmenities } from '@/lib/dataApi.js';
+import { getEntityId } from '@/lib/propertyMappers.js';
 
 const CreatePropertyPage = () => {
   const navigate = useNavigate();
@@ -46,10 +47,7 @@ const CreatePropertyPage = () => {
 
   const loadAmenities = async () => {
     try {
-      const records = await pb.collection('amenities').getFullList({
-        sort: 'name',
-        $autoCancel: false
-      });
+      const records = await listAmenities({ sort: 'name' });
       setAmenities(records);
     } catch (error) {
       console.error('Failed to load amenities:', error);
@@ -147,7 +145,7 @@ const CreatePropertyPage = () => {
   const handlePreSubmit = (e) => {
     e.preventDefault();
     
-    if (!currentUser || !pb.authStore.isValid) {
+    if (!currentUser) {
       toast.error('Authentication failed. Please log in again.');
       return;
     }
@@ -193,7 +191,7 @@ const CreatePropertyPage = () => {
 
     try {
       const data = new FormData();
-      data.append('hostId', currentUser.id);
+      data.append('hostId', getEntityId(currentUser));
       data.append('title', formData.title.trim());
       data.append('description', formData.description.trim());
       data.append('location', formData.location.trim());
@@ -216,7 +214,7 @@ const CreatePropertyPage = () => {
         setTimeout(() => reject(new Error('TIMEOUT')), 30000)
       );
       
-      const createPromise = pb.collection('properties').create(data, { $autoCancel: false });
+      const createPromise = createProperty(data);
       
       const record = await Promise.race([createPromise, timeoutPromise]);
       
@@ -233,14 +231,14 @@ const CreatePropertyPage = () => {
       if (error.message === 'TIMEOUT') {
         toast.error('Failed to create property: Request timed out after 30 seconds');
       } else if (error.response) {
-        const pbErrors = error.response.data;
-        if (pbErrors && Object.keys(pbErrors).length > 0) {
-          const errorMessages = Object.entries(pbErrors)
-            .map(([field, details]) => `${field}: ${details.message}`)
+        const apiErrors = error.response.data?.errors || error.response.data;
+        if (apiErrors && typeof apiErrors === 'object' && Object.keys(apiErrors).length > 0) {
+          const errorMessages = Object.entries(apiErrors)
+            .map(([field, details]) => `${field}: ${details.message || details}`)
             .join(', ');
           toast.error(`Failed to create property: ${errorMessages}`);
         } else {
-          toast.error(`Failed to create property: ${error.response.message || 'Validation failed'}`);
+        toast.error(`Failed to create property: ${error.response.data?.message || error.response.message || 'Validation failed'}`);
         }
       } else {
         toast.error(`Failed to create property: ${error.message || 'Network error'}`);

@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import PropertyGrid from './PropertyGrid.jsx';
-import pb from '@/lib/pocketbaseClient.js';
+import { listProperties } from '@/lib/dataApi.js';
+import { isLiveProperty } from '@/lib/propertyMappers.js';
 
 export default function PoolVillas() {
   const [properties, setProperties] = useState([]);
@@ -13,12 +14,20 @@ export default function PoolVillas() {
       try {
         setLoading(true);
         setError(null);
-        const records = await pb.collection('properties').getList(1, 8, {
-          filter: 'amenities.name ?~ "pool" && status="Live"',
-          sort: '-created',
-          $autoCancel: false
-        });
-        setProperties(records.items || []);
+        const records = await listProperties();
+        setProperties(
+          records
+            .filter((property) => isLiveProperty(property))
+            .filter((property) =>
+              Array.isArray(property.amenities) &&
+              property.amenities.some((amenity) =>
+                String(typeof amenity === 'string' ? amenity : amenity?.name || '')
+                  .toLowerCase()
+                  .includes('pool')
+              )
+            )
+            .slice(0, 8)
+        );
       } catch (err) {
         console.error('Error fetching pool villas:', err);
         setError('Failed to load villas with private pools.');

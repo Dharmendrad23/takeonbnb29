@@ -8,7 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Search, SlidersHorizontal, Home } from 'lucide-react';
-import pb from '@/lib/pocketbaseClient';
+import { listProperties } from '@/lib/dataApi.js';
+import { getEntityId, isLiveProperty } from '@/lib/propertyMappers.js';
 
 const ExplorePage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -27,36 +28,37 @@ const ExplorePage = () => {
   const loadProperties = async () => {
     setLoading(true);
     try {
-      let filter = '';
-      const filters = [];
+      let result = await listProperties();
+      result = result.filter((property) => isLiveProperty(property));
 
       if (searchLocation) {
-        filters.push(`location ~ "${searchLocation}"`);
+        const query = searchLocation.toLowerCase();
+        result = result.filter((property) =>
+          String(property.location || '').toLowerCase().includes(query)
+        );
       }
 
       if (propertyType !== 'all') {
-        filters.push(`propertyType = "${propertyType}"`);
+        result = result.filter(
+          (property) => String(property.propertyType || '').toLowerCase() === propertyType.toLowerCase()
+        );
       }
 
       if (minPrice) {
-        filters.push(`pricePerNight >= ${minPrice}`);
+        result = result.filter((property) => Number(property.pricePerNight || 0) >= Number(minPrice));
       }
 
       if (maxPrice) {
-        filters.push(`pricePerNight <= ${maxPrice}`);
+        result = result.filter((property) => Number(property.pricePerNight || 0) <= Number(maxPrice));
       }
 
-      if (filters.length > 0) {
-        filter = filters.join(' && ');
+      if (sortBy === 'pricePerNight') {
+        result = [...result].sort((a, b) => Number(a.pricePerNight || 0) - Number(b.pricePerNight || 0));
+      } else if (sortBy === '-pricePerNight') {
+        result = [...result].sort((a, b) => Number(b.pricePerNight || 0) - Number(a.pricePerNight || 0));
       }
 
-      const result = await pb.collection('properties').getList(1, 50, {
-        filter,
-        sort: sortBy,
-        $autoCancel: false
-      });
-
-      setProperties(result.items);
+      setProperties(result.slice(0, 50));
     } catch (error) {
       console.error('Failed to load properties:', error);
     } finally {
@@ -181,7 +183,7 @@ const ExplorePage = () => {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {properties.map((property) => (
-                    <PropertyCard key={property.id} property={property} />
+                    <PropertyCard key={getEntityId(property)} property={property} />
                   ))}
                 </div>
               )}

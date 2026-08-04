@@ -1,70 +1,125 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import pb from '@/lib/pocketbaseClient.js';
 import { MapPin, Star, BedDouble, Bath, Users, SearchX } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+import apiServerClient from '@/lib/apiServerClient.js';
+import {
+  getEntityId,
+  getPropertyImage,
+  getPropertyRating,
+} from '@/lib/propertyMappers.js';
+
+const PAGE_SIZE = 24;
+
+const isLiveProperty = (property) => {
+  const status = String(property?.status || '').toLowerCase();
+  const approvalStatus = String(property?.approvalStatus || '').toLowerCase();
+
+  if (status && !['live', 'approved', 'published'].includes(status)) {
+    return false;
+  }
+
+  if (approvalStatus && approvalStatus !== 'approved') {
+    return false;
+  }
+
+  return true;
+};
+
+const sortByNewest = (left, right) => {
+  const leftDate = new Date(left?.createdAt || left?.created || 0).getTime();
+  const rightDate = new Date(right?.createdAt || right?.created || 0).getTime();
+  return rightDate - leftDate;
+};
 
 const SearchResults = ({ criteria }) => {
+  const [allProperties, setAllProperties] = useState([]);
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
 
-  const fetchResults = async (pageNum = 1, append = false) => {
+  const fetchResults = async () => {
     setLoading(true);
     setError(null);
 
     try {
       const guests = parseInt(criteria.guests, 10) || 1;
       const location = criteria.where ? criteria.where.toLowerCase() : '';
+      const propertiesResponse = await apiServerClient.fetch('/properties');
 
-      let filterStr = `status = 'Live' && guestCapacity >= ${guests}`;
-      if (location) {
-        filterStr += ` && (location ~ "${location}" || title ~ "${location}")`;
+      if (!propertiesResponse.ok) {
+        throw new Error('Failed to load properties');
       }
+
+      const records = await propertiesResponse.json();
+      let filteredRecords = Array.isArray(records) ? records.filter(isLiveProperty) : [];
+
+      filteredRecords = filteredRecords.filter((property) => {
+        const propertyGuests = Number(property?.guestCapacity || 0);
+        const propertyLocation = String(property?.location || '').toLowerCase();
+        const propertyTitle = String(property?.title || '').toLowerCase();
+
+        if (propertyGuests > 0 && propertyGuests < guests) {
+          return false;
+        }
+
+        if (location && !propertyLocation.includes(location) && !propertyTitle.includes(location)) {
+          return false;
+        }
+
+        return true;
+      });
 
       if (criteria.checkIn && criteria.checkOut) {
         const inDate = new Date(criteria.checkIn);
         const outDate = new Date(criteria.checkOut);
 
         if (inDate < outDate) {
-          const inStr = inDate.toISOString().split('T')[0];
-          const outStr = outDate.toISOString().split('T')[0];
+          const bookingsResponse = await apiServerClient.fetch('/bookings');
 
-          const records = await pb.collection('properties').getFullList({
-            filter: filterStr,
-            sort: '-created',
-            $autoCancel: false
-          });
+          if (!bookingsResponse.ok) {
+            throw new Error('Failed to load bookings');
+          }
 
-          const bookings = await pb.collection('bookings').getFullList({
-            filter: `status != 'cancelled' && checkInDate < "${outStr} 23:59:59" && checkOutDate > "${inStr} 00:00:00"`,
-            $autoCancel: false
-          });
+          const bookings = await bookingsResponse.json();
+          const overlappingPropertyIds = new Set(
+            (Array.isArray(bookings) ? bookings : [])
+              .filter((booking) => {
+                const bookingStatus = String(booking?.status || '').toLowerCase();
+                if (bookingStatus === 'cancelled') {
+                  return false;
+                }
 
-          const bookedPropertyIds = new Set(bookings.map(b => b.propertyId));
-          const filteredRecords = records.filter(r => !bookedPropertyIds.has(r.id));
+                const bookingCheckIn = new Date(booking?.checkInDate);
+                const bookingCheckOut = new Date(booking?.checkOutDate);
 
-          setProperties(filteredRecords);
-          setHasMore(false);
-          return;
+                return bookingCheckIn < outDate && bookingCheckOut > inDate;
+              })
+              .map((booking) => getEntityId(booking?.propertyId) || booking?.propertyId)
+              .filter(Boolean)
+          );
+
+          filteredRecords = filteredRecords.filter(
+            (property) => !overlappingPropertyIds.has(getEntityId(property))
+          );
         }
       }
 
-      const records = await pb.collection('properties').getList(pageNum, 24, {
-        filter: filterStr,
-        sort: '-created',
-        $autoCancel: false
-      });
-
-      setProperties(prev => append ? [...prev, ...records.items] : records.items);
-      setHasMore(records.page < records.totalPages);
+      const sortedRecords = filteredRecords.sort(sortByNewest);
+      setPage(1);
+      setAllProperties(sortedRecords);
+      setProperties(sortedRecords.slice(0, PAGE_SIZE));
+      setHasMore(sortedRecords.length > PAGE_SIZE);
     } catch (err) {
       console.error('Search error:', err);
       setError('Failed to fetch search results. Please try again.');
+      setAllProperties([]);
+      setProperties([]);
+      setHasMore(false);
     } finally {
       setLoading(false);
     }
@@ -73,9 +128,10 @@ const SearchResults = ({ criteria }) => {
   useEffect(() => {
     if (!criteria) return;
     setPage(1);
+    setAllProperties([]);
     setProperties([]);
     setHasMore(false);
-    fetchResults(1, false);
+    fetchResults();
   }, [criteria]);
 
   if (!criteria) return null;
@@ -119,27 +175,29 @@ const SearchResults = ({ criteria }) => {
 
   const handleLoadMore = () => {
     const nextPage = page + 1;
+    const nextSlice = allProperties.slice(0, nextPage * PAGE_SIZE);
     setPage(nextPage);
-    fetchResults(nextPage, true);
+    setProperties(nextSlice);
+    setHasMore(nextSlice.length < allProperties.length);
   };
 
   return (
     <div className="mt-10">
       <h2 className="text-xl font-bold text-foreground mb-6">
-        {properties.length} {properties.length === 1 ? 'place' : 'places'} found
+        {allProperties.length} {allProperties.length === 1 ? 'place' : 'places'} found
       </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 lg:gap-8">
         {properties.map((property, i) => (
           <motion.div 
-            key={property.id}
+            key={getEntityId(property)}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: i * 0.05 }}
           >
-            <Link to={`/property/${property.id}`} className="group block">
+            <Link to={`/property/${getEntityId(property)}`} className="group block">
               <div className="relative aspect-[4/3] rounded-2xl overflow-hidden mb-4 bg-muted">
                 <img 
-                  src={property.coverImage ? pb.files.getUrl(property, property.coverImage) : (property.photos?.[0] ? pb.files.getUrl(property, property.photos[0]) : 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=800&auto=format&fit=crop')} 
+                  src={getPropertyImage(property)}
                   alt={property.title} 
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
@@ -154,7 +212,7 @@ const SearchResults = ({ criteria }) => {
                 </h3>
                 <div className="flex items-center gap-1 text-sm font-semibold shrink-0 mt-1">
                   <Star className="w-4 h-4 fill-primary text-primary" />
-                  <span>{property.rating || '4.9'}</span>
+                  <span>{getPropertyRating(property)}</span>
                 </div>
               </div>
               

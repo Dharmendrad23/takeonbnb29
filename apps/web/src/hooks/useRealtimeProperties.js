@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import pb from '@/lib/pocketbaseClient.js';
+import { listProperties } from '@/lib/dataApi.js';
+import { isLiveProperty } from '@/lib/propertyMappers.js';
 
 export const useRealtimeProperties = (options = {}) => {
   const [properties, setProperties] = useState([]);
@@ -12,13 +13,17 @@ export const useRealtimeProperties = (options = {}) => {
     const fetchProperties = async () => {
       try {
         const parsedOptions = JSON.parse(optionsString);
-        const records = await pb.collection('properties').getList(1, parsedOptions.limit || 50, {
-          filter: parsedOptions.filter || "status='Live'",
-          sort: parsedOptions.sort || '-created',
-          expand: parsedOptions.expand || '',
-          $autoCancel: false
-        });
-        setProperties(records.items);
+        let records = await listProperties();
+
+        if (parsedOptions.onlyLive !== false) {
+          records = records.filter((property) => isLiveProperty(property));
+        }
+
+        if (parsedOptions.limit) {
+          records = records.slice(0, parsedOptions.limit);
+        }
+
+        setProperties(records);
       } catch (err) {
         console.error('Failed to fetch realtime properties:', err);
       } finally {
@@ -27,13 +32,8 @@ export const useRealtimeProperties = (options = {}) => {
     };
 
     fetchProperties();
-
-    // Subscribe to any changes in the properties collection
-    pb.collection('properties').subscribe('*', () => {
-      fetchProperties();
-    });
-
-    return () => pb.collection('properties').unsubscribe('*');
+    const intervalId = window.setInterval(fetchProperties, 30000);
+    return () => window.clearInterval(intervalId);
   }, [optionsString]);
 
   return { properties, loading };

@@ -1,27 +1,18 @@
 import { useEffect } from 'react';
-import pb from '@/lib/pocketbaseClient.js';
 
 export const usePropertySync = (callback) => {
   useEffect(() => {
-    let isSubscribed = true;
+    if (!callback) {
+      return undefined;
+    }
 
-    const subscribe = async () => {
-      try {
-        await pb.collection('properties').subscribe('*', (e) => {
-          if (isSubscribed && callback) {
-            callback(e);
-          }
-        });
-      } catch (error) {
-        console.error('Failed to subscribe to properties:', error);
-      }
-    };
-
-    subscribe();
+    callback({ action: 'refresh' });
+    const intervalId = window.setInterval(() => {
+      callback({ action: 'refresh' });
+    }, 30000);
 
     return () => {
-      isSubscribed = false;
-      pb.collection('properties').unsubscribe('*');
+      window.clearInterval(intervalId);
     };
   }, [callback]);
 };

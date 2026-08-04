@@ -3,14 +3,10 @@ import { Edit, Trash2, Eye, MapPin, Building, CheckCircle2, Clock } from 'lucide
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
-import pb from '@/lib/pocketbaseClient.js';
+import { getEntityId, getPropertyImage } from '@/lib/propertyMappers.js';
 
 const HostPropertyCard = ({ property, onEdit, onDelete }) => {
-  const imageUrl = property.coverImage 
-    ? pb.files.getUrl(property, property.coverImage)
-    : property.photos?.length > 0
-      ? pb.files.getUrl(property, property.photos[0])
-      : 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80';
+  const imageUrl = getPropertyImage(property) || 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80';
 
   const getStatusConfig = (status) => {
     switch(status?.toLowerCase()) {
@@ -64,7 +60,7 @@ const HostPropertyCard = ({ property, onEdit, onDelete }) => {
             <Edit className="w-4 h-4 mr-1.5" /> Edit
           </Button>
           <Button variant="outline" size="sm" asChild className="flex-1 hover:bg-primary/5 hover:text-primary hover:border-primary/30">
-            <Link to={`/property/${property.id}`} target="_blank">
+            <Link to={`/property/${getEntityId(property)}`} target="_blank">
               <Eye className="w-4 h-4 mr-1.5" /> View
             </Link>
           </Button>

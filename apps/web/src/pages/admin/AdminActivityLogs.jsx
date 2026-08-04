@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet';
-import pb from '@/lib/pocketbaseClient.js';
 import { Activity, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { listActivityLogs } from '@/lib/dataApi.js';
+import { getEntityId, getHostName } from '@/lib/propertyMappers.js';
 
 const AdminActivityLogs = () => {
   const [logs, setLogs] = useState([]);
@@ -11,12 +12,8 @@ const AdminActivityLogs = () => {
   useEffect(() => {
     const fetchLogs = async () => {
       try {
-        const records = await pb.collection('activity_logs').getList(1, 50, {
-          sort: '-created',
-          expand: 'adminId',
-          $autoCancel: false
-        });
-        setLogs(records.items);
+        const records = await listActivityLogs({ page: 1, perPage: 50, sort: '-createdAt' });
+        setLogs(records.items || []);
       } catch (error) {
         console.error("Logs fetch error:", error);
       } finally {
@@ -54,13 +51,13 @@ const AdminActivityLogs = () => {
               <tr><td colSpan="4" className="px-6 py-8 text-center text-muted-foreground">No recent activity recorded.</td></tr>
             ) : (
               logs.map((log) => (
-                <tr key={log.id} className="hover:bg-muted/10 transition-colors">
+                <tr key={getEntityId(log)} className="hover:bg-muted/10 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap text-muted-foreground flex items-center gap-2">
                     <Clock className="w-4 h-4 text-primary/50" />
-                    {new Date(log.created).toLocaleString()}
+                    {new Date(log.createdAt || log.created).toLocaleString()}
                   </td>
                   <td className="px-6 py-4 font-medium text-foreground">
-                    {log.expand?.adminId?.name || 'System Auto'}
+                    {getHostName(log.adminId) || 'System Auto'}
                   </td>
                   <td className="px-6 py-4">
                     <Badge variant="outline" className="capitalize bg-secondary/10 text-secondary-foreground border-secondary/20">

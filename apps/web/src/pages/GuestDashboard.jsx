@@ -6,9 +6,10 @@ import EmptyState from '@/components/EmptyState.jsx';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar } from 'lucide-react';
-import pb from '@/lib/pocketbaseClient.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { toast } from 'sonner';
+import { listBookings, listProperties, updateBooking } from '@/lib/dataApi.js';
+import { getEntityId } from '@/lib/propertyMappers.js';
 
 const GuestDashboard = () => {
   const { currentUser } = useAuth();
@@ -27,18 +28,23 @@ const GuestDashboard = () => {
   const loadBookings = async () => {
     try {
       setLoading(true);
-      const records = await pb.collection('bookings').getList(1, 50, {
-        filter: `guestId="${currentUser.id}"`,
-        expand: 'propertyId,propertyId.hostId',
-        sort: '-checkInDate',
-        $autoCancel: false
-      });
+      const [records, properties] = await Promise.all([
+        listBookings({ guestId: currentUser.id }),
+        listProperties(),
+      ]);
+      const propertyMap = new Map(properties.map((property) => [getEntityId(property), property]));
+      const hydratedRecords = records
+        .map((booking) => ({
+          ...booking,
+          property: booking.property || propertyMap.get(String(booking.propertyId)) || null,
+        }))
+        .sort((left, right) => new Date(right.checkInDate) - new Date(left.checkInDate));
 
       const now = new Date();
       const upcoming = [];
       const past = [];
 
-      records.items.forEach(booking => {
+      hydratedRecords.forEach(booking => {
         if (new Date(booking.checkOutDate) > now && booking.status !== 'cancelled') {
           upcoming.push(booking);
         } else {
@@ -73,10 +79,10 @@ const GuestDashboard = () => {
     }
 
     try {
-      await pb.collection('bookings').update(booking.id, {
+      await updateBooking(getEntityId(booking), {
         status: 'cancelled',
         bookingStatus: 'cancelled'
-      }, { $autoCancel: false });
+      });
       toast.success('Booking cancelled');
       loadBookings();
     } catch (error) {
@@ -171,7 +177,7 @@ const GuestDashboard = () => {
           </DialogHeader>
           {selectedBooking && (
             <ReviewForm
-              propertyId={selectedBooking.propertyId}
+              propertyId={getEntityId(selectedBooking.property || selectedBooking.propertyId)}
               onSuccess={handleReviewSuccess}
             />
           )}

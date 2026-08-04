@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, MapPin, Users, ChevronRight, Luggage, Clock, CheckCircle2, XCircle } from 'lucide-react';
-import pb from '@/lib/pocketbaseClient.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { formatCurrencyINR, formatDate, isPastDate } from '@/lib/bookingUtils.js';
 import { Card } from '@/components/ui/card';
@@ -12,6 +11,8 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import GuestDashboardLayout from '@/components/GuestDashboardLayout.jsx';
+import { listBookings, listProperties } from '@/lib/dataApi.js';
+import { getEntityId, getPropertyImage } from '@/lib/propertyMappers.js';
 
 const GuestBookingsPage = () => {
   const { currentUser } = useAuth();
@@ -25,13 +26,17 @@ const GuestBookingsPage = () => {
 
     const fetchBookings = async () => {
       try {
-        const records = await pb.collection('bookings').getFullList({
-          filter: `guestId="${currentUser.id}"`,
-          sort: '-created',
-          expand: 'propertyId',
-          $autoCancel: false
-        });
-        setBookings(records);
+        const [records, properties] = await Promise.all([
+          listBookings({ guestId: currentUser.id }),
+          listProperties(),
+        ]);
+        const propertyMap = new Map(properties.map((property) => [getEntityId(property), property]));
+        setBookings(
+          records.map((booking) => ({
+            ...booking,
+            property: booking.property || propertyMap.get(String(booking.propertyId)) || null,
+          }))
+        );
       } catch (error) {
         console.error('Error fetching bookings:', error);
       } finally {
@@ -40,14 +45,8 @@ const GuestBookingsPage = () => {
     };
 
     fetchBookings();
-
-    pb.collection('bookings').subscribe('*', function (e) {
-      if (e.record.guestId === currentUser.id) {
-        fetchBookings();
-      }
-    });
-
-    return () => pb.collection('bookings').unsubscribe('*');
+    const intervalId = window.setInterval(fetchBookings, 15000);
+    return () => window.clearInterval(intervalId);
   }, [currentUser]);
 
   const getStatusBadge = (status) => {
@@ -92,25 +91,25 @@ const GuestBookingsPage = () => {
       <div className="space-y-6">
         <AnimatePresence>
           {items.map((booking, index) => {
-            const property = booking.expand?.propertyId;
+            const property = booking.property;
             const statusConfig = getStatusBadge(booking.bookingStatus || booking.status);
             const StatusIcon = statusConfig.icon;
             
             return (
               <motion.div
-                key={booking.id}
+                key={getEntityId(booking)}
                 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.3, delay: index * 0.05 }}
               >
                 <Card 
                   className="overflow-hidden border-border rounded-2xl hover:shadow-md transition-all cursor-pointer group"
-                  onClick={() => navigate(`/guest/bookings/${booking.id}`)}
+                  onClick={() => navigate(`/guest/bookings/${getEntityId(booking)}`)}
                 >
                   <div className="flex flex-col md:flex-row h-full">
                     <div className="w-full md:w-80 h-56 md:h-auto relative overflow-hidden bg-muted shrink-0">
-                      {property?.coverImage || property?.photos?.[0] ? (
+                      {getPropertyImage(property) ? (
                         <img 
-                          src={pb.files.getUrl(property, property.coverImage || property.photos[0])} 
+                          src={getPropertyImage(property)} 
                           alt={property.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
@@ -134,7 +133,7 @@ const GuestBookingsPage = () => {
                             {booking.propertyName || property?.title}
                           </h3>
                           <span className="font-mono text-xs font-bold text-muted-foreground bg-muted px-2.5 py-1 rounded-md shrink-0 ml-4 hidden sm:block">
-                            ID: {booking.id.slice(0, 8).toUpperCase()}
+                            ID: {getEntityId(booking).slice(0, 8).toUpperCase()}
                           </span>
                         </div>
                         

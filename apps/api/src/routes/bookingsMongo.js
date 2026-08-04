@@ -6,6 +6,7 @@ import {
   updateBooking,
   deleteBooking,
 } from "../controllers/bookingController.js";
+import { bookingUpload } from "../middleware/uploads.js";
 
 const router = express.Router();
 
@@ -13,9 +14,9 @@ router.get("/", getBookings);
 
 router.get("/:id", getBookingById);
 
-router.post("/", createBooking);
+router.post("/", bookingUpload, createBooking);
 
-router.put("/:id", updateBooking);
+router.put("/:id", bookingUpload, updateBooking);
 
 router.delete("/:id", deleteBooking);
 

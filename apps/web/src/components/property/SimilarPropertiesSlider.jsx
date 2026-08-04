@@ -3,31 +3,72 @@ import { Link } from 'react-router-dom';
 import { Star, MapPin } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
-import pb from '@/lib/pocketbaseClient.js';
 import { formatCurrency } from '@/lib/bookingUtils.js';
 import PropertyCardSkeleton from '@/components/PropertyCardSkeleton.jsx';
+import apiServerClient from '@/lib/apiServerClient.js';
+import {
+  getEntityId,
+  getPropertyImage,
+  getPropertyRating,
+} from '@/lib/propertyMappers.js';
 
 export const SimilarPropertiesSlider = ({ currentPropertyId, propertyType }) => {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!propertyType || !currentPropertyId) {
+      setProperties([]);
+      setLoading(false);
+      return;
+    }
+
     const fetchSimilar = async () => {
       try {
-        const records = await pb.collection('properties').getList(1, 6, {
-          filter: `propertyType='${propertyType}' && approvalStatus='approved' && id!='${currentPropertyId}'`,
-          $autoCancel: false
-        });
-        setProperties(records.items);
+        const response = await apiServerClient.fetch('/properties');
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch similar properties');
+        }
+
+        const records = await response.json();
+        const normalizedPropertyType = String(propertyType || '').toLowerCase();
+        const similarProperties = (Array.isArray(records) ? records : [])
+          .filter((property) => {
+            const candidateId = getEntityId(property);
+            const candidateType = String(property?.propertyType || '').toLowerCase();
+            const approvalStatus = String(property?.approvalStatus || '').toLowerCase();
+            const status = String(property?.status || '').toLowerCase();
+
+            if (!candidateId || candidateId === currentPropertyId) {
+              return false;
+            }
+
+            if (normalizedPropertyType && candidateType !== normalizedPropertyType) {
+              return false;
+            }
+
+            if (approvalStatus && approvalStatus !== 'approved') {
+              return false;
+            }
+
+            if (status && !['live', 'approved', 'published'].includes(status)) {
+              return false;
+            }
+
+            return true;
+          })
+          .slice(0, 6);
+
+        setProperties(similarProperties);
       } catch (err) {
         console.error("Failed to fetch similar properties", err);
       } finally {
         setLoading(false);
       }
     };
-    if (propertyType && currentPropertyId) {
-      fetchSimilar();
-    }
+    setLoading(true);
+    fetchSimilar();
   }, [propertyType, currentPropertyId]);
 
   if (loading) {
@@ -51,23 +92,19 @@ export const SimilarPropertiesSlider = ({ currentPropertyId, propertyType }) => 
       >
         <CarouselContent className="-ml-4">
           {properties.map((property) => {
-            const imageUrl = property.photos && property.photos.length > 0
-              ? pb.files.getUrl(property, property.photos[0], { thumb: '600x400' })
-              : 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=600&q=80';
-
             return (
-              <CarouselItem key={property.id} className="pl-4 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
-                <Link to={`/property/${property.id}`}>
+              <CarouselItem key={getEntityId(property)} className="pl-4 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+                <Link to={`/property/${getEntityId(property)}`}>
                   <Card className="overflow-hidden border-none shadow-sm hover:shadow-hover transition-all duration-300 group h-full bg-card">
                     <div className="aspect-[4/3] relative overflow-hidden rounded-t-2xl">
                       <img 
-                        src={imageUrl} 
+                        src={getPropertyImage(property)} 
                         alt={property.title}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                       />
                       <div className="absolute top-3 right-3 bg-background/90 backdrop-blur-sm px-2 py-1 rounded-md flex items-center gap-1 text-sm font-medium shadow-sm">
                         <Star className="w-3.5 h-3.5 fill-foreground text-foreground" />
-                        {property.rating || 'New'}
+                        {getPropertyRating(property)}
                       </div>
                     </div>
                     <CardContent className="p-4">

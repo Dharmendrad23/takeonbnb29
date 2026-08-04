@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet';
-import pb from '@/lib/pocketbaseClient.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import HostDashboardLayout from '@/components/HostDashboardLayout.jsx';
 import { Home, CalendarCheck, DollarSign, Star } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatCurrency } from '@/lib/bookingUtils.js';
+import { getEntityId } from '@/lib/propertyMappers.js';
+import { listBookings, listProperties } from '@/lib/dataApi.js';
 
 const HostDashboardHome = () => {
   const { currentUser } = useAuth();
@@ -15,16 +16,22 @@ const HostDashboardHome = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [propsRes, bookingsRes] = await Promise.all([
-          pb.collection('properties').getList(1, 100, { filter: `hostId="${currentUser.id}"`, $autoCancel: false }),
-          pb.collection('bookings').getList(1, 1000, { filter: `propertyId.hostId="${currentUser.id}"`, $autoCancel: false })
+        const [allProperties, allBookings] = await Promise.all([
+          listProperties(),
+          listBookings(),
         ]);
+        const hostId = currentUser?.id || currentUser?._id || '';
+        const propsRes = allProperties.filter((property) => String(property.hostId || '') === hostId);
+        const bookingsRes = allBookings.filter((booking) => {
+          const property = booking.property || booking.propertyId;
+          return String(property?.hostId || '') === hostId;
+        });
         
-        const totalEarnings = bookingsRes.items.reduce((sum, b) => sum + (b.totalPrice || 0), 0);
-        const activeBookings = bookingsRes.items.filter(b => b.status === 'confirmed' || b.status === 'checked-in').length;
+        const totalEarnings = bookingsRes.reduce((sum, b) => sum + (b.totalPrice || 0), 0);
+        const activeBookings = bookingsRes.filter(b => b.status === 'confirmed' || b.status === 'checked-in').length;
         
         setStats({
-          props: propsRes.totalItems,
+          props: propsRes.length,
           bookings: activeBookings,
           earnings: totalEarnings,
           rating: 4.8 // Mock average for display

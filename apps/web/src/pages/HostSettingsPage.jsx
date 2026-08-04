@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Helmet } from 'react-helmet';
-import pb from '@/lib/pocketbaseClient.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import HostDashboardLayout from '@/components/HostDashboardLayout.jsx';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import { updateUser } from '@/lib/dataApi.js';
 
 const HostSettingsPage = () => {
   const { currentUser } = useAuth();
@@ -17,7 +17,7 @@ const HostSettingsPage = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await pb.collection('users').update(currentUser.id, { name, bio }, { $autoCancel: false });
+      await updateUser(currentUser.id, { name, bio });
       toast.success('Host profile updated');
     } catch (err) {
       toast.error('Failed to update profile');

@@ -23,7 +23,7 @@ const userSchema = new mongoose.Schema(
 
     role: {
       type: String,
-      enum: ["guest", "host", "admin"],
+      enum: ["guest", "host", "admin", "manager"],
       default: "guest",
     },
 
@@ -41,9 +41,14 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    bio: {
+      type: String,
+      default: "",
+    },
   },
   {
     timestamps: true,
+    strict: false,
   }
 );
 

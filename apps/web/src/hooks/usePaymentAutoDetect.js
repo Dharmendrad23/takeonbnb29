@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import pb from '@/lib/pocketbaseClient.js';
 import { toast } from 'sonner';
+import { getBooking, updateBooking } from '@/lib/dataApi.js';
 
 export const usePaymentAutoDetect = (bookingId) => {
   const [isVerified, setIsVerified] = useState(false);
@@ -14,7 +14,7 @@ export const usePaymentAutoDetect = (bookingId) => {
 
     const checkPaymentStatus = async () => {
       try {
-        const record = await pb.collection('bookings').getOne(bookingId, { $autoCancel: false });
+        const record = await getBooking(bookingId);
         
         if (record.paymentStatus === 'verified') {
           setIsVerified(true);
@@ -23,9 +23,9 @@ export const usePaymentAutoDetect = (bookingId) => {
           
           // Automatically update bookingStatus to confirmed if not already done by the backend hook
           if (record.bookingStatus !== 'confirmed') {
-            await pb.collection('bookings').update(bookingId, { 
+            await updateBooking(bookingId, { 
               bookingStatus: 'confirmed' 
-            }, { $autoCancel: false });
+            });
           }
           
           toast.success('Payment Confirmed!', {

@@ -5,16 +5,14 @@ import { Button } from '@/components/ui/button';
 import StatusBadge from './StatusBadge';
 import { formatDateRange } from '@/lib/bookingUtils';
 import { Calendar, Users } from 'lucide-react';
-import pb from '@/lib/pocketbaseClient';
+import { getEntityId, getPropertyImage } from '@/lib/propertyMappers.js';
 
 const BookingCard = ({ booking, onReview, onCancel }) => {
-  const property = booking.expand?.propertyId;
+  const property = booking.property || booking.propertyId;
   
   if (!property) return null;
 
-  const imageUrl = property.photos && property.photos.length > 0
-    ? pb.files.getUrl(property, property.photos[0])
-    : 'https://images.unsplash.com/photo-1568605114967-8130f3a36994';
+  const imageUrl = getPropertyImage(property) || 'https://images.unsplash.com/photo-1568605114967-8130f3a36994';
 
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-all duration-300">
@@ -53,7 +51,7 @@ const BookingCard = ({ booking, onReview, onCancel }) => {
             </div>
             <div className="flex space-x-2">
               <Button variant="outline" asChild>
-                <Link to={`/property/${property.id}`}>View Property</Link>
+                <Link to={`/property/${getEntityId(property)}`}>View Property</Link>
               </Button>
               {booking.status === 'completed' && onReview && (
                 <Button onClick={() => onReview(booking)}>Leave Review</Button>

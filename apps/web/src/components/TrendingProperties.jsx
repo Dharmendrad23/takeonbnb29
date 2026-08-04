@@ -4,7 +4,8 @@ import useEmblaCarousel from 'embla-carousel-react';
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import pb from '@/lib/pocketbaseClient.js';
+import { listProperties } from '@/lib/dataApi.js';
+import { getEntityId, isLiveProperty } from '@/lib/propertyMappers.js';
 import PropertyCard from './PropertyCard.jsx';
 import PropertyCardSkeleton from './PropertyCardSkeleton.jsx';
 
@@ -18,12 +19,8 @@ const TrendingProperties = () => {
     const fetchProperties = async () => {
       try {
         setLoading(true);
-        const records = await pb.collection('properties').getList(1, 50, {
-          sort: '-created',
-          filter: 'status="Live"',
-          $autoCancel: false
-        });
-        setProperties(records.items || []);
+        const records = await listProperties();
+        setProperties(records.filter((property) => isLiveProperty(property)).slice(0, 50));
       } catch (err) {
         console.error('Error fetching trending properties:', err);
         setError('Failed to load trending properties.');
@@ -33,21 +30,8 @@ const TrendingProperties = () => {
     };
 
     fetchProperties();
-
-    // Real-time subscription
-    pb.collection('properties').subscribe('*', function (e) {
-      if (e.action === 'create' && e.record.status === 'Live') {
-        setProperties(prev => [e.record, ...prev].slice(0, 50));
-      } else if (e.action === 'update') {
-        setProperties(prev => prev.map(p => p.id === e.record.id ? e.record : p));
-      } else if (e.action === 'delete') {
-        setProperties(prev => prev.filter(p => p.id !== e.record.id));
-      }
-    });
-
-    return () => {
-      pb.collection('properties').unsubscribe('*');
-    };
+    const intervalId = window.setInterval(fetchProperties, 30000);
+    return () => window.clearInterval(intervalId);
   }, []);
 
   const getSafeProperty = (prop) => {
@@ -115,7 +99,7 @@ const TrendingProperties = () => {
                 if (!safeProp) return null;
                 return (
                   <motion.div 
-                    key={safeProp.id || `prop-${idx}`} 
+                    key={getEntityId(safeProp) || `prop-${idx}`} 
                     className="embla__slide"
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}

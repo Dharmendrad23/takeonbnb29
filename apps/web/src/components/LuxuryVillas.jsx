@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import PropertyGrid from './PropertyGrid.jsx';
-import pb from '@/lib/pocketbaseClient.js';
+import { listProperties } from '@/lib/dataApi.js';
+import { isLiveProperty } from '@/lib/propertyMappers.js';
 
 export default function LuxuryVillas() {
   const [properties, setProperties] = useState([]);
@@ -13,12 +14,13 @@ export default function LuxuryVillas() {
       try {
         setLoading(true);
         setError(null);
-        const records = await pb.collection('properties').getList(1, 8, {
-          filter: 'propertyType="Villas" && status="Live"',
-          sort: '-created',
-          $autoCancel: false
-        });
-        setProperties(records.items || []);
+        const records = await listProperties();
+        setProperties(
+          records
+            .filter((property) => isLiveProperty(property))
+            .filter((property) => String(property.propertyType || '').toLowerCase() === 'villas')
+            .slice(0, 8)
+        );
       } catch (err) {
         console.error('Error fetching luxury villas:', err);
         setError('Failed to load luxury villas. Please try again later.');

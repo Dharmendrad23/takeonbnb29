@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import RatingStars from './RatingStars';
 import { format } from 'date-fns';
-import pb from '@/lib/pocketbaseClient';
+import { getEntityId, getHostAvatarUrl, getHostName } from '@/lib/propertyMappers.js';
 
 const ReviewList = ({ reviews }) => {
   if (!reviews || reviews.length === 0) {
@@ -17,16 +17,16 @@ const ReviewList = ({ reviews }) => {
   return (
     <div className="space-y-4">
       {reviews.map((review) => {
-        const guest = review.expand?.guestId;
-        const avatarUrl = guest?.avatar ? pb.files.getUrl(guest, guest.avatar) : null;
-        const initials = guest?.name ? guest.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'U';
+        const guest = review.guest || review.user || review.guestId;
+        const avatarUrl = getHostAvatarUrl(guest);
+        const initials = getHostName(guest).split(' ').map(n => n[0]).join('').toUpperCase() || 'U';
 
         return (
-          <Card key={review.id}>
+          <Card key={getEntityId(review)}>
             <CardContent className="p-6">
               <div className="flex items-start space-x-4">
                 <Avatar className="rounded-xl">
-                  {avatarUrl && <AvatarImage src={avatarUrl} alt={guest?.name} />}
+                  {avatarUrl && <AvatarImage src={avatarUrl} alt={getHostName(guest)} />}
                   <AvatarFallback className="rounded-xl bg-primary text-primary-foreground">
                     {initials}
                   </AvatarFallback>
@@ -34,7 +34,7 @@ const ReviewList = ({ reviews }) => {
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-2">
                     <div>
-                      <h4 className="font-semibold">{guest?.name || 'Anonymous'}</h4>
+                      <h4 className="font-semibold">{getHostName(guest) || 'Anonymous'}</h4>
                       <p className="text-sm text-muted-foreground">
                         {format(new Date(review.createdAt), 'MMM d, yyyy')}
                       </p>

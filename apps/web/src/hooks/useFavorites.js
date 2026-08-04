@@ -1,7 +1,23 @@
 import { useState, useEffect } from 'react';
-import pb from '@/lib/pocketbaseClient.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { toast } from 'sonner';
+
+const getWishlistStorageKey = (userId) => `wishlist:${userId}`;
+
+const readFavorites = (userId) => {
+  if (!userId) {
+    return [];
+  }
+
+  try {
+    const storedValue = localStorage.getItem(getWishlistStorageKey(userId));
+    const parsedValue = JSON.parse(storedValue || '[]');
+    return Array.isArray(parsedValue) ? parsedValue : [];
+  } catch (error) {
+    console.error('Error reading favorites from storage:', error);
+    return [];
+  }
+};
 
 export function useFavorites() {
   const { currentUser } = useAuth();
@@ -13,19 +29,7 @@ export function useFavorites() {
       return;
     }
 
-    const fetchFavorites = async () => {
-      try {
-        const records = await pb.collection('favorites').getFullList({
-          filter: `guestId = "${currentUser.id}"`,
-          $autoCancel: false
-        });
-        setFavorites(records.map(r => r.propertyId));
-      } catch (error) {
-        console.error('Error fetching favorites:', error);
-      }
-    };
-
-    fetchFavorites();
+    setFavorites(readFavorites(currentUser.id));
   }, [currentUser]);
 
   const toggleFavorite = async (propertyId) => {
@@ -36,22 +40,18 @@ export function useFavorites() {
 
     try {
       const isFav = favorites.includes(propertyId);
-      
-      if (isFav) {
-        // Find and delete
-        const record = await pb.collection('favorites').getFirstListItem(`guestId="${currentUser.id}" && propertyId="${propertyId}"`, { $autoCancel: false });
-        await pb.collection('favorites').delete(record.id, { $autoCancel: false });
-        setFavorites(prev => prev.filter(id => id !== propertyId));
-        toast.success('Removed from favorites');
-      } else {
-        // Create
-        await pb.collection('favorites').create({
-          guestId: currentUser.id,
-          propertyId: propertyId
-        }, { $autoCancel: false });
-        setFavorites(prev => [...prev, propertyId]);
-        toast.success('Saved to favorites');
-      }
+      const nextFavorites = isFav
+        ? favorites.filter((id) => id !== propertyId)
+        : [...favorites, propertyId];
+
+      localStorage.setItem(
+        getWishlistStorageKey(currentUser.id),
+        JSON.stringify(nextFavorites)
+      );
+
+      setFavorites(nextFavorites);
+      toast.success(isFav ? 'Removed from favorites' : 'Saved to favorites');
+
       return !isFav;
     } catch (error) {
       console.error('Error toggling favorite:', error);

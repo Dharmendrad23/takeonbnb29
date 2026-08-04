@@ -14,7 +14,7 @@ export const validateBookingForm = (formData) => {
   if (!formData.guestMobileNumber) {
     errors.guestMobileNumber = "Mobile number is required.";
   } else {
-    // Matches PocketBase validation pattern and ensures country code
+    // Keeps the historical phone validation shape and ensures country code
     const phonePattern = /^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/;
     if (!phonePattern.test(formData.guestMobileNumber.replace(/\s+/g, ''))) {
       errors.guestMobileNumber = "Invalid phone format. Please include country code.";

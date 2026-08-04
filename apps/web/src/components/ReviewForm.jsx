@@ -4,10 +4,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import RatingStars from '@/components/RatingStars.jsx';
-import pb from '@/lib/pocketbaseClient.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import { createReview } from '@/lib/dataApi.js';
 
 export const ReviewForm = ({ propertyId, onReviewAdded }) => {
   const { currentUser } = useAuth();
@@ -44,12 +44,12 @@ export const ReviewForm = ({ propertyId, onReviewAdded }) => {
     try {
       const reviewText = `${title.trim()}\n\n${comment.trim()}`;
       
-      await pb.collection('reviews').create({
+      await createReview({
         propertyId,
         guestId: currentUser.id,
         rating,
         reviewText
-      }, { $autoCancel: false });
+      });
 
       toast.success('Review submitted successfully!');
       setRating(0);

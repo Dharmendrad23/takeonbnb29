@@ -7,8 +7,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FormFieldWrapper } from '@/components/FormFieldWrapper.jsx';
 import { toast } from 'sonner';
-import pb from '@/lib/pocketbaseClient.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
+import { createProperty, updateProperty } from '@/lib/dataApi.js';
+import { getEntityId } from '@/lib/propertyMappers.js';
 
 const HostPropertyForm = ({ property = null, onClose, onSuccess }) => {
   const { currentUser } = useAuth();
@@ -39,15 +40,15 @@ const HostPropertyForm = ({ property = null, onClose, onSuccess }) => {
         bedrooms: Number(data.bedrooms),
         bathrooms: Number(data.bathrooms),
         guestCapacity: Number(data.guestCapacity),
-        hostId: currentUser.id,
+        hostId: getEntityId(currentUser),
         status: property ? property.status : 'Draft',
       };
 
-      if (property?.id) {
-        await pb.collection('properties').update(property.id, payload, { $autoCancel: false });
+      if (property?.id || property?._id) {
+        await updateProperty(getEntityId(property), payload);
         toast.success('Property updated successfully');
       } else {
-        await pb.collection('properties').create(payload, { $autoCancel: false });
+        await createProperty(payload);
         toast.success('Property added successfully');
       }
       onSuccess();
@@ -162,7 +163,7 @@ const HostPropertyForm = ({ property = null, onClose, onSuccess }) => {
             />
           </FormFieldWrapper>
           
-          {/* Note: Photos upload skipped for brevity in this simple form, could be added via file input handling pocketbase multipart form data */}
+          {/* Note: Photos upload skipped for brevity in this simple form, could be added via file input handling multipart form data */}
           <div className="text-sm text-muted-foreground bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg border border-amber-200 dark:border-amber-900/50">
             Note: Photo upload functionality is managed via the detailed property editor after initial creation.
           </div>

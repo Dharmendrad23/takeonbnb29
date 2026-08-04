@@ -3,11 +3,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, Download, Calendar, Users, MapPin } from 'lucide-react';
 import { motion } from 'framer-motion';
-import pb from '@/lib/pocketbaseClient.js';
 import apiServerClient from '@/lib/apiServerClient.js';
 import { formatCurrencyINR, formatDate } from '@/lib/bookingUtils.js';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { getBooking } from '@/lib/dataApi.js';
+import { getEntityId, getPropertyImage } from '@/lib/propertyMappers.js';
 
 const PaymentSuccessModal = ({ bookingId, isOpen, onClose }) => {
   const [booking, setBooking] = useState(null);
@@ -18,10 +19,7 @@ const PaymentSuccessModal = ({ bookingId, isOpen, onClose }) => {
     if (isOpen && bookingId) {
       const fetchBooking = async () => {
         try {
-          const record = await pb.collection('bookings').getOne(bookingId, {
-            expand: 'propertyId',
-            $autoCancel: false
-          });
+          const record = await getBooking(bookingId);
           setBooking(record);
         } catch (error) {
           console.error('Error fetching booking:', error);
@@ -99,15 +97,15 @@ const PaymentSuccessModal = ({ bookingId, isOpen, onClose }) => {
             <div className="space-y-6">
               <div className="text-center">
                 <p className="text-sm text-muted-foreground font-bold uppercase tracking-wider">Confirmation Number</p>
-                <p className="font-mono text-lg font-bold text-foreground">{booking.id.toUpperCase()}</p>
+                <p className="font-mono text-lg font-bold text-foreground">{getEntityId(booking).toUpperCase()}</p>
               </div>
 
               <div className="bg-muted/30 rounded-2xl p-4 border border-border">
                 <div className="flex items-center gap-4 mb-4">
                   <div className="w-16 h-16 rounded-xl bg-muted overflow-hidden shrink-0">
-                    {booking.expand?.propertyId?.coverImage && (
+                    {getPropertyImage(booking.property || booking.propertyId) && (
                       <img 
-                        src={pb.files.getUrl(booking.expand.propertyId, booking.expand.propertyId.coverImage)} 
+                        src={getPropertyImage(booking.property || booking.propertyId)} 
                         alt="Property" 
                         className="w-full h-full object-cover"
                       />
@@ -116,7 +114,7 @@ const PaymentSuccessModal = ({ bookingId, isOpen, onClose }) => {
                   <div>
                     <h3 className="font-bold text-foreground line-clamp-1">{booking.propertyName}</h3>
                     <p className="text-sm text-muted-foreground flex items-center mt-1">
-                      <MapPin className="w-3.5 h-3.5 mr-1" /> {booking.expand?.propertyId?.location || 'Location'}
+                      <MapPin className="w-3.5 h-3.5 mr-1" /> {booking.property?.location || booking.propertyId?.location || 'Location'}
                     </p>
                   </div>
                 </div>
@@ -137,7 +135,7 @@ const PaymentSuccessModal = ({ bookingId, isOpen, onClose }) => {
                 <Button onClick={handleDownloadReceipt} variant="outline" className="w-full rounded-xl h-12 font-bold border-border hover:bg-muted">
                   <Download className="w-4 h-4 mr-2" /> Download Receipt
                 </Button>
-                <Button onClick={() => { onClose(); navigate(`/guest/bookings/${booking.id}`); }} className="w-full rounded-xl h-12 font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-brand">
+                <Button onClick={() => { onClose(); navigate(`/guest/bookings/${getEntityId(booking)}`); }} className="w-full rounded-xl h-12 font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-brand">
                   View Booking Details
                 </Button>
               </div>

@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { MapPin, Calendar, Users, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import pb from '@/lib/pocketbaseClient.js';
+import { listProperties } from '@/lib/dataApi.js';
+import { isLiveProperty } from '@/lib/propertyMappers.js';
 
 const HeroBanner = () => {
   const navigate = useNavigate();
@@ -20,14 +21,15 @@ const HeroBanner = () => {
   useEffect(() => {
     const fetchCities = async () => {
       try {
-        const records = await pb.collection('properties').getFullList({
-          filter: 'status="Live"',
-          fields: 'location',
-          $autoCancel: false,
-        });
+        const records = await listProperties();
 
         const uniqueCities = Array.from(
-          new Set(records.map(record => record.location?.trim()).filter(Boolean))
+          new Set(
+            records
+              .filter((record) => isLiveProperty(record))
+              .map((record) => record.location?.trim())
+              .filter(Boolean)
+          )
         ).sort((a, b) => a.localeCompare(b));
 
         setCities(uniqueCities);

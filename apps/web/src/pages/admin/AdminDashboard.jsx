@@ -5,9 +5,10 @@ import { Users, Home, Calendar, IndianRupee, Activity, Clock, CheckCircle2, Arro
 import { useRealtimeDashboardStats } from '@/hooks/useRealtimeDashboardStats.js';
 import { formatCurrencyINR, formatDate } from '@/lib/bookingUtils.js';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from 'recharts';
-import pb from '@/lib/pocketbaseClient.js';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { listBookings } from '@/lib/dataApi.js';
+import { getEntityId } from '@/lib/propertyMappers.js';
 
 const StatCard = ({ title, value, icon: Icon, colorClass, isLoading, trend }) => (
   <div className="bg-card border border-border p-6 rounded-3xl shadow-sm transition-all duration-300 hover:shadow-md relative overflow-hidden group">
@@ -47,11 +48,8 @@ const AdminDashboard = () => {
   useEffect(() => {
     const fetchRecent = async () => {
       try {
-        const records = await pb.collection('bookings').getList(1, 5, {
-          sort: '-created',
-          $autoCancel: false
-        });
-        setRecentBookings(records.items);
+        const records = await listBookings({ sort: '-createdAt' });
+        setRecentBookings(records.slice(0, 5));
       } catch (err) {
         console.error(err);
       }
@@ -157,11 +155,11 @@ const AdminDashboard = () => {
                 const status = booking.bookingStatus || booking.status;
                 const isPending = status === 'pending_verification';
                 return (
-                  <div key={booking.id} className="flex items-start justify-between group">
+                  <div key={getEntityId(booking)} className="flex items-start justify-between group">
                     <div className="min-w-0 flex-1">
                       <p className="font-bold text-foreground truncate group-hover:text-primary transition-colors">{booking.propertyName}</p>
                       <p className="text-xs text-muted-foreground font-medium mt-1 truncate">{booking.guestFullName}</p>
-                      <p className="text-[10px] text-muted-foreground mt-1 uppercase tracking-wider">{formatDate(booking.created)}</p>
+                      <p className="text-[10px] text-muted-foreground mt-1 uppercase tracking-wider">{formatDate(booking.createdAt || booking.created)}</p>
                     </div>
                     <div className="flex flex-col items-end shrink-0 ml-3">
                       <span className="font-extrabold text-sm text-foreground">{formatCurrencyINR(booking.totalAmount || booking.totalPrice)}</span>

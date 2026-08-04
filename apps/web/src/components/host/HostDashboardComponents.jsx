@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { format } from 'date-fns';
+import { getEntityId } from '@/lib/propertyMappers.js';
 
 export const DashboardCard = ({ title, value, trend, trendValue, icon: Icon }) => (
   <Card className="shadow-sm border-border">
@@ -93,9 +94,9 @@ export const BookingsTable = ({ bookings }) => {
               </TableRow>
             )}
             {bookings.slice(0, 5).map(b => (
-              <TableRow key={b.id} className="hover:bg-muted/30 transition-colors">
-                <TableCell className="font-medium text-foreground">{b.guestFullName || b.expand?.guestId?.name || 'Guest'}</TableCell>
-                <TableCell className="text-muted-foreground">{b.expand?.propertyId?.title || 'Unknown Property'}</TableCell>
+              <TableRow key={getEntityId(b)} className="hover:bg-muted/30 transition-colors">
+                <TableCell className="font-medium text-foreground">{b.guestFullName || b.guest?.name || 'Guest'}</TableCell>
+                <TableCell className="text-muted-foreground">{b.propertyName || b.property?.title || b.propertyId?.title || 'Unknown Property'}</TableCell>
                 <TableCell className="text-sm text-muted-foreground">
                   {format(new Date(b.checkInDate), 'MMM d')} - {format(new Date(b.checkOutDate), 'MMM d')}
                 </TableCell>

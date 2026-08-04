@@ -8,13 +8,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext.jsx';
-import pb from '@/lib/pocketbaseClient.js';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/bookingUtils.js';
 import { validateBookingForm } from '@/lib/validateBookingForm.js';
 import { FormFieldWrapper } from '@/components/FormFieldWrapper.jsx';
 import { PhoneNumberInput } from '@/components/PhoneNumberInput.jsx';
 import { BookingSuccessModal } from '@/components/BookingSuccessModal.jsx';
+import { createBooking, listProperties } from '@/lib/dataApi.js';
+import { getEntityId } from '@/lib/propertyMappers.js';
 
 export const BookingForm = ({ propertyId, initialPrice = 0 }) => {
   const { currentUser } = useAuth();
@@ -46,10 +47,10 @@ export const BookingForm = ({ propertyId, initialPrice = 0 }) => {
   useEffect(() => {
     const fetchProperties = async () => {
       try {
-        const records = await pb.collection('properties').getFullList({ $autoCancel: false });
+        const records = await listProperties();
         setProperties(records);
         if (propertyId) {
-          const activeProp = records.find(p => p.id === propertyId);
+          const activeProp = records.find(p => getEntityId(p) === propertyId);
           setSelectedProperty(activeProp);
         }
       } catch (error) {
@@ -61,7 +62,7 @@ export const BookingForm = ({ propertyId, initialPrice = 0 }) => {
 
   useEffect(() => {
     if (formData.propertyId) {
-      const activeProp = properties.find(p => p.id === formData.propertyId);
+      const activeProp = properties.find(p => getEntityId(p) === formData.propertyId);
       setSelectedProperty(activeProp);
     }
   }, [formData.propertyId, properties]);
@@ -140,7 +141,7 @@ export const BookingForm = ({ propertyId, initialPrice = 0 }) => {
 
       const bookingData = {
         propertyId: formData.propertyId,
-        guestId: currentUser?.id || '',
+        guestId: getEntityId(currentUser) || '',
         guestFullName: formData.guestFullName,
         guestEmail: formData.guestEmail,
         guestMobileNumber: formData.guestMobileNumber,
@@ -156,7 +157,7 @@ export const BookingForm = ({ propertyId, initialPrice = 0 }) => {
         paymentStatus: 'pending'
       };
 
-      const record = await pb.collection('bookings').create(bookingData, { $autoCancel: false });
+      const record = await createBooking(bookingData);
       
       setCompletedBooking(record);
       setSuccessModalOpen(true);
@@ -206,7 +207,7 @@ export const BookingForm = ({ propertyId, initialPrice = 0 }) => {
                   </SelectTrigger>
                   <SelectContent>
                     {properties.map(p => (
-                      <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>
+                      <SelectItem key={getEntityId(p)} value={getEntityId(p)}>{p.title}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
