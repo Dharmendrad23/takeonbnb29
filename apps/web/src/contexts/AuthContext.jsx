@@ -102,22 +102,10 @@ const signup = async (email, password, name, userType = "guest") => {
     const digitsOnlyPhone = trimmedPhone.replace(/\D/g, '');
     const recipientPhone = trimmedPhone.startsWith('+') ? trimmedPhone : `+91${digitsOnlyPhone}`;
     const messageBody = `Your TakeOnBnB verification code is ${otpCode}. It expires in 5 minutes. Do not share this code with anyone.`;
-    const apiHost = `${window.location.protocol}//${window.location.hostname}:3001`;
 
-    const response = await fetch(`${apiHost}/notifications/send-sms`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ recipientPhone, messageBody }),
-    });
+    const response = await api.post('/notifications/send-sms', { recipientPhone, messageBody });
 
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => response.statusText);
-      throw new Error(`Unable to send OTP SMS: ${errorText || response.statusText}`);
-    }
-
-    return response.json();
+    return response.data;
   };
 
  const requestOTPCode = async (identifier) => {

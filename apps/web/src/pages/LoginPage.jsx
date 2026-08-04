@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { Mail, Lock, Phone, Loader2, KeyRound, Apple } from 'lucide-react';
 
 const LoginPage = () => {
+  const { login, requestOTP, loginWithOAuth2, currentUser: user } = useAuth();
   const [method, setMethod] = useState('email'); // 'email' or 'phone'
   const [loading, setLoading] = useState(false);
   const [otpStep, setOtpStep] = useState(false);
