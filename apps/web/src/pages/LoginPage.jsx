@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
@@ -9,41 +8,42 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Mail, Lock, Phone, Loader2, KeyRound, Apple } from 'lucide-react';
+import { Mail, Lock, Loader2, KeyRound } from 'lucide-react';
 
 const LoginPage = () => {
-  const { login, requestOTP, loginWithOAuth2, currentUser: user } = useAuth();
-  const [method, setMethod] = useState('email'); // 'email' or 'phone'
+  const { login, requestOTP, verifyOTP } = useAuth();
+  const [method, setMethod] = useState('email'); // 'email' or 'emailOtp'
   const [loading, setLoading] = useState(false);
   const [otpStep, setOtpStep] = useState(false);
-  
-  // Form values
+
+  // Email & Password
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [phone, setPhone] = useState('');
+
+  // Email OTP
+  const [otpEmail, setOtpEmail] = useState('');
   const [otpId, setOtpId] = useState(null);
   const [otpCode, setOtpCode] = useState('');
+
   const navigate = useNavigate();
   const location = useLocation();
 
   const handleSuccess = (user) => {
     toast.success('Logged in successfully');
     const destination =
-  location.state?.from?.pathname ||
-  (
-    user.role === 'admin'
-      ? '/admin'
-      : user.role === 'host'
-      ? '/host/dashboard'
-      : '/guest/dashboard'
-  );
+      location.state?.from?.pathname ||
+      (user.role === 'admin'
+        ? '/admin'
+        : user.role === 'host'
+        ? '/host/dashboard'
+        : '/guest/dashboard');
     navigate(destination, { replace: true });
   };
 
+  // --- Email + Password ---
   const handleEmailLogin = async (e) => {
     e.preventDefault();
     if (!email || !password) return;
-    
     setLoading(true);
     try {
       const authData = await login(email, password);
@@ -55,57 +55,49 @@ const LoginPage = () => {
     }
   };
 
-  const handlePhoneOTPRequest = async (e) => {
+  // --- Email OTP: step 1 — send OTP ---
+  const handleEmailOTPRequest = async (e) => {
     e.preventDefault();
-    if (phone.length !== 10) {
-      toast.error('Enter a valid 10-digit mobile number');
-      return;
-    }
-
+    if (!otpEmail) return;
     setLoading(true);
     try {
-      const id = await requestOTP(phone);
+      const id = await requestOTP(otpEmail);
       setOtpId(id);
       setOtpStep(true);
-      toast.success('OTP sent to your mobile');
+      toast.success('OTP sent to your email');
     } catch (error) {
-      toast.error(error.message);
+      toast.error(error.message || 'Failed to send OTP');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAppleLogin = async () => {
-    setLoading(true);
-    try {
-      const authData = await loginWithOAuth2('apple');
-      handleSuccess(authData.record);
-    } catch (error) {
-      console.error('Apple login failed:', error);
-      toast.error(error.message || 'Apple login failed. Check backend OAuth configuration.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handlePhoneOTPVerify = async (e) => {
+  // --- Email OTP: step 2 — verify OTP ---
+  const handleEmailOTPVerify = async (e) => {
     e.preventDefault();
     if (otpCode.length !== 6) return;
-
     setLoading(true);
     try {
-      handleSuccess(user);
+      const result = await verifyOTP(otpId, otpCode);
+      handleSuccess(result.record || result);
     } catch (error) {
-      toast.error(error.message);
+      toast.error(error.message || 'Invalid OTP');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleTabChange = (val) => {
+    setMethod(val);
+    setOtpStep(false);
+    setOtpCode('');
+    setOtpId(null);
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4 py-12 pt-28">
       <Helmet><title>Log in | TakeOn BnB</title></Helmet>
-      
+
       <Card className="w-full max-w-md shadow-xl border-border rounded-2xl overflow-hidden">
         <CardHeader className="text-center pb-6">
           <CardTitle className="text-3xl font-extrabold tracking-tight text-foreground">Welcome Back</CardTitle>
@@ -113,32 +105,17 @@ const LoginPage = () => {
             Log in to manage your bookings and properties
           </CardDescription>
         </CardHeader>
-        
+
         <CardContent>
           {!otpStep ? (
-            <Tabs value={method} onValueChange={setMethod} className="w-full">
+            <Tabs value={method} onValueChange={handleTabChange} className="w-full">
               <TabsList className="grid w-full grid-cols-2 p-1 bg-muted rounded-xl h-12 mb-6">
                 <TabsTrigger value="email" className="rounded-lg font-bold text-sm">Email & Password</TabsTrigger>
-          
+                <TabsTrigger value="emailOtp" className="rounded-lg font-bold text-sm">Email OTP</TabsTrigger>
               </TabsList>
 
+              {/* Tab 1: Email + Password */}
               <TabsContent value="email" className="animate-in fade-in">
-                <div className="space-y-4 mb-6">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full h-12 text-base font-bold rounded-xl border-border text-foreground hover:bg-muted"
-                    onClick={handleAppleLogin}
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                    ) : (
-                      <Apple className="w-5 h-5 mr-2" />
-                    )}
-                    Continue with Apple
-                  </Button>
-                </div>
                 <form onSubmit={handleEmailLogin} className="space-y-5">
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-foreground">Email Address</label>
@@ -156,9 +133,7 @@ const LoginPage = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <label className="text-sm font-bold text-foreground">Password</label>
-                    </div>
+                    <label className="text-sm font-bold text-foreground">Password</label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-3.5 h-5 w-5 text-muted-foreground" />
                       <Input
@@ -172,8 +147,8 @@ const LoginPage = () => {
                     </div>
                   </div>
 
-                  <Button 
-                    type="submit" 
+                  <Button
+                    type="submit"
                     className="w-full h-12 text-base font-bold rounded-xl mt-4"
                     disabled={loading || !email || !password}
                   >
@@ -182,26 +157,27 @@ const LoginPage = () => {
                 </form>
               </TabsContent>
 
-              <TabsContent value="phone" className="animate-in fade-in">
-                <form onSubmit={handlePhoneOTPRequest} className="space-y-5">
+              {/* Tab 2: Email OTP */}
+              <TabsContent value="emailOtp" className="animate-in fade-in">
+                <form onSubmit={handleEmailOTPRequest} className="space-y-5">
                   <div className="space-y-2">
-                    <label className="text-sm font-bold text-foreground">Mobile Number</label>
+                    <label className="text-sm font-bold text-foreground">Email Address</label>
                     <div className="relative">
-                      <Phone className="absolute left-3 top-3.5 h-5 w-5 text-muted-foreground" />
+                      <Mail className="absolute left-3 top-3.5 h-5 w-5 text-muted-foreground" />
                       <Input
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                        type="email"
+                        value={otpEmail}
+                        onChange={(e) => setOtpEmail(e.target.value)}
                         className="pl-10 h-12"
-                        placeholder="10-digit mobile number"
+                        placeholder="Enter your email"
                         required
                       />
                     </div>
                   </div>
-                  <Button 
-                    type="submit" 
+                  <Button
+                    type="submit"
                     className="w-full h-12 text-base font-bold rounded-xl mt-4"
-                    disabled={loading || phone.length !== 10}
+                    disabled={loading || !otpEmail}
                   >
                     {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Send OTP'}
                   </Button>
@@ -209,14 +185,15 @@ const LoginPage = () => {
               </TabsContent>
             </Tabs>
           ) : (
-           <form onSubmit={handleEmailLogin} className="space-y-5">
+            /* OTP Verification Step */
+            <form onSubmit={handleEmailOTPVerify} className="space-y-5">
               <div className="text-center mb-6">
                 <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-4">
                   <KeyRound className="w-8 h-8" />
                 </div>
-                <h3 className="text-xl font-bold">Verify Mobile</h3>
+                <h3 className="text-xl font-bold">Verify Email</h3>
                 <p className="text-muted-foreground text-sm mt-2">
-                  Enter the 6-digit code sent to +91 {phone}
+                  Enter the 6-digit code sent to {otpEmail}
                 </p>
               </div>
 
@@ -227,29 +204,24 @@ const LoginPage = () => {
                 inputMode="numeric"
                 pattern="[0-9]*"
                 autoFocus
-                className="h-14 text-center text-2xl font-bold tracking-[0.5em]"
                 containerClassName="justify-center"
                 render={({ slots }) => (
                   <InputOTPGroup className="justify-center gap-2">
                     {slots.map((slot, index) => (
-                      <InputOTPSlot
-                        key={index}
-                        index={index}
-                        className="h-14 w-12 text-2xl font-bold"
-                      />
+                      <InputOTPSlot key={index} index={index} className="h-14 w-12 text-2xl font-bold" />
                     ))}
                   </InputOTPGroup>
                 )}
               />
 
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className="w-full h-12 text-base font-bold rounded-xl mt-4"
                 disabled={loading || otpCode.length !== 6}
               >
                 {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Verify & Log In'}
               </Button>
-              
+
               <div className="text-center mt-2">
                 <button type="button" onClick={() => setOtpStep(false)} className="text-xs text-muted-foreground hover:text-foreground underline">
                   Back
