@@ -1,7 +1,7 @@
 ﻿import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet";
-import api from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext.jsx";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -16,6 +16,7 @@ import { Mail, Lock, Loader2 } from "lucide-react";
 
 const HostLoginPage = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -25,20 +26,7 @@ const HostLoginPage = () => {
     try {
       setLoading(true);
 
-      const res = await api.post("/auth/login", {
-        email: email.trim().toLowerCase(),
-        password,
-      });
-
-      const token = res?.data?.token;
-      const user = res?.data?.user;
-
-      if (!token || !user) throw new Error("Invalid login response");
-
-      localStorage.setItem("token", token);
-      localStorage.setItem("authToken", token);
-      localStorage.setItem("user", JSON.stringify(user));
-      api.defaults.headers.common.Authorization = `Bearer ${token}`;
+      const { record: user } = await login(email.trim().toLowerCase(), password);
 
       if (user.role !== "host") {
         toast.error("This account is not a host account");
