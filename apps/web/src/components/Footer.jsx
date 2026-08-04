@@ -4,8 +4,11 @@ import { Link } from 'react-router-dom';
 import { Facebook, Instagram, Twitter, Linkedin, Mail, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useAdminAuth } from '@/contexts/AdminAuthContext.jsx';
 
 const Footer = () => {
+  const { isAuthenticated: isAdminAuthenticated } = useAdminAuth();
+
   return (
     <footer className="bg-[#111111] text-[#F5F5F5] pt-20 pb-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -34,7 +37,7 @@ const Footer = () => {
             <ul className="space-y-4">
               <li><Link to="/" className="text-sm text-gray-400 hover:text-white transition-colors">Home</Link></li>
               <li><Link to="/properties" className="text-sm text-gray-400 hover:text-white transition-colors">Properties</Link></li>
-              <li><Link to="/host/register" className="text-sm text-gray-400 hover:text-white transition-colors">Become a Host</Link></li>
+              <li><Link to="/host/login" className="text-sm text-gray-400 hover:text-white transition-colors">Become a Host</Link></li>
               <li><Link to="/explore" className="text-sm text-gray-400 hover:text-white transition-colors">Explore</Link></li>
               <li><Link to="/blog" className="text-sm text-gray-400 hover:text-white transition-colors">Blog</Link></li>
             </ul>
@@ -75,10 +78,16 @@ const Footer = () => {
           <p className="text-sm text-gray-500">
             © {new Date().getFullYear()} Take on BnB. All rights reserved.
           </p>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-6 flex-wrap justify-center md:justify-end">
             <Link to="/privacy" className="text-sm text-gray-500 hover:text-white transition-colors">Privacy Policy</Link>
             <Link to="/terms" className="text-sm text-gray-500 hover:text-white transition-colors">Terms of Service</Link>
             <Link to="/cancellation" className="text-sm text-gray-500 hover:text-white transition-colors">Cancellation Policy</Link>
+            <Link
+              to={isAdminAuthenticated ? '/admin' : '/admin/login'}
+              className="text-sm text-gray-500 hover:text-white transition-colors"
+            >
+              Admin Panel
+            </Link>
           </div>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { useAuth } from '@/contexts/AuthContext.jsx';
@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { Mail, Lock, Loader2 } from 'lucide-react';
 
 const LoginPage = () => {
-  const { login } = useAuth();
+  const { login, isAuthenticated, isHost } = useAuth();
   const [loading, setLoading] = useState(false);
 
   const [email, setEmail] = useState('');
@@ -17,6 +17,13 @@ const LoginPage = () => {
 
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Redirect already-authenticated users to their dashboard
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate(isHost ? '/host/dashboard' : '/guest/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, isHost, navigate]);
 
   const handleSuccess = (user) => {
     toast.success('Logged in successfully');
@@ -94,9 +101,9 @@ const LoginPage = () => {
           </form>
 
           <div className="mt-8 text-center text-sm">
-            <span className="text-muted-foreground">Don't have an account? </span>
-            <Link to="/signup" className="text-primary hover:underline font-bold">
-              Sign up today
+            <span className="text-muted-foreground">Want to list your property? </span>
+            <Link to="/host/login" className="text-primary hover:underline font-bold">
+              Become a Host
             </Link>
           </div>
         </CardContent>

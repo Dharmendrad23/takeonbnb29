@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 
@@ -7,7 +7,9 @@ const ProtectedRoute = ({ children, requireHost = false, requireGuest = false })
   const location = useLocation();
 
   if (!currentUser) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    // Host routes redirect to /host/login; guest routes redirect to /login
+    const loginPath = requireHost ? '/host/login' : '/login';
+    return <Navigate to={loginPath} state={{ from: location }} replace />;
   }
 
   if (requireHost && !isHost) {

@@ -22,6 +22,7 @@ import PropertyDetailPage from '@/pages/PropertyDetailPage.jsx';
 import LoginPage from '@/pages/LoginPage.jsx';
 import SignupPage from '@/pages/SignupPage.jsx';
 import HostRegisterPage from '@/pages/HostRegisterPage.jsx';
+import HostAuthPage from '@/pages/HostAuthPage.jsx';
 import DestinationPage from '@/pages/DestinationPage.jsx';
 
 // Advanced Search
@@ -104,6 +105,7 @@ function App() {
                 <Route path="/destination/:location" element={<AppLayout><DestinationPage /></AppLayout>} />
                 <Route path="/login" element={<AppLayout><LoginPage /></AppLayout>} />
                 <Route path="/signup" element={<AppLayout><SignupPage /></AppLayout>} />
+                <Route path="/host/login" element={<AppLayout><HostAuthPage /></AppLayout>} />
                 <Route path="/host/register" element={<AppLayout><HostRegisterPage /></AppLayout>} />
                 
                 {/* Static Pages */}

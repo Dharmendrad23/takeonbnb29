@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { useAdminAuth } from '@/contexts/AdminAuthContext.jsx';
@@ -17,11 +17,14 @@ const AdminLoginPage = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  if (isAuthenticated) {
-    const from = location.state?.from?.pathname || '/admin';
-    navigate(from, { replace: true });
-    return null;
-  }
+  useEffect(() => {
+    if (isAuthenticated) {
+      const from = location.state?.from?.pathname || '/admin';
+      navigate(from, { replace: true });
+    }
+  }, [isAuthenticated, location, navigate]);
+
+  if (isAuthenticated) return null;
 
   const handleLogin = async (e) => {
     e.preventDefault();

@@ -258,7 +258,7 @@ const Header = () => {
 
 
 
-              <Link to="/host/register">Become a Host</Link>
+              <Link to="/host/login">Become a Host</Link>
 
 
 
@@ -287,18 +287,6 @@ const Header = () => {
 
 
                 <Link to="/login">Log In</Link>
-
-
-
-              </Button>
-
-
-
-              <Button asChild className="bg-primary text-white hover:bg-primary/90 shadow-brand font-semibold rounded-full">
-
-
-
-                <Link to="/signup">Sign Up</Link>
 
 
 
@@ -506,7 +494,7 @@ const Header = () => {
 
 
 
-                <Link to="/host/register" className="text-lg font-semibold text-foreground py-2 border-b border-border/50">
+                <Link to="/host/login" className="text-lg font-semibold text-foreground py-2 border-b border-border/50">
 
 
 
@@ -543,18 +531,6 @@ const Header = () => {
 
 
                       <Link to="/login">Log In</Link>
-
-
-
-                    </Button>
-
-
-
-                    <Button asChild className="w-full justify-center bg-primary text-white rounded-xl h-12 text-base">
-
-
-
-                      <Link to="/signup">Sign Up</Link>
 
 
 
