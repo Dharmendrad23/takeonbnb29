@@ -252,25 +252,17 @@ const Header = () => {
 
           {!isHost && (
 
-
-
             <Button variant="ghost" asChild className="font-semibold text-foreground hover:bg-muted rounded-full">
-
-
 
               <Link to="/host/login">Become a Host</Link>
 
-
-
             </Button>
-
-
 
           )}
 
-
-
-
+          <Button variant="ghost" asChild className="font-semibold text-foreground hover:bg-muted rounded-full">
+            <Link to="/admin/login">Admin Login</Link>
+          </Button>
 
 
 
@@ -492,25 +484,17 @@ const Header = () => {
 
               {!isHost && (
 
-
-
                 <Link to="/host/login" className="text-lg font-semibold text-foreground py-2 border-b border-border/50">
-
-
 
                   Become a Host
 
-
-
                 </Link>
-
-
 
               )}
 
-
-
-
+              <Link to="/admin/login" className="text-lg font-semibold text-foreground py-2 border-b border-border/50">
+                Admin Login
+              </Link>
 
 
 
