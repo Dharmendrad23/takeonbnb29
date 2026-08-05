@@ -21,9 +21,9 @@ const Footer = () => {
               Curated luxury vacation rentals and unique experiences. We make booking your perfect getaway simple, secure, and unforgettable.
             </p>
             <div className="flex items-center gap-4">
-              <a href="#" className="p-2 bg-white/10 rounded-full hover:bg-primary hover:text-white transition-colors"><Facebook size={18} /></a>
-              <a href="#" className="p-2 bg-white/10 rounded-full hover:bg-primary hover:text-white transition-colors"><Instagram size={18} /></a>
-              <a href="#" className="p-2 bg-white/10 rounded-full hover:bg-primary hover:text-white transition-colors"><Twitter size={18} /></a>
+              <a href="https://www.facebook.com/profile.php?id=61588779882292" target="_blank" rel="noopener noreferrer" className="p-2 bg-white/10 rounded-full hover:bg-primary hover:text-white transition-colors"><Facebook size={18} /></a>
+              <a href="https://www.instagram.com/takeonbnb/" target="_blank" rel="noopener noreferrer" className="p-2 bg-white/10 rounded-full hover:bg-primary hover:text-white transition-colors"><Instagram size={18} /></a>
+              <a href="https://x.com/takeonbnb" target="_blank" rel="noopener noreferrer" className="p-2 bg-white/10 rounded-full hover:bg-primary hover:text-white transition-colors"><Twitter size={18} /></a>
               <a href="#" className="p-2 bg-white/10 rounded-full hover:bg-primary hover:text-white transition-colors"><Linkedin size={18} /></a>
             </div>
           </div>
