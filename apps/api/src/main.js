@@ -54,6 +54,9 @@ function getCorsOrigins() {
 
 const corsOrigin = getCorsOrigins();
 
+// Log which branch/version is deployed
+console.log('[DEPLOYMENT] Version: 2.2.0 - CORS fix v2');
+
 app.use(
   cors({
     origin: corsOrigin,
