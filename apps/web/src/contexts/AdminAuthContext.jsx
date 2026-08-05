@@ -9,7 +9,7 @@ export const useAdminAuth = () => {
   return context;
 };
 
-const API_HOST = `${window.location.protocol}//${window.location.hostname}:3001`;
+const API_HOST = import.meta.env.VITE_API_URL;
 
 export const AdminAuthProvider = ({ children }) => {
   const [adminUser, setAdminUser] = useState(null);
@@ -37,11 +37,13 @@ export const AdminAuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    const response = await fetch(`${API_HOST}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
+    const response = await fetch(`${API_HOST}/api/auth/login`, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({ email, password }),
+});
 
     const data = await response.json();
 
