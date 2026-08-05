@@ -20,6 +20,8 @@ const AdminLoginPage = () => {
   useEffect(() => {
     if (isAuthenticated) {
       const from = location.state?.from?.pathname || '/admin';
+      console.log('[AdminLoginPage] isAuthenticated now true, navigating to:', from);
+      setIsLoading(false);  // Clear loading state after successful auth
       navigate(from, { replace: true });
     }
   }, [isAuthenticated, location, navigate]);
@@ -35,10 +37,8 @@ const AdminLoginPage = () => {
     try {
       console.log('[AdminLoginPage] Calling login()...');
       await login(email, password);
-      console.log('[AdminLoginPage] Login succeeded');
-      const from = location.state?.from?.pathname || '/admin';
-      console.log('[AdminLoginPage] Navigating to:', from);
-      navigate(from, { replace: true });
+      console.log('[AdminLoginPage] Login succeeded, state update in progress');
+      // DO NOT call navigate() here - let useEffect handle it when isAuthenticated updates
     } catch (err) {
       console.error('[AdminLoginPage] Login error caught:', {
         name: err.name,
@@ -46,8 +46,7 @@ const AdminLoginPage = () => {
         stack: err.stack,
       });
       toast.error(err.message || "Invalid credentials or unauthorized access.");
-    } finally {
-      console.log('[AdminLoginPage] Clearing loading state');
+      console.log('[AdminLoginPage] Clearing loading state after error');
       setIsLoading(false);
     }
   };
