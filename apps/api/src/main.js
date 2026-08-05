@@ -42,7 +42,7 @@ process.on("SIGTERM", async () => {
 app.use(helmet());
 
 // Configure CORS with proper origin array handling
-const ALLOWED_ORIGINS = [
+const ALLOWED_ORIGINS = Array.from(new Set([
 	'https://takeonbnb.com',
 	'https://www.takeonbnb.com',
 	'https://takeonbnb29.onrender.com',
@@ -53,7 +53,7 @@ const ALLOWED_ORIGINS = [
 	...(process.env.CORS_ORIGIN
 		? process.env.CORS_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean)
 		: []),
-];
+]));
 
 console.log('[CORS] Configured allowed origins:', ALLOWED_ORIGINS);
 
