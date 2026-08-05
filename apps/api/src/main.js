@@ -41,8 +41,18 @@ process.on("SIGTERM", async () => {
 
 app.use(helmet());
 
-const corsOrigin = process.env.CORS_ORIGIN || "*";
-console.log('[CORS] Configured origins:', corsOrigin);
+// Parse comma-separated CORS origins into an array
+function getCorsOrigins() {
+  const corsEnv = process.env.CORS_ORIGIN || "*";
+  if (corsEnv === "*") return "*";
+  
+  // Parse comma-separated values
+  const origins = corsEnv.split(',').map(o => o.trim()).filter(Boolean);
+  console.log('[CORS] Configured origins:', origins);
+  return origins;
+}
+
+const corsOrigin = getCorsOrigins();
 
 app.use(
   cors({
