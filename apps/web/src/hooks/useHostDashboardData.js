@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext.jsx";
-
-const API_HOST = `${window.location.protocol}//${window.location.hostname}:3001`;
+import { buildApiUrl } from "@/lib/api.js";
 
 export const useHostDashboardData = () => {
   const { currentUser } = useAuth();
@@ -39,7 +38,7 @@ export const useHostDashboardData = () => {
         const token = localStorage.getItem("authToken");
 
         const response = await fetch(
-          `${API_HOST}/dashboard?hostId=${hostId}`,
+          `${buildApiUrl('/api/dashboard')}?hostId=${hostId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

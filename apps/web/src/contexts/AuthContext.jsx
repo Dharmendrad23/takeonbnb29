@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { buildApiUrl } from '@/lib/api.js';
 
 const AuthContext = createContext();
 
@@ -11,9 +12,6 @@ export const useAuth = () => {
   }
   return context;
 };
-
-// 👇 Agar tumhara backend alag port par hai, sirf yahan change karo
-const API_HOST = `${window.location.protocol}//${window.location.hostname}:3001`;
 
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
@@ -40,7 +38,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await fetch(`${API_HOST}/auth/login`, {
+      const response = await fetch(buildApiUrl('/api/auth/login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -67,7 +65,7 @@ export const AuthProvider = ({ children }) => {
 
   const signup = async (email, password, name, role = 'guest') => {
     try {
-      const response = await fetch(`${API_HOST}/auth/register`, {
+      const response = await fetch(buildApiUrl('/api/auth/register'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, name, role }),
@@ -97,7 +95,7 @@ export const AuthProvider = ({ children }) => {
 
   const requestOTP = async (email) => {
     try {
-      const response = await fetch(`${API_HOST}/otp/request-login`, {
+      const response = await fetch(buildApiUrl('/api/otp/request-login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
@@ -119,7 +117,7 @@ export const AuthProvider = ({ children }) => {
       const otpId = otpIdOverride || pendingOtpId;
       if (!otpId) throw new Error('OTP session missing. Please request a new OTP.');
 
-      const response = await fetch(`${API_HOST}/otp/verify-login`, {
+      const response = await fetch(buildApiUrl('/api/otp/verify-login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ otpId, code }),
@@ -144,7 +142,7 @@ export const AuthProvider = ({ children }) => {
 
   const requestSignupOTP = async (email) => {
     try {
-      const response = await fetch(`${API_HOST}/otp/request-signup`, {
+      const response = await fetch(buildApiUrl('/api/otp/request-signup'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
@@ -163,7 +161,7 @@ export const AuthProvider = ({ children }) => {
 
   const signupWithOTP = async (email, password, role, name, otpId, otpCode) => {
     try {
-      const response = await fetch(`${API_HOST}/otp/verify-signup`, {
+      const response = await fetch(buildApiUrl('/api/otp/verify-signup'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
