@@ -9,9 +9,14 @@ export const useAdminAuth = () => {
   return context;
 };
 
-const API_HOST = import.meta.env.VITE_API_URL;
+const VITE_API_URL = import.meta.env.VITE_API_URL;
 
-console.log('[AdminAuth] API_HOST from VITE_API_URL:', API_HOST);
+// Determine API host: use env var, or default to render API domain
+// This handles both dev (.env.local) and production (where env var may not be set)
+const API_HOST = VITE_API_URL || 'https://takeonbnb29.onrender.com';
+
+console.log('[AdminAuth] VITE_API_URL from environment:', VITE_API_URL);
+console.log('[AdminAuth] Final API_HOST being used:', API_HOST);
 
 export const AdminAuthProvider = ({ children }) => {
   const [adminUser, setAdminUser] = useState(null);
