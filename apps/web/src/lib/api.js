@@ -33,4 +33,26 @@ const api = axios.create({
   },
 });
 
+// MongoDB documents come back as `_id`; a lot of the app (React Router links,
+// favorites, edit/delete actions) was written against PocketBase's `id` field.
+// Alias `_id` -> `id` on every response so both keep working.
+const normalizeRecord = (record) => {
+  if (record && typeof record === "object" && !Array.isArray(record) && record._id && !record.id) {
+    return { ...record, id: record._id };
+  }
+  return record;
+};
+
+api.interceptors.response.use((response) => {
+  if (Array.isArray(response.data)) {
+    response.data = response.data.map(normalizeRecord);
+  } else if (response.data && typeof response.data === "object") {
+    response.data = normalizeRecord(response.data);
+    if (Array.isArray(response.data.items)) {
+      response.data.items = response.data.items.map(normalizeRecord);
+    }
+  }
+  return response;
+});
+
 export default api;

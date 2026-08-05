@@ -29,13 +29,15 @@ const PropertyDetailPage = () => {
     const fetchProperty = async () => {
       try {
         setLoading(true);
-      const { data } = await api.get(`/properties/${id}`);
-if (data.status !== 'Live') {
-  setError('Property not found or unavailable.');
-} else {
-  setProperty(data);
-}
-
+        const { data } = await api.get(`/properties/${id}`);
+        const isAdminPreview = Boolean(
+          typeof window !== 'undefined' && window.localStorage.getItem('adminToken')
+        );
+        if (data.status !== 'Live' && !isAdminPreview) {
+          setError('Property not found or unavailable.');
+        } else {
+          setProperty(data);
+        }
       } catch (err) {
         console.error("Error fetching property:", err);
         setError('Property not found or unavailable.');
@@ -74,6 +76,15 @@ const photos = property.photos || [];
         <title>{`${property.title} | Take on BnB`}</title>
         <meta name="description" content={property.description?.substring(0, 150)} />
       </Helmet>
+
+      {property.status !== 'Live' && (
+        <div className="bg-warning/10 border-b border-warning/30 text-warning-foreground">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 text-sm font-semibold">
+            Preview only &mdash; this listing is currently <span className="capitalize">{property.status}</span> and not visible to guests.
+            {property.status === 'rejected' && property.rejectionReason ? ` Reason: ${property.rejectionReason}` : ''}
+          </div>
+        </div>
+      )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="md:hidden py-4 -mb-4">

@@ -4,6 +4,11 @@ import { buildApiUrl } from '@/lib/api.js';
 
 const AdminAuthContext = createContext();
 
+const normalizeAdminUser = (user) => {
+  if (!user) return null;
+  return { ...user, id: user.id || user._id };
+};
+
 const toFormBody = (data) => {
   const params = new URLSearchParams();
   Object.entries(data).forEach(([key, value]) => {
@@ -30,7 +35,7 @@ export const AdminAuthProvider = ({ children }) => {
     const saved = localStorage.getItem('adminUser');
     if (token && saved) {
       try {
-        const user = JSON.parse(saved);
+        const user = normalizeAdminUser(JSON.parse(saved));
         if (user.role === 'admin') {
           setAdminUser(user);
         } else {
@@ -76,7 +81,8 @@ export const AdminAuthProvider = ({ children }) => {
         throw new Error(data.message || data.error || 'Invalid credentials');
       }
 
-      const { token, user } = data;
+      const { token, user: rawUser } = data;
+      const user = normalizeAdminUser(rawUser);
 
       if (user.role !== 'admin') {
         console.error('[AdminAuth] User role is not admin:', user.role);

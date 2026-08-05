@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
-import { Check, X, Search, FileText, MapPin, Users, Bath, Bed } from 'lucide-react';
+import { Check, X, Search, FileText, MapPin, Users, Bath, Bed, Eye } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import api from '@/lib/api.js';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -13,6 +14,7 @@ import pb from '@/lib/pocketbaseClient';
 
 const AdminPropertyApprovalPage = () => {
   const [properties, setProperties] = useState([]);
+  const [hostsById, setHostsById] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
   
@@ -20,6 +22,19 @@ const AdminPropertyApprovalPage = () => {
   const [rejectionModalOpen, setRejectionModalOpen] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
+
+  const fetchHosts = async (records) => {
+    const uniqueIds = Array.from(new Set(records.map((p) => p.hostId).filter(Boolean)));
+    if (uniqueIds.length === 0) return;
+    try {
+      const { data } = await api.get('/users', { params: { ids: uniqueIds.join(',') } });
+      const map = {};
+      data.forEach((user) => { map[user.id] = user; });
+      setHostsById(map);
+    } catch (err) {
+      console.error('Failed to fetch host details', err);
+    }
+  };
 
   const fetchPendingProperties = async () => {
     setIsLoading(true);
@@ -30,11 +45,11 @@ const AdminPropertyApprovalPage = () => {
 
       const records = await pb.collection('properties').getList(1, 50, {
         filter: filterStr,
-        expand: 'hostId',
         sort: '-created',
         $autoCancel: false
       });
       setProperties(records.items);
+      fetchHosts(records.items);
     } catch (error) {
       console.error(error);
       toast.error("Failed to load pending properties");
@@ -166,10 +181,15 @@ const AdminPropertyApprovalPage = () => {
                   <div className="flex items-center justify-between mt-auto pt-4 border-t border-border">
                     <div className="text-sm">
                       <span className="text-muted-foreground">Host: </span>
-                      <span className="font-bold text-foreground">{property.expand?.hostId?.name || property.expand?.hostId?.email || 'Unknown'}</span>
+                      <span className="font-bold text-foreground">{hostsById[property.hostId]?.name || hostsById[property.hostId]?.email || 'Unknown'}</span>
                     </div>
                     
                     <div className="flex items-center gap-2">
+                      <Button variant="outline" className="h-10 px-4 rounded-xl" asChild>
+                        <Link to={`/property/${property.id}`} target="_blank" rel="noopener noreferrer">
+                          <Eye className="w-4 h-4 mr-2" /> View
+                        </Link>
+                      </Button>
                       <Button variant="outline" className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive h-10 px-6 rounded-xl" onClick={() => openRejectionModal(property)}>
                         <X className="w-4 h-4 mr-2" /> Reject
                       </Button>

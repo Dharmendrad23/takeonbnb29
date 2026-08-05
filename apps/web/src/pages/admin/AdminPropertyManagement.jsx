@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
-import { Plus, Search, Edit, Trash2, MapPin, Home } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, MapPin, Home, Eye } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +12,8 @@ import api from '@/lib/api.js';
 import { formatCurrency } from '@/lib/bookingUtils.js';
 import { toast } from 'sonner';
 import pb from '@/lib/pocketbaseClient';
+import { useAdminAuth } from '@/contexts/AdminAuthContext.jsx';
+import PropertyForm from '@/components/property/PropertyForm.jsx';
 
 const PROPERTY_TYPE_OPTIONS = [
   { value: 'apartment', label: 'Apartment' },
@@ -20,16 +23,32 @@ const PROPERTY_TYPE_OPTIONS = [
 ];
 
 const AdminPropertyManagement = () => {
+  const { adminUser } = useAdminAuth();
   const [properties, setProperties] = useState([]);
+  const [hostsById, setHostsById] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   
   const [formData, setFormData] = useState({
     title: '', description: '', location: '', propertyType: 'villa',
     pricePerNight: '', bedrooms: '', bathrooms: '', guestCapacity: '', status: 'pending'
   });
+
+  const fetchHosts = async (records) => {
+    const uniqueIds = Array.from(new Set(records.map((p) => p.hostId).filter(Boolean)));
+    if (uniqueIds.length === 0) return;
+    try {
+      const { data } = await api.get('/users', { params: { ids: uniqueIds.join(',') } });
+      const map = {};
+      data.forEach((user) => { map[user.id] = user; });
+      setHostsById(map);
+    } catch (err) {
+      console.error('Failed to fetch host details', err);
+    }
+  };
 
   const fetchProperties = async () => {
     try {
@@ -38,6 +57,7 @@ const AdminPropertyManagement = () => {
         filter, sort: '-created', $autoCancel: false
       });
       setProperties(records);
+      fetchHosts(records);
     } catch (err) {
       console.error(err);
       toast.error("Failed to fetch properties");
@@ -52,6 +72,12 @@ const AdminPropertyManagement = () => {
     return () => pb.collection('properties').unsubscribe('*');
   }, [search]);
 
+  const handleCreateSuccess = () => {
+    toast.success('Property created successfully');
+    setIsCreateModalOpen(false);
+    fetchProperties();
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -59,15 +85,6 @@ const AdminPropertyManagement = () => {
 
   const handleSelectChange = (name, value) => {
     setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const openCreateModal = () => {
-    setEditingId(null);
-    setFormData({
-      title: '', description: '', location: '', propertyType: 'villa',
-      pricePerNight: '', bedrooms: '', bathrooms: '', guestCapacity: '', status: 'pending'
-    });
-    setIsModalOpen(true);
   };
 
   const openEditModal = (property) => {
@@ -90,16 +107,10 @@ const AdminPropertyManagement = () => {
         bedrooms: Number(formData.bedrooms),
         bathrooms: Number(formData.bathrooms),
         guestCapacity: Number(formData.guestCapacity),
-        hostId: pb.authStore.model?.id || 'admin' // Fallback if needed
       };
 
-      if (editingId) {
-        await pb.collection('properties').update(editingId, data, { $autoCancel: false });
-        toast.success("Property updated successfully");
-      } else {
-        await pb.collection('properties').create(data, { $autoCancel: false });
-        toast.success("Property created successfully");
-      }
+      await pb.collection('properties').update(editingId, data, { $autoCancel: false });
+      toast.success("Property updated successfully");
       setIsModalOpen(false);
     } catch (err) {
       console.error(err);
@@ -134,15 +145,30 @@ const AdminPropertyManagement = () => {
               className="pl-9 bg-card"
             />
           </div>
-          <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+          <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
             <DialogTrigger asChild>
-              <Button onClick={openCreateModal} className="bg-primary text-primary-foreground">
+              <Button className="bg-primary text-primary-foreground">
                 <Plus className="w-4 h-4 mr-2" /> Add Property
               </Button>
             </DialogTrigger>
+            <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Create New Property</DialogTitle>
+              </DialogHeader>
+              <PropertyForm
+                hostId={adminUser?.id}
+                defaultStatus="Live"
+                submitLabel="Create Property"
+                submittingLabel="Creating..."
+                onSuccess={handleCreateSuccess}
+              />
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
             <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>{editingId ? 'Edit Property' : 'Create New Property'}</DialogTitle>
+                <DialogTitle>Edit Property</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4 mt-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -207,7 +233,7 @@ const AdminPropertyManagement = () => {
                 </div>
                 <div className="flex justify-end gap-3 pt-4">
                   <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-                  <Button type="submit">{editingId ? 'Save Changes' : 'Create Property'}</Button>
+                  <Button type="submit">Save Changes</Button>
                 </div>
               </form>
             </DialogContent>
@@ -220,6 +246,7 @@ const AdminPropertyManagement = () => {
           <thead>
             <tr>
               <th>Property</th>
+              <th>Host</th>
               <th>Location</th>
               <th>Type</th>
               <th>Price/Night</th>
@@ -230,9 +257,9 @@ const AdminPropertyManagement = () => {
           </thead>
           <tbody>
             {isLoading ? (
-              <tr><td colSpan="7" className="text-center py-8">Loading...</td></tr>
+              <tr><td colSpan="8" className="text-center py-8">Loading...</td></tr>
             ) : properties.length === 0 ? (
-              <tr><td colSpan="7" className="text-center py-8 text-muted-foreground">No properties found.</td></tr>
+              <tr><td colSpan="8" className="text-center py-8 text-muted-foreground">No properties found.</td></tr>
             ) : (
               properties.map(property => (
                 <tr key={property.id}>
@@ -246,6 +273,7 @@ const AdminPropertyManagement = () => {
                       <span className="truncate max-w-[200px]">{property.title}</span>
                     </div>
                   </td>
+                  <td className="text-muted-foreground">{hostsById[property.hostId]?.name || hostsById[property.hostId]?.email || property.hostId || 'Unknown'}</td>
                   <td><div className="flex items-center text-muted-foreground"><MapPin className="w-3.5 h-3.5 mr-1"/> {property.location}</div></td>
                   <td>{property.propertyType}</td>
                   <td className="font-semibold">{formatCurrency(property.pricePerNight)}</td>
@@ -260,6 +288,7 @@ const AdminPropertyManagement = () => {
                     </Badge>
                   </td>
                   <td className="text-right">
+                    <Button variant="ghost" size="icon" asChild><Link to={`/property/${property.id}`} target="_blank" rel="noopener noreferrer"><Eye className="w-4 h-4" /></Link></Button>
                     <Button variant="ghost" size="icon" onClick={() => openEditModal(property)}><Edit className="w-4 h-4" /></Button>
                     <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDelete(property.id)}><Trash2 className="w-4 h-4" /></Button>
                   </td>
