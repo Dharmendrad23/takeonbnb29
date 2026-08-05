@@ -366,8 +366,7 @@ export default defineConfig({
 				'@babel/parser',
 				'@babel/traverse',
 				'@babel/generator',
-				'@babel/types',
-				'react'  // Mark react as external to fix swiper resolution
+				'@babel/types'
 			],
 			onwarn(warning, warn) {
 				// Suppress unresolved external dependency warnings for known issues
