@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '@/lib/api.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
-import pb from '@/lib/pocketbaseClient';
 
 export const useRealtimeNotifications = () => {
   const { currentUser } = useAuth();
@@ -13,13 +12,10 @@ export const useRealtimeNotifications = () => {
 
     const fetchNotifications = async () => {
       try {
-        const records = await pb.collection('notifications').getList(1, 50, {
-          filter: `userId = "${currentUser.id}"`,
-          sort: '-created',
-          $autoCancel: false
-        });
-        setNotifications(records.items);
-        setUnreadCount(records.items.filter(n => !n.isRead).length);
+        const response = await api.get(`/api/notifications?userId=${currentUser.id}`);
+        const items = Array.isArray(response.data) ? response.data : response.data?.items || [];
+        setNotifications(items);
+        setUnreadCount(items.filter(n => !n.isRead).length);
       } catch (error) {
         console.error('Failed to fetch notifications:', error);
       }
@@ -27,39 +23,9 @@ export const useRealtimeNotifications = () => {
 
     fetchNotifications();
 
-    let unsubscribeFunc = null;
-    const subscribe = async () => {
-      try {
-        unsubscribeFunc = await pb.collection('notifications').subscribe('*', function (e) {
-          if (e.record.userId !== currentUser.id) return;
-          
-          if (e.action === 'create') {
-            setNotifications(prev => [e.record, ...prev]);
-            setUnreadCount(prev => prev + 1);
-          } else if (e.action === 'update') {
-            setNotifications(prev => prev.map(n => n.id === e.record.id ? e.record : n));
-            setUnreadCount(prev => {
-              const wasRead = notifications.find(n => n.id === e.record.id)?.isRead;
-              if (!wasRead && e.record.isRead) return Math.max(0, prev - 1);
-              if (wasRead && !e.record.isRead) return prev + 1;
-              return prev;
-            });
-          } else if (e.action === 'delete') {
-            setNotifications(prev => prev.filter(n => n.id !== e.record.id));
-            if (!e.record.isRead) setUnreadCount(prev => Math.max(0, prev - 1));
-          }
-        });
-      } catch (err) {
-        console.error("Failed to subscribe to notifications:", err);
-      }
-    };
-
-    subscribe();
-
-    return () => {
-      if (unsubscribeFunc) unsubscribeFunc();
-      else pb.collection('notifications').unsubscribe('*');
-    };
+    // Poll every 60 seconds for new notifications
+    const interval = setInterval(fetchNotifications, 60000);
+    return () => clearInterval(interval);
   }, [currentUser]);
 
   return { notifications, unreadCount };

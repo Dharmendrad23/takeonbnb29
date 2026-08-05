@@ -3,7 +3,6 @@ import api from '@/lib/api.js';
 import SwappingPropertyCard from '@/components/SwappingPropertyCard.jsx';
 import PropertyCardSkeleton from '@/components/PropertyCardSkeleton.jsx';
 import { AlertCircle } from 'lucide-react';
-import pb from '@/lib/pocketbaseClient';
 
 const AllPropertiesGrid = () => {
   const [properties, setProperties] = useState([]);
@@ -14,12 +13,9 @@ const AllPropertiesGrid = () => {
     const fetchProperties = async () => {
       try {
         setIsLoading(true);
-        const records = await pb.collection('properties').getList(1, 100, {
-          filter: 'status="Live"',
-          sort: '-created',
-          $autoCancel: false
-        });
-        setProperties(records.items);
+        const response = await api.get('/api/properties');
+        const records = Array.isArray(response.data) ? response.data : response.data?.items || [];
+        setProperties(records.filter(p => (p.status || 'Live').toLowerCase() === 'live'));
       } catch (err) {
         console.error("Failed to fetch properties:", err);
         setError(err.message);
