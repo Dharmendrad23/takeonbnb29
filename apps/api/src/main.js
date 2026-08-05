@@ -47,6 +47,9 @@ const ALLOWED_ORIGINS = [
 	'https://www.takeonbnb.com',
 	'https://takeonbnb29.onrender.com',
 	'https://takeonbnb29.netlify.app',
+	'http://localhost:3000',
+	'http://127.0.0.1:3000',
+	'https://localhost:3000',
 	...(process.env.CORS_ORIGIN
 		? process.env.CORS_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean)
 		: []),
