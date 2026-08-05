@@ -4,6 +4,16 @@ import { buildApiUrl } from '@/lib/api.js';
 
 const AdminAuthContext = createContext();
 
+const toFormBody = (data) => {
+  const params = new URLSearchParams();
+  Object.entries(data).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      params.append(key, String(value));
+    }
+  });
+  return params.toString();
+};
+
 export const useAdminAuth = () => {
   const context = useContext(AdminAuthContext);
   if (!context) throw new Error('useAdminAuth must be used within AdminAuthProvider');
@@ -47,9 +57,9 @@ export const AdminAuthProvider = ({ children }) => {
       const response = await fetch(loginUrl, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: JSON.stringify({ email, password }),
+        body: toFormBody({ email, password }),
         credentials: 'include',
       });
 

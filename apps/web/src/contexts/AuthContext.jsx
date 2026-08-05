@@ -19,6 +19,16 @@ const normalizeUser = (user) => {
   };
 };
 
+const toFormBody = (data) => {
+  const params = new URLSearchParams();
+  Object.entries(data).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      params.append(key, String(value));
+    }
+  });
+  return params.toString();
+};
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -55,8 +65,8 @@ export const AuthProvider = ({ children }) => {
       const normalizedEmail = String(email || '').trim().toLowerCase();
       const response = await fetch(buildApiUrl('/api/auth/login'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: normalizedEmail, password }),
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: toFormBody({ email: normalizedEmail, password }),
       });
 
       const data = await response.json();
@@ -84,8 +94,8 @@ export const AuthProvider = ({ children }) => {
       const normalizedEmail = String(email || '').trim().toLowerCase();
       const response = await fetch(buildApiUrl('/api/auth/register'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: normalizedEmail, password, name, role }),
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: toFormBody({ email: normalizedEmail, password, name, role }),
       });
 
       const data = await response.json();
@@ -115,8 +125,8 @@ export const AuthProvider = ({ children }) => {
       const normalizedEmail = String(email || '').trim().toLowerCase();
       const response = await fetch(buildApiUrl('/api/otp/request-login'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: normalizedEmail }),
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: toFormBody({ email: normalizedEmail }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Failed to send OTP');
@@ -137,8 +147,8 @@ export const AuthProvider = ({ children }) => {
 
       const response = await fetch(buildApiUrl('/api/otp/verify-login'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ otpId, code }),
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: toFormBody({ otpId, code }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Invalid OTP code');
@@ -165,8 +175,8 @@ export const AuthProvider = ({ children }) => {
       const normalizedEmail = String(email || '').trim().toLowerCase();
       const response = await fetch(buildApiUrl('/api/otp/request-signup'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: normalizedEmail }),
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: toFormBody({ email: normalizedEmail }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Failed to send OTP');
@@ -184,8 +194,8 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await fetch(buildApiUrl('/api/otp/verify-signup'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: toFormBody({
           otpId: otpId || pendingOtpId,
           code: otpCode,
           name,
