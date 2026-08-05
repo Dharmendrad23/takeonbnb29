@@ -27,6 +27,7 @@ const parseFilter = (filter) => {
   const propertyIdMatch = filter.match(/propertyId\s*=\s*"([^"]+)"/i);
   const locationMatch = filter.match(/location\s*~\s*"([^"]+)"/i);
   const propertyTypeMatch = filter.match(/propertyType\s*=\s*"([^"]+)"/i);
+  const statusMatch = filter.match(/status\s*=\s*"([^"]+)"/i);
   const minPriceMatch = filter.match(/pricePerNight\s*>=\s*(\d+)/i);
   const maxPriceMatch = filter.match(/pricePerNight\s*<=\s*(\d+)/i);
   const notIdMatch = filter.match(/id\s*!=\s*"([^"]+)"/i);
@@ -36,6 +37,7 @@ const parseFilter = (filter) => {
     propertyId: propertyIdMatch?.[1] || null,
     location: locationMatch?.[1] || null,
     propertyType: propertyTypeMatch?.[1] || null,
+    status: statusMatch?.[1] || null,
     minPrice: minPriceMatch ? Number(minPriceMatch[1]) : null,
     maxPrice: maxPriceMatch ? Number(maxPriceMatch[1]) : null,
     notId: notIdMatch?.[1] || null,
@@ -50,6 +52,10 @@ const matchesFilter = (item, filter) => {
   if (parsed.propertyId && item.propertyId !== parsed.propertyId) return false;
   if (parsed.location && !(item.location || '').toLowerCase().includes(parsed.location.toLowerCase())) return false;
   if (parsed.propertyType && item.propertyType !== parsed.propertyType) return false;
+  if (parsed.status) {
+    const itemStatus = (item.status || 'Live').toString().toLowerCase();
+    if (itemStatus !== parsed.status.toLowerCase()) return false;
+  }
   if (parsed.minPrice != null && Number(item.pricePerNight) < parsed.minPrice) return false;
   if (parsed.maxPrice != null && Number(item.pricePerNight) > parsed.maxPrice) return false;
   if (parsed.notId && item.id === parsed.notId) return false;
