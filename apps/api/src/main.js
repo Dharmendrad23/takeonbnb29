@@ -65,8 +65,8 @@ app.use(
 );
 
 // API Routes
+app.use("/api", routes());
 app.use("/hcgi/api", routes());
-app.use("/", routes());
 
 app.use(errorMiddleware);
 
