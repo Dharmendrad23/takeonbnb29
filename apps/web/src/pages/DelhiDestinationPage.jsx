@@ -18,7 +18,7 @@ const delhiProperties = [
 ];
 
 const DestinationPropertyCard = ({ property }) => (
-  <Link to={`/properties/${property.id}`} className="group block">
+  <Link to={`/property/${property.id}`} className="group block">
     <div className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-luxury transition-all duration-300 h-full border border-border">
       <div className="relative aspect-[4/3] overflow-hidden">
         <img 

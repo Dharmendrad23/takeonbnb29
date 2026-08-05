@@ -4,7 +4,7 @@ import { Star, Users, BedDouble, ArrowRight, MapPin } from 'lucide-react';
 
 const DestinationPropertyCard = ({ property }) => {
   return (
-    <Link to={`/properties/${property.id}`} className="group block h-full">
+    <Link to={`/property/${property.id}`} className="group block h-full">
       <div className="bg-card rounded-2xl overflow-hidden shadow-sm hover:shadow-luxury transition-smooth h-full flex flex-col border border-border">
         <div className="relative aspect-[4/3] overflow-hidden">
           <img 
