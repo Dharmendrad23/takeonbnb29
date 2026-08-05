@@ -72,7 +72,7 @@ export const AuthProvider = ({ children }) => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Invalid email or password');
+        throw new Error(data.message || data.error || 'Invalid email or password');
       }
 
       const { token, user } = data;

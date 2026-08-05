@@ -72,8 +72,8 @@ export const AdminAuthProvider = ({ children }) => {
       console.log('[AdminAuth] Response JSON:', { success: data.success, message: data.message, hasToken: !!data.token, hasUser: !!data.user });
 
       if (!response.ok) {
-        console.error('[AdminAuth] Login failed:', data.message);
-        throw new Error(data.message || 'Invalid credentials');
+        console.error('[AdminAuth] Login failed:', data.message || data.error);
+        throw new Error(data.message || data.error || 'Invalid credentials');
       }
 
       const { token, user } = data;
