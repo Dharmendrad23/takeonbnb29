@@ -65,17 +65,48 @@ export const AdminAuthProvider = ({ children }) => {
       console.log('[AdminAuth] Email:', email);
       console.log('[AdminAuth] Password length:', password?.length || 0);
 
-      const response = await fetch(loginUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
+      let response;
+      let corsError = false;
+      
+      try {
+        response = await fetch(loginUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email, password }),
+        });
+      } catch (fetchErr) {
+        console.error('[AdminAuth] Fetch error:', fetchErr.message);
+        corsError = true;
+        
+        // Try alternative Render endpoint without CORS issues
+        if (API_HOST.includes('takeonbnb29.onrender.com')) {
+          console.log('[AdminAuth] Trying alternative endpoint without credentials...');
+          try {
+            response = await fetch('https://takeonbnb29.onrender.com/api/auth/login', {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ email, password }),
+              mode: 'cors',
+              credentials: 'omit', // Try without credentials
+            });
+            corsError = false;
+            console.log('[AdminAuth] Alternative endpoint succeeded');
+          } catch (altErr) {
+            console.error('[AdminAuth] Alternative endpoint also failed:', altErr.message);
+            throw new Error('Failed to connect to authentication server. Please try again in a moment.');
+          }
+        } else {
+          throw fetchErr;
+        }
+      }
 
-      console.log('[AdminAuth] Response status:', response.status);
+      console.log('[AdminAuth] Response status:', response?.status);
       console.log('[AdminAuth] Response headers:', {
-        contentType: response.headers.get('content-type'),
+        contentType: response?.headers.get('content-type'),
       });
 
       const data = await response.json();
