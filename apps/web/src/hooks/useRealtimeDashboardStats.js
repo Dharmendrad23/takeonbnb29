@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import api from '@/lib/api.js';
-import pb from '@/lib/pocketbaseClient';
 
 export const useRealtimeDashboardStats = () => {
   const [stats, setStats] = useState({
@@ -16,23 +15,25 @@ export const useRealtimeDashboardStats = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [props, bookings, users] = await Promise.all([
-          pb.collection('properties').getList(1, 1, { $autoCancel: false }),
-          pb.collection('bookings').getFullList({ $autoCancel: false }),
-          pb.collection('users').getList(1, 1, { $autoCancel: false })
+        const [statsRes, propsRes, usersRes] = await Promise.all([
+          api.get('/api/admin/dashboard/stats'),
+          api.get('/api/properties'),
+          api.get('/api/users'),
         ]);
 
-        const revenue = bookings.reduce((sum, b) => sum + (b.totalPrice || 0), 0);
-        const active = bookings.filter(b => b.status === 'confirmed' || b.status === 'checked-in').length;
-        const pending = bookings.filter(b => b.status === 'pending').length;
+        const s = statsRes.data;
+        const totalProperties = Array.isArray(propsRes.data)
+          ? propsRes.data.length
+          : (propsRes.data?.totalItems ?? 0);
+        const totalUsers = usersRes.data?.totalItems ?? 0;
 
         setStats({
-          totalProperties: props.totalItems,
-          totalBookings: bookings.length,
-          totalUsers: users.totalItems,
-          totalRevenue: revenue,
-          activeBookings: active,
-          pendingBookings: pending
+          totalProperties,
+          totalBookings: s.totalBookings ?? 0,
+          totalUsers,
+          totalRevenue: s.totalRevenue ?? 0,
+          activeBookings: s.confirmedBookings ?? 0,
+          pendingBookings: s.pendingBookings ?? 0,
         });
       } catch (error) {
         console.error("Error fetching dashboard stats:", error);
@@ -43,15 +44,9 @@ export const useRealtimeDashboardStats = () => {
 
     fetchStats();
 
-    pb.collection('properties').subscribe('*', fetchStats);
-    pb.collection('bookings').subscribe('*', fetchStats);
-    pb.collection('users').subscribe('*', fetchStats);
-
-    return () => {
-      pb.collection('properties').unsubscribe('*');
-      pb.collection('bookings').unsubscribe('*');
-      pb.collection('users').unsubscribe('*');
-    };
+    // Poll every 30 seconds to stay reasonably fresh without realtime subscriptions
+    const interval = setInterval(fetchStats, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   return { stats, isLoading };

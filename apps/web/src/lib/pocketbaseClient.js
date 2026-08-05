@@ -25,9 +25,11 @@ const parseFilter = (filter) => {
 
   const guestIdMatch = filter.match(/guestId\s*=\s*"([^"]+)"/i);
   const propertyIdMatch = filter.match(/propertyId\s*=\s*"([^"]+)"/i);
+  const userIdMatch = filter.match(/userId\s*=\s*"([^"]+)"/i);
   const locationMatch = filter.match(/location\s*~\s*"([^"]+)"/i);
   const propertyTypeMatch = filter.match(/propertyType\s*=\s*"([^"]+)"/i);
-  const statusMatch = filter.match(/status\s*=\s*"([^"]+)"/i);
+  // Match both `status` and `bookingStatus`
+  const statusMatch = filter.match(/(?:booking)?[Ss]tatus\s*=\s*"([^"]+)"/i);
   const minPriceMatch = filter.match(/pricePerNight\s*>=\s*(\d+)/i);
   const maxPriceMatch = filter.match(/pricePerNight\s*<=\s*(\d+)/i);
   const notIdMatch = filter.match(/id\s*!=\s*"([^"]+)"/i);
@@ -35,6 +37,7 @@ const parseFilter = (filter) => {
   return {
     guestId: guestIdMatch?.[1] || null,
     propertyId: propertyIdMatch?.[1] || null,
+    userId: userIdMatch?.[1] || null,
     location: locationMatch?.[1] || null,
     propertyType: propertyTypeMatch?.[1] || null,
     status: statusMatch?.[1] || null,
@@ -48,8 +51,18 @@ const matchesFilter = (item, filter) => {
   const parsed = parseFilter(filter);
   if (!parsed) return true;
 
-  if (parsed.guestId && item.guestId !== parsed.guestId) return false;
-  if (parsed.propertyId && item.propertyId !== parsed.propertyId) return false;
+  if (parsed.guestId) {
+    const itemGuestId = item.guestId?._id || item.guestId;
+    if (String(itemGuestId) !== String(parsed.guestId)) return false;
+  }
+  if (parsed.propertyId) {
+    const itemPropId = item.propertyId?._id || item.propertyId;
+    if (String(itemPropId) !== String(parsed.propertyId)) return false;
+  }
+  if (parsed.userId) {
+    const itemUserId = item.userId?._id || item.userId;
+    if (String(itemUserId) !== String(parsed.userId)) return false;
+  }
   if (parsed.location && !(item.location || '').toLowerCase().includes(parsed.location.toLowerCase())) return false;
   if (parsed.propertyType && item.propertyType !== parsed.propertyType) return false;
   if (parsed.status) {
@@ -58,7 +71,10 @@ const matchesFilter = (item, filter) => {
   }
   if (parsed.minPrice != null && Number(item.pricePerNight) < parsed.minPrice) return false;
   if (parsed.maxPrice != null && Number(item.pricePerNight) > parsed.maxPrice) return false;
-  if (parsed.notId && item.id === parsed.notId) return false;
+  if (parsed.notId) {
+    const itemId = item._id || item.id;
+    if (String(itemId) === String(parsed.notId)) return false;
+  }
   return true;
 };
 
@@ -78,9 +94,29 @@ const sortItems = (items, sort) => {
   });
 };
 
+// Normalize MongoDB _id to id for PocketBase-compatible API surface
+const normalizeRecord = (record) => {
+  if (!record || typeof record !== 'object') return record;
+  if (record._id && !record.id) {
+    return { ...record, id: String(record._id) };
+  }
+  return record;
+};
+
+const normalizeRecords = (records) => records.map(normalizeRecord);
+
+const COLLECTION_PATH_MAP = {
+  properties: '/properties',
+  bookings: '/bookings',
+  users: '/users',
+  notifications: '/notifications',
+  reviews: '/reviews',
+  favorites: '/favorites',
+};
+
 const createCollection = (collectionName) => {
   const buildPath = (id = null) => {
-    const basePath = collectionName === 'favorites' ? '/favorites' : `/${collectionName}`;
+    const basePath = COLLECTION_PATH_MAP[collectionName] || `/${collectionName}`;
     return id ? `${basePath}/${id}` : basePath;
   };
 
@@ -91,24 +127,14 @@ const createCollection = (collectionName) => {
         return favorites.sort((a, b) => new Date(b.createdAt || b.created || 0) - new Date(a.createdAt || a.created || 0));
       }
 
-      if (collectionName === 'properties') {
+      try {
         const response = await api.get(buildPath());
-        const records = Array.isArray(response.data) ? response.data : response.data?.items || [];
+        const raw = Array.isArray(response.data) ? response.data : response.data?.items || [];
+        const records = normalizeRecords(raw);
         return sortItems(records.filter((item) => matchesFilter(item, options.filter)), options.sort);
-      }
-
-      if (collectionName === 'bookings') {
-        const response = await api.get(buildPath());
-        const records = Array.isArray(response.data) ? response.data : response.data?.items || [];
-        return sortItems(records.filter((item) => matchesFilter(item, options.filter)), options.sort);
-      }
-
-      if (collectionName === 'reviews') {
+      } catch {
         return [];
       }
-
-      const response = await api.get(buildPath());
-      return Array.isArray(response.data) ? response.data : response.data?.items || [];
     },
 
     async getList(page = 1, perPage = 50, options = {}) {
@@ -132,7 +158,7 @@ const createCollection = (collectionName) => {
       }
 
       const response = await api.get(buildPath(id));
-      return response.data;
+      return normalizeRecord(response.data);
     },
 
     async getFirstListItem(filter) {
@@ -154,7 +180,7 @@ const createCollection = (collectionName) => {
       }
 
       const response = await api.post(buildPath(), data);
-      return response.data;
+      return normalizeRecord(response.data);
     },
 
     async update(id, data) {
@@ -168,7 +194,7 @@ const createCollection = (collectionName) => {
       }
 
       const response = await api.put(buildPath(id), data);
-      return response.data;
+      return normalizeRecord(response.data);
     },
 
     async delete(id) {
@@ -180,6 +206,16 @@ const createCollection = (collectionName) => {
 
       const response = await api.delete(buildPath(id));
       return response.data;
+    },
+
+    // No-op stubs — MongoDB backend doesn't support realtime subscriptions.
+    // Components call these but they are safe to ignore.
+    subscribe(_topic, _callback) {
+      return Promise.resolve(() => {});
+    },
+
+    unsubscribe(_topic) {
+      return Promise.resolve();
     },
   };
 };

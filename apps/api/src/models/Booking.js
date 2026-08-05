@@ -10,7 +10,7 @@ const bookingSchema = new mongoose.Schema(
 
     guestId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Guest",
+      ref: "User",
       required: true,
     },
 
@@ -48,8 +48,43 @@ const bookingSchema = new mongoose.Schema(
         "confirmed",
         "cancelled",
         "completed",
+        "pending_verification",
+        "rejected",
       ],
       default: "pending",
+    },
+
+    // Payment fields
+    paymentStatus: {
+      type: String,
+      enum: ["unpaid", "pending", "verified", "failed"],
+      default: "unpaid",
+    },
+
+    transactionId: {
+      type: String,
+      default: "",
+    },
+
+    paymentScreenshot: {
+      type: String,
+      default: "",
+    },
+
+    // Denormalized guest info for easy admin display
+    guestFullName: {
+      type: String,
+      default: "",
+    },
+
+    propertyName: {
+      type: String,
+      default: "",
+    },
+
+    rejectReason: {
+      type: String,
+      default: "",
     },
   },
   {

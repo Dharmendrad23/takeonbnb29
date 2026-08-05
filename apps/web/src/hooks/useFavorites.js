@@ -1,8 +1,21 @@
 import { useState, useEffect } from 'react';
-import api from '@/lib/api.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { toast } from 'sonner';
-import pb from '@/lib/pocketbaseClient';
+
+const FAVORITES_STORAGE_KEY = 'takeonbnb-favorites';
+
+const getStoredFavorites = () => {
+  try {
+    const stored = window.localStorage.getItem(FAVORITES_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+};
+
+const persistFavorites = (favorites) => {
+  window.localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(favorites));
+};
 
 export function useFavorites() {
   const { currentUser } = useAuth();
@@ -14,19 +27,8 @@ export function useFavorites() {
       return;
     }
 
-    const fetchFavorites = async () => {
-      try {
-        const records = await pb.collection('favorites').getFullList({
-          filter: `guestId = "${currentUser.id}"`,
-          $autoCancel: false
-        });
-        setFavorites(records.map(r => r.propertyId));
-      } catch (error) {
-        console.error('Error fetching favorites:', error);
-      }
-    };
-
-    fetchFavorites();
+    const stored = getStoredFavorites().filter(f => f.guestId === currentUser.id);
+    setFavorites(stored.map(r => r.propertyId));
   }, [currentUser]);
 
   const toggleFavorite = async (propertyId) => {
@@ -37,19 +39,16 @@ export function useFavorites() {
 
     try {
       const isFav = favorites.includes(propertyId);
+      const storedAll = getStoredFavorites();
       
       if (isFav) {
-        // Find and delete
-        const record = await pb.collection('favorites').getFirstListItem(`guestId="${currentUser.id}" && propertyId="${propertyId}"`, { $autoCancel: false });
-        await pb.collection('favorites').delete(record.id, { $autoCancel: false });
+        const updated = storedAll.filter(f => !(f.guestId === currentUser.id && f.propertyId === propertyId));
+        persistFavorites(updated);
         setFavorites(prev => prev.filter(id => id !== propertyId));
         toast.success('Removed from favorites');
       } else {
-        // Create
-        await pb.collection('favorites').create({
-          guestId: currentUser.id,
-          propertyId: propertyId
-        }, { $autoCancel: false });
+        storedAll.push({ id: `fav-${Date.now()}`, guestId: currentUser.id, propertyId, createdAt: new Date().toISOString() });
+        persistFavorites(storedAll);
         setFavorites(prev => [...prev, propertyId]);
         toast.success('Saved to favorites');
       }

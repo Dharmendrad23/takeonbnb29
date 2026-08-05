@@ -1,28 +1,9 @@
 import { useEffect } from 'react';
-import api from '@/lib/api.js';
-import pb from '@/lib/pocketbaseClient';
 
-export const usePropertySync = (callback) => {
+// usePropertySync is a no-op on the MongoDB backend since realtime subscriptions
+// are not supported. Components that need fresh data should re-fetch via polling.
+export const usePropertySync = (_callback) => {
   useEffect(() => {
-    let isSubscribed = true;
-
-    const subscribe = async () => {
-      try {
-        await pb.collection('properties').subscribe('*', (e) => {
-          if (isSubscribed && callback) {
-            callback(e);
-          }
-        });
-      } catch (error) {
-        console.error('Failed to subscribe to properties:', error);
-      }
-    };
-
-    subscribe();
-
-    return () => {
-      isSubscribed = false;
-      pb.collection('properties').unsubscribe('*');
-    };
-  }, [callback]);
+    // no-op
+  }, []);
 };
