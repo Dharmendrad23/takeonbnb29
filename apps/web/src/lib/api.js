@@ -27,7 +27,7 @@ export const buildApiUrl = (path = "") => {
 };
 
 const api = axios.create({
-  baseURL: getApiBaseUrl() || "/api",
+  baseURL: `${(getApiBaseUrl() || "").replace(/\/$/, "")}/api`,
   headers: {
     "Content-Type": "application/json",
   },
