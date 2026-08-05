@@ -79,7 +79,14 @@ export const verifyLoginOtp = async (req, res) => {
 
     const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: "7d" });
 
-    res.json({ success: true, token, user });
+    res.json({
+      success: true,
+      token,
+      user: {
+        ...user.toObject(),
+        userType: user.role,
+      },
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: err.message });
@@ -156,7 +163,14 @@ export const verifySignupOtp = async (req, res) => {
 
     const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: "7d" });
 
-    res.status(201).json({ success: true, token, user });
+    res.status(201).json({
+      success: true,
+      token,
+      user: {
+        ...user.toObject(),
+        userType: user.role,
+      },
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: err.message });

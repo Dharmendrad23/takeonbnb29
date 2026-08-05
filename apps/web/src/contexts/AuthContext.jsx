@@ -14,6 +14,7 @@ const normalizeUser = (user) => {
   return {
     ...user,
     role,
+    userType: user.userType || role,
   };
 };
 

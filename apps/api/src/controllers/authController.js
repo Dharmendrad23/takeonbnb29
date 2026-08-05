@@ -103,6 +103,7 @@ export const login = async (req, res) => {
         email: user.email,
         name: user.name,
         role: user.role,
+        userType: user.role,
       },
     });
     console.log('[AuthController] Login response sent successfully');
