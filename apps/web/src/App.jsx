@@ -33,26 +33,47 @@ import AboutUsPage from '@/pages/AboutUsPage.jsx';
 import ContactPage from '@/pages/ContactPage.jsx';
 import ExplorePage from '@/pages/ExplorePage.jsx';
 import BlogPage from '@/pages/BlogPage.jsx';
+import BlogDetailPage from '@/pages/BlogDetailPage.jsx';
 import HelpCenterPage from '@/pages/HelpCenterPage.jsx';
 import SafetyPage from '@/pages/SafetyPage.jsx';
 import FAQPage from '@/pages/FAQPage.jsx';
+import PrivacyPolicyPage from '@/pages/PrivacyPolicyPage.jsx';
+import TermsPage from '@/pages/TermsPage.jsx';
+import CancellationPolicyPage from '@/pages/CancellationPolicyPage.jsx';
 import NotFoundPage from '@/pages/NotFoundPage.jsx';
+
+// Checkout / Payment Pages
+import CheckoutPage from '@/pages/CheckoutPage.jsx';
+import SuccessPage from '@/pages/SuccessPage.jsx';
+import CancelPage from '@/pages/CancelPage.jsx';
+import BookingConfirmationPage from '@/pages/BookingConfirmationPage.jsx';
 
 // Guest Dashboards
 import GuestDashboardHome from '@/pages/GuestDashboardHome.jsx';
 import GuestBookingsPage from '@/pages/GuestBookingsPage.jsx';
 import GuestWishlistPage from '@/pages/GuestWishlistPage.jsx';
+import GuestUpcomingTripsPage from '@/pages/GuestUpcomingTripsPage.jsx';
+import GuestPaymentHistoryPage from '@/pages/GuestPaymentHistoryPage.jsx';
+import GuestFavoritesPage from '@/pages/GuestFavoritesPage.jsx';
+import GuestMessagesPage from '@/pages/GuestMessagesPage.jsx';
+import GuestReviewsPage from '@/pages/GuestReviewsPage.jsx';
+import GuestSettingsPage from '@/pages/GuestSettingsPage.jsx';
+import BookingDetailPage from '@/pages/BookingDetailPage.jsx';
 
 // Host Pages
 import HostDashboardPage from '@/pages/HostDashboardPage.jsx';
 import HostPropertyListingForm from '@/pages/HostPropertyListingForm.jsx';
 import HostPropertiesPage from '@/pages/HostPropertiesPage.jsx';
+import EditPropertyPage from '@/pages/EditPropertyPage.jsx';
 
 // Admin Pages
 import AdminLoginPage from '@/pages/admin/AdminLoginPage.jsx';
 import AdminDashboard from '@/pages/admin/AdminDashboard.jsx';
 import AdminPropertyManagement from '@/pages/admin/AdminPropertyManagement.jsx';
 import AdminPropertyApprovalPage from '@/pages/admin/AdminPropertyApprovalPage.jsx';
+import AdminBookingManagement from '@/pages/admin/AdminBookingManagement.jsx';
+import AdminGuestManagement from '@/pages/admin/AdminGuestManagement.jsx';
+import AdminRevenueTracking from '@/pages/admin/AdminRevenueTracking.jsx';
 
 // Wrapping layout for general pages
 const AppLayout = ({ children }) => {
