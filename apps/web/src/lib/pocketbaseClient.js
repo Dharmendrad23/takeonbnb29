@@ -181,6 +181,13 @@ const createCollection = (collectionName) => {
       const response = await api.delete(buildPath(id));
       return response.data;
     },
+
+    // The MongoDB-backed API has no realtime transport yet. These are safe
+    // no-ops so callers written against PocketBase's realtime API don't crash.
+    async subscribe() {
+      return () => {};
+    },
+    async unsubscribe() {},
   };
 };
 
