@@ -18,14 +18,14 @@ function getApiHost() {
     return VITE_API_URL;
   }
 
-  // Strategy 2: Check if we're on production domain (takeonbnb.com)
+  // Strategy 2: For production on Netlify, use relative path (Netlify will proxy to Render)
   if (typeof window !== 'undefined' && window.location.hostname === 'takeonbnb.com') {
-    console.log('[AdminAuth] Detected production domain takeonbnb.com, using Render backend');
-    return 'https://takeonbnb29.onrender.com';
+    console.log('[AdminAuth] Detected production domain takeonbnb.com, using Netlify proxy');
+    return ''; // Empty string = use relative paths like /api/auth/login
   }
 
-  // Strategy 3: Use hardcoded fallback for Render deployment
-  console.log('[AdminAuth] No env var detected, using hardcoded Render API fallback');
+  // Strategy 3: For development/local, use absolute URL
+  console.log('[AdminAuth] Using direct Render backend URL');
   return 'https://takeonbnb29.onrender.com';
 }
 
@@ -59,54 +59,27 @@ export const AdminAuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const loginUrl = `${API_HOST}/api/auth/login`;
+      // For relative paths, construct full URL; for absolute URLs, use as-is
+      const baseUrl = API_HOST ? API_HOST : window.location.origin;
+      const loginUrl = `${baseUrl}/api/auth/login`;
+      
       console.log('[AdminAuth] Starting login request...');
       console.log('[AdminAuth] URL:', loginUrl);
       console.log('[AdminAuth] Email:', email);
       console.log('[AdminAuth] Password length:', password?.length || 0);
 
-      let response;
-      let corsError = false;
-      
-      try {
-        response = await fetch(loginUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ email, password }),
-        });
-      } catch (fetchErr) {
-        console.error('[AdminAuth] Fetch error:', fetchErr.message);
-        corsError = true;
-        
-        // Try alternative Render endpoint without CORS issues
-        if (API_HOST.includes('takeonbnb29.onrender.com')) {
-          console.log('[AdminAuth] Trying alternative endpoint without credentials...');
-          try {
-            response = await fetch('https://takeonbnb29.onrender.com/api/auth/login', {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ email, password }),
-              mode: 'cors',
-              credentials: 'omit', // Try without credentials
-            });
-            corsError = false;
-            console.log('[AdminAuth] Alternative endpoint succeeded');
-          } catch (altErr) {
-            console.error('[AdminAuth] Alternative endpoint also failed:', altErr.message);
-            throw new Error('Failed to connect to authentication server. Please try again in a moment.');
-          }
-        } else {
-          throw fetchErr;
-        }
-      }
+      const response = await fetch(loginUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+        credentials: 'include', // Include cookies for auth
+      });
 
-      console.log('[AdminAuth] Response status:', response?.status);
+      console.log('[AdminAuth] Response status:', response.status);
       console.log('[AdminAuth] Response headers:', {
-        contentType: response?.headers.get('content-type'),
+        contentType: response.headers.get('content-type'),
       });
 
       const data = await response.json();
