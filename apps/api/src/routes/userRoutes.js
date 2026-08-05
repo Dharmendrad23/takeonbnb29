@@ -7,7 +7,9 @@ const router = express.Router();
 router.get("/", async (req, res) => {
   try {
     const { role } = req.query;
-    const query = role ? { role } : {};
+    // Sanitize: only allow valid role strings to prevent NoSQL injection
+    const VALID_ROLES = ['guest', 'host', 'admin'];
+    const query = role && typeof role === 'string' && VALID_ROLES.includes(role) ? { role } : {};
     const users = await User.find(query, "-password").sort({ createdAt: -1 });
     res.json({ items: users, totalItems: users.length });
   } catch (err) {
@@ -27,9 +29,13 @@ router.get("/:id", async (req, res) => {
 
 router.put("/:id", async (req, res) => {
   try {
-    // Never allow password change via this route
-    const { password, ...updateData } = req.body;
-    const user = await User.findByIdAndUpdate(req.params.id, updateData, { new: true, select: "-password" });
+    // Only allow safe profile fields — never allow password change via this route
+    const { name, phone, avatar } = req.body;
+    const updateData = {};
+    if (name !== undefined) updateData.name = String(name);
+    if (phone !== undefined) updateData.phone = String(phone);
+    if (avatar !== undefined) updateData.avatar = String(avatar);
+    const user = await User.findByIdAndUpdate(req.params.id, updateData, { new: true }).select("-password");
     if (!user) return res.status(404).json({ message: "User not found" });
     res.json(user);
   } catch (err) {

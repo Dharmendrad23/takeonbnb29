@@ -7,8 +7,9 @@ router.get("/", async (req, res) => {
   try {
     const { propertyId, guestId } = req.query;
     const query = {};
-    if (propertyId) query.propertyId = propertyId;
-    if (guestId) query.guestId = guestId;
+    // Sanitize query params to prevent NoSQL injection
+    if (propertyId && typeof propertyId === 'string') query.propertyId = String(propertyId);
+    if (guestId && typeof guestId === 'string') query.guestId = String(guestId);
     const reviews = await Review.find(query)
       .populate("guestId", "name avatar")
       .sort({ createdAt: -1 });
@@ -39,7 +40,11 @@ router.post("/", async (req, res) => {
 
 router.put("/:id", async (req, res) => {
   try {
-    const review = await Review.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const { rating, comment } = req.body;
+    const updateData = {};
+    if (rating !== undefined) updateData.rating = Number(rating);
+    if (comment !== undefined) updateData.comment = String(comment);
+    const review = await Review.findByIdAndUpdate(req.params.id, updateData, { new: true });
     if (!review) return res.status(404).json({ message: "Review not found" });
     res.json(review);
   } catch (err) {

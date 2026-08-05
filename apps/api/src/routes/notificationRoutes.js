@@ -6,7 +6,8 @@ const router = express.Router();
 router.get("/", async (req, res) => {
   try {
     const { userId } = req.query;
-    const query = userId ? { userId } : {};
+    // Sanitize: only allow string userId to prevent NoSQL injection
+    const query = userId && typeof userId === 'string' ? { userId: String(userId) } : {};
     const notifications = await Notification.find(query).sort({ createdAt: -1 });
     res.json(notifications);
   } catch (err) {
@@ -35,7 +36,14 @@ router.post("/", async (req, res) => {
 
 router.put("/:id", async (req, res) => {
   try {
-    const notification = await Notification.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    // Only allow known safe fields to update
+    const { isRead, title, message, type } = req.body;
+    const updateData = {};
+    if (isRead !== undefined) updateData.isRead = Boolean(isRead);
+    if (title !== undefined) updateData.title = String(title);
+    if (message !== undefined) updateData.message = String(message);
+    if (type !== undefined) updateData.type = String(type);
+    const notification = await Notification.findByIdAndUpdate(req.params.id, updateData, { new: true });
     if (!notification) return res.status(404).json({ message: "Notification not found" });
     res.json(notification);
   } catch (err) {
