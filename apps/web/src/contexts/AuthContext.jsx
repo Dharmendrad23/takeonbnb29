@@ -5,6 +5,18 @@ import { buildApiUrl } from '@/lib/api.js';
 
 const AuthContext = createContext();
 
+const normalizeUser = (user) => {
+  if (!user) return null;
+
+  const role = user.role ||
+    (user.userType === 'host' ? 'host' : user.userType === 'admin' ? 'admin' : user.userType === 'guest' ? 'guest' : 'guest');
+
+  return {
+    ...user,
+    role,
+  };
+};
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -27,7 +39,7 @@ export const AuthProvider = ({ children }) => {
     const savedUser = localStorage.getItem('authUser');
     if (token && savedUser) {
       try {
-        setCurrentUser(JSON.parse(savedUser));
+        setCurrentUser(normalizeUser(JSON.parse(savedUser)));
       } catch {
         localStorage.removeItem('authToken');
         localStorage.removeItem('authUser');
@@ -38,10 +50,11 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
+      const normalizedEmail = String(email || '').trim().toLowerCase();
       const response = await fetch(buildApiUrl('/api/auth/login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: normalizedEmail, password }),
       });
 
       const data = await response.json();
@@ -51,12 +64,13 @@ export const AuthProvider = ({ children }) => {
       }
 
       const { token, user } = data;
+      const normalizedUser = normalizeUser(user);
 
       localStorage.setItem('authToken', token);
-      localStorage.setItem('authUser', JSON.stringify(user));
-      setCurrentUser(user);
+      localStorage.setItem('authUser', JSON.stringify(normalizedUser));
+      setCurrentUser(normalizedUser);
 
-      return { record: user, token };
+      return { record: normalizedUser, token };
     } catch (error) {
       console.error('Login error:', error);
       throw new Error(error.message || 'Invalid email or password');
@@ -65,10 +79,11 @@ export const AuthProvider = ({ children }) => {
 
   const signup = async (email, password, name, role = 'guest') => {
     try {
+      const normalizedEmail = String(email || '').trim().toLowerCase();
       const response = await fetch(buildApiUrl('/api/auth/register'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, name, role }),
+        body: JSON.stringify({ email: normalizedEmail, password, name, role }),
       });
 
       const data = await response.json();
@@ -78,7 +93,7 @@ export const AuthProvider = ({ children }) => {
       }
 
       // Register ke baad login call karke token/session set karte hain
-      return await login(email, password);
+      return await login(normalizedEmail, password);
     } catch (error) {
       console.error('Signup error:', error);
       throw new Error(error.message || 'Failed to create account.');
@@ -95,16 +110,17 @@ export const AuthProvider = ({ children }) => {
 
   const requestOTP = async (email) => {
     try {
+      const normalizedEmail = String(email || '').trim().toLowerCase();
       const response = await fetch(buildApiUrl('/api/otp/request-login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: normalizedEmail }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Failed to send OTP');
 
       setPendingOtpId(data.otpId);
-      setPendingOtpEmail(email);
+      setPendingOtpEmail(normalizedEmail);
       return data.otpId;
     } catch (error) {
       console.error('OTP request error:', error);
@@ -125,13 +141,14 @@ export const AuthProvider = ({ children }) => {
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Invalid OTP code');
 
+      const normalizedUser = normalizeUser(data.user);
       localStorage.setItem('authToken', data.token);
-      localStorage.setItem('authUser', JSON.stringify(data.user));
-      setCurrentUser(data.user);
+      localStorage.setItem('authUser', JSON.stringify(normalizedUser));
+      setCurrentUser(normalizedUser);
       setPendingOtpId(null);
       setPendingOtpEmail(null);
 
-      return { record: data.user, token: data.token };
+      return { record: normalizedUser, token: data.token };
     } catch (error) {
       console.error('OTP verify error:', error);
       throw error;
@@ -139,19 +156,21 @@ export const AuthProvider = ({ children }) => {
   };
 
   const loginWithOTP = requestOTP;
+  const authWithOTP = async (otpId, code) => verifyOTP(code, otpId);
 
   const requestSignupOTP = async (email) => {
     try {
+      const normalizedEmail = String(email || '').trim().toLowerCase();
       const response = await fetch(buildApiUrl('/api/otp/request-signup'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: normalizedEmail }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Failed to send OTP');
 
       setPendingOtpId(data.otpId);
-      setPendingOtpEmail(email);
+      setPendingOtpEmail(normalizedEmail);
       return data.otpId;
     } catch (error) {
       console.error('Signup OTP request error:', error);
@@ -175,13 +194,14 @@ export const AuthProvider = ({ children }) => {
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Failed to verify OTP');
 
+      const normalizedUser = normalizeUser(data.user);
       localStorage.setItem('authToken', data.token);
-      localStorage.setItem('authUser', JSON.stringify(data.user));
-      setCurrentUser(data.user);
+      localStorage.setItem('authUser', JSON.stringify(normalizedUser));
+      setCurrentUser(normalizedUser);
       setPendingOtpId(null);
       setPendingOtpEmail(null);
 
-      return data.user;
+      return normalizedUser;
     } catch (error) {
       console.error('OTP signup error:', error);
       throw error;
@@ -192,7 +212,6 @@ export const AuthProvider = ({ children }) => {
     throw new Error(`${featureName} abhi available nahi hai.`);
   };
   const requestPhoneOTP = notImplemented('Phone OTP');
-  const authWithOTP = notImplemented('Phone OTP auth');
   const verifyPhoneOTP = notImplemented('Phone OTP verification');
   const loginWithOAuth2 = notImplemented('Social login (Google/Facebook)');
 

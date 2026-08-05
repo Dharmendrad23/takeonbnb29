@@ -69,7 +69,7 @@ const HostPhoneLoginPage = () => {
     setIsSubmitting(true);
     try {
       const authData = await verifyPhoneOTP(otpId, otpCode);
-      if (authData?.record?.userType !== 'host') {
+      if (authData?.record?.role !== 'host') {
         toast.error('Logged in successfully, but this account is not registered as a host.');
       } else {
         toast.success('Welcome back!');
