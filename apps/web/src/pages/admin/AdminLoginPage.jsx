@@ -30,14 +30,24 @@ const AdminLoginPage = () => {
     e.preventDefault();
     if (!email || !password) return toast.error("Please enter email and password");
     
+    console.log('[AdminLoginPage] handleLogin called with email:', email);
     setIsLoading(true);
     try {
+      console.log('[AdminLoginPage] Calling login()...');
       await login(email, password);
+      console.log('[AdminLoginPage] Login succeeded');
       const from = location.state?.from?.pathname || '/admin';
+      console.log('[AdminLoginPage] Navigating to:', from);
       navigate(from, { replace: true });
     } catch (err) {
-      toast.error("Invalid credentials or unauthorized access.");
+      console.error('[AdminLoginPage] Login error caught:', {
+        name: err.name,
+        message: err.message,
+        stack: err.stack,
+      });
+      toast.error(err.message || "Invalid credentials or unauthorized access.");
     } finally {
+      console.log('[AdminLoginPage] Clearing loading state');
       setIsLoading(false);
     }
   };

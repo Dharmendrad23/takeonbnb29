@@ -11,6 +11,8 @@ export const useAdminAuth = () => {
 
 const API_HOST = import.meta.env.VITE_API_URL;
 
+console.log('[AdminAuth] API_HOST from VITE_API_URL:', API_HOST);
+
 export const AdminAuthProvider = ({ children }) => {
   const [adminUser, setAdminUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -37,31 +39,56 @@ export const AdminAuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    const response = await fetch(`${API_HOST}/api/auth/login`, {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({ email, password }),
-});
+    try {
+      const loginUrl = `${API_HOST}/api/auth/login`;
+      console.log('[AdminAuth] Starting login request...');
+      console.log('[AdminAuth] URL:', loginUrl);
+      console.log('[AdminAuth] Email:', email);
+      console.log('[AdminAuth] Password length:', password?.length || 0);
 
-    const data = await response.json();
+      const response = await fetch(loginUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
 
-    if (!response.ok) {
-      throw new Error(data.message || 'Invalid credentials');
+      console.log('[AdminAuth] Response status:', response.status);
+      console.log('[AdminAuth] Response headers:', {
+        contentType: response.headers.get('content-type'),
+      });
+
+      const data = await response.json();
+      console.log('[AdminAuth] Response JSON:', { success: data.success, message: data.message, hasToken: !!data.token, hasUser: !!data.user });
+
+      if (!response.ok) {
+        console.error('[AdminAuth] Login failed:', data.message);
+        throw new Error(data.message || 'Invalid credentials');
+      }
+
+      const { token, user } = data;
+
+      if (user.role !== 'admin') {
+        console.error('[AdminAuth] User role is not admin:', user.role);
+        throw new Error('Access denied. Admin account required.');
+      }
+
+      console.log('[AdminAuth] Login successful, saving tokens...');
+      localStorage.setItem('adminToken', token);
+      localStorage.setItem('adminUser', JSON.stringify(user));
+      setAdminUser(user);
+      toast.success(`Welcome back, ${user.name || 'Admin'}`);
+      console.log('[AdminAuth] Login completed successfully');
+      return { token, user };
+    } catch (err) {
+      console.error('[AdminAuth] Login error:', {
+        name: err.name,
+        message: err.message,
+        stack: err.stack,
+      });
+      throw err;
     }
-
-    const { token, user } = data;
-
-    if (user.role !== 'admin') {
-      throw new Error('Access denied. Admin account required.');
-    }
-
-    localStorage.setItem('adminToken', token);
-    localStorage.setItem('adminUser', JSON.stringify(user));
-    setAdminUser(user);
-    toast.success(`Welcome back, ${user.name || 'Admin'}`);
-    return { token, user };
   };
 
   const logoutAdmin = () => {

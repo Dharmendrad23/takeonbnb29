@@ -41,9 +41,12 @@ process.on("SIGTERM", async () => {
 
 app.use(helmet());
 
+const corsOrigin = process.env.CORS_ORIGIN || "*";
+console.log('[CORS] Configured origins:', corsOrigin);
+
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || "*",
+    origin: corsOrigin,
     credentials: true,
   })
 );
@@ -65,8 +68,14 @@ app.use(
 );
 
 // API Routes
-app.use("/api", routes());
-app.use("/hcgi/api", routes());
+app.use("/api", (req, res, next) => {
+  console.log('[API Middleware]', req.method, req.path);
+  next();
+}, routes());
+app.use("/hcgi/api", (req, res, next) => {
+  console.log('[HCGI Middleware]', req.method, req.path);
+  next();
+}, routes());
 
 app.use(errorMiddleware);
 

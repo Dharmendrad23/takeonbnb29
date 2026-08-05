@@ -44,27 +44,42 @@ export const register = async (req, res) => {
 
 export const login = async (req, res) => {
   try {
+    console.log('[AuthController] Login request received');
+    console.log('[AuthController] Request body:', { email: req.body.email, hasPassword: !!req.body.password });
 
     const { email, password } = req.body;
 
+    if (!email || !password) {
+      console.log('[AuthController] Missing email or password');
+      return res.status(400).json({
+        success: false,
+        message: "Email and password are required",
+      });
+    }
+
+    console.log('[AuthController] Looking up user by email:', email);
     const user = await User.findOne({ email });
 
     if (!user) {
+      console.log('[AuthController] User not found:', email);
       return res.status(400).json({
         success: false,
         message: "Invalid Email",
       });
     }
 
+    console.log('[AuthController] User found, checking password...');
     const match = await bcrypt.compare(password, user.password);
 
     if (!match) {
+      console.log('[AuthController] Password mismatch for user:', email);
       return res.status(400).json({
         success: false,
         message: "Invalid Password",
       });
     }
 
+    console.log('[AuthController] Password matched, generating JWT...');
     const token = jwt.sign(
       {
         id: user._id,
@@ -76,20 +91,30 @@ export const login = async (req, res) => {
       }
     );
 
+    console.log('[AuthController] JWT generated, sending response...');
+    console.log('[AuthController] User role:', user.role);
     res.json({
       success: true,
       token,
-      user,
+      user: {
+        _id: user._id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
     });
+    console.log('[AuthController] Login response sent successfully');
 
   } catch (err) {
-
-    console.error(err);
+    console.error('[AuthController] Login error:', {
+      name: err.name,
+      message: err.message,
+      stack: err.stack,
+    });
 
     res.status(500).json({
       success: false,
       message: err.message,
     });
-
   }
 };
