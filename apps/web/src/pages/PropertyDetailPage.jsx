@@ -33,7 +33,10 @@ const PropertyDetailPage = () => {
         const isAdminPreview = Boolean(
           typeof window !== 'undefined' && window.localStorage.getItem('adminToken')
         );
-        if (data.status !== 'Live' && !isAdminPreview) {
+        // Legacy/older properties may have no status field at all - treat those as public,
+        // only hold back listings explicitly marked pending/rejected.
+        const isRestricted = data.status === 'pending' || data.status === 'rejected';
+        if (isRestricted && !isAdminPreview) {
           setError('Property not found or unavailable.');
         } else {
           setProperty(data);
@@ -77,7 +80,7 @@ const photos = property.photos || [];
         <meta name="description" content={property.description?.substring(0, 150)} />
       </Helmet>
 
-      {property.status !== 'Live' && (
+      {(property.status === 'pending' || property.status === 'rejected') && (
         <div className="bg-warning/10 border-b border-warning/30 text-warning-foreground">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 text-sm font-semibold">
             Preview only &mdash; this listing is currently <span className="capitalize">{property.status}</span> and not visible to guests.
