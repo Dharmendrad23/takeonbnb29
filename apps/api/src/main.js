@@ -17,58 +17,19 @@ const app = express();
 
 app.set("trust proxy", true);
 
-process.on("uncaughtException", (error) => {
-  logger.error("Uncaught exception:", error);
-});
-
-process.on("unhandledRejection", (reason, promise) => {
-  logger.error("Unhandled rejection at:", promise, "reason:", reason);
-});
-
-process.on("SIGINT", async () => {
-  logger.info("Interrupted");
-  process.exit(0);
-});
-
-process.on("SIGTERM", async () => {
-  logger.info("SIGTERM signal received");
-
-  await new Promise((resolve) => setTimeout(resolve, 3000));
-
-  logger.info("Exiting");
-  process.exit(0);
-});
-
 app.use(helmet());
 
 app.use(
   cors({
-    origin: (origin, callback) => {
-      const configuredOrigins = (process.env.CORS_ORIGIN || "")
-        .split(",")
-        .map((value) => value.trim())
-        .filter(Boolean);
-
-      if (!origin || configuredOrigins.length === 0 || configuredOrigins.includes("*") || configuredOrigins.includes(origin)) {
-        callback(null, true);
-        return;
-      }
-
-      callback(new Error("CORS origin not allowed"));
-    },
-    credentials: false,
+    origin: process.env.CORS_ORIGIN || "*",
+    credentials: true,
   })
 );
 
 app.use(morgan("combined"));
 app.use(globalRateLimit);
 
-app.use(
-  express.json({
-    limit: BodyLimit,
-  })
-);
-
+app.use(express.json({ limit: BodyLimit }));
 app.use(
   express.urlencoded({
     extended: true,
@@ -79,7 +40,6 @@ app.use(
 // API Routes
 app.use("/api", routes());
 app.use("/hcgi/api", routes());
-app.use("/", routes());
 
 app.use(errorMiddleware);
 
@@ -94,11 +54,11 @@ const port = process.env.PORT || 3001;
 connectDB()
   .then(() => {
     app.listen(port, () => {
-      logger.info(`🚀 API Server running on port ${port}`);
+      logger.info(`API Server running on port ${port}`);
     });
   })
   .catch((err) => {
-    logger.error("❌ Failed to connect to MongoDB:", err);
+    logger.error("Failed to connect to MongoDB:", err);
     process.exit(1);
   });
 
