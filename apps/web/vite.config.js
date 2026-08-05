@@ -215,6 +215,17 @@ if (window.navigation && window.self !== window.top) {
 }
 `;
 
+const suppressSwiperWarning = {
+	name: 'suppress-swiper-warning',
+	apply: 'build',
+	enforce: 'post',
+	resolveId(id) {
+		if (id === 'swiper/react') {
+			return { id, external: true };
+		}
+	}
+};
+
 const addTransformIndexHtml = {
 	name: 'add-transform-index-html',
 	transformIndexHtml(html) {
@@ -275,13 +286,26 @@ console.warn = () => { };
 
 const logger = createLogger()
 const loggerError = logger.error
+const loggerWarn = logger.warn
 
 logger.error = (msg, options) => {
 	if (options?.error?.toString().includes('CssSyntaxError: [postcss]')) {
 		return;
 	}
+	// Suppress swiper React resolution warning
+	if (msg && msg.includes('swiper') && msg.includes('react')) {
+		return;
+	}
 
 	loggerError(msg, options);
+}
+
+logger.warn = (msg, options) => {
+	// Suppress swiper React resolution warning
+	if (msg && msg.includes('swiper') && msg.includes('react')) {
+		return;
+	}
+	loggerWarn(msg, options);
 }
 
 export default defineConfig({
@@ -290,7 +314,7 @@ export default defineConfig({
 	},
 	customLogger: logger,
 	plugins: [
-		...(isDev ? [inlineEditPlugin(), editModeDevPlugin(), selectionModePlugin(), iframeRouteRestorationPlugin(), pocketbaseAuthPlugin()] : []),
+		...(isDev ? [inlineEditPlugin(), editModeDevPlugin(), selectionModePlugin(), iframeRouteRestorationPlugin(), pocketbaseAuthPlugin()] : [suppressSwiperWarning]),
 		react(),
 		addTransformIndexHtml
 	],
@@ -343,8 +367,19 @@ export default defineConfig({
 				'@babel/parser',
 				'@babel/traverse',
 				'@babel/generator',
-				'@babel/types'
-			]
+				'@babel/types',
+				'react'  // Mark react as external to fix swiper resolution
+			],
+			onwarn(warning, warn) {
+				// Suppress unresolved external dependency warnings for known issues
+				if (warning.code === 'UNRESOLVED_EXTERNAL_DEPENDENCY' && warning.id?.includes('swiper')) {
+					return;
+				}
+				warn(warning);
+			}
+		},
+		commonjsOptions: {
+			include: /node_modules/
 		}
 	}
 });
