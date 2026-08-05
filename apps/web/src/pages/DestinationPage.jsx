@@ -4,6 +4,7 @@ import { useParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import api from '@/lib/api.js';
 import PropertyGrid from '@/components/PropertyGrid.jsx';
+import pb from '@/lib/pocketbaseClient';
 
 const DestinationPage = () => {
   const { location } = useParams();

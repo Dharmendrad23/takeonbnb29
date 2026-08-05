@@ -6,6 +6,7 @@ import HostDashboardLayout from '@/components/HostDashboardLayout.jsx';
 import { Home, CalendarCheck, DollarSign, Star } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatCurrency } from '@/lib/bookingUtils.js';
+import pb from '@/lib/pocketbaseClient';
 
 const HostDashboardHome = () => {
   const { currentUser } = useAuth();

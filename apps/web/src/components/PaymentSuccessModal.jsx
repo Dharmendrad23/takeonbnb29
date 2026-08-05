@@ -8,6 +8,7 @@ import apiServerClient from '@/lib/apiServerClient.js';
 import { formatCurrencyINR, formatDate } from '@/lib/bookingUtils.js';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import pb from '@/lib/pocketbaseClient';
 
 const PaymentSuccessModal = ({ bookingId, isOpen, onClose }) => {
   const [booking, setBooking] = useState(null);

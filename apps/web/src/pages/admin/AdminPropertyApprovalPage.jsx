@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/bookingUtils.js';
+import pb from '@/lib/pocketbaseClient';
 
 const AdminPropertyApprovalPage = () => {
   const [properties, setProperties] = useState([]);

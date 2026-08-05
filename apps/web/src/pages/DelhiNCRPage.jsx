@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import SharedDestinationLayout from '@/components/SharedDestinationLayout.jsx';
 import api from '@/lib/api.js';
+import pb from '@/lib/pocketbaseClient';
 
 const whyVisit = [
   {

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '@/lib/api.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { toast } from 'sonner';
+import pb from '@/lib/pocketbaseClient';
 
 export function useFavorites() {
   const { currentUser } = useAuth();

@@ -9,6 +9,7 @@ import PropertyCard from '@/components/PropertyCard.jsx';
 import { Button } from '@/components/ui/button';
 import { Plus, Home, FileText, Clock, CheckCircle, Globe } from 'lucide-react';
 import { toast } from 'sonner';
+import pb from '@/lib/pocketbaseClient';
 
 const HostPropertiesPage = () => {
   const { currentUser } = useAuth();

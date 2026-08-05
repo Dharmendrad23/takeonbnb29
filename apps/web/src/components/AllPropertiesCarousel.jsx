@@ -3,6 +3,7 @@ import { Home } from 'lucide-react';
 import api from '@/lib/api.js';
 import SwappingPropertyCard from '@/components/SwappingPropertyCard.jsx';
 import PropertyCardSkeleton from '@/components/PropertyCardSkeleton.jsx';
+import pb from '@/lib/pocketbaseClient';
 
 const AllPropertiesCarousel = ({ category = 'All' }) => {
   const [properties, setProperties] = useState([]);

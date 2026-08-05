@@ -14,6 +14,7 @@ import { useAuth } from '@/contexts/AuthContext.jsx';
 import { toast } from 'sonner';
 import { validatePropertyForm } from '@/lib/validatePropertyForm.js';
 import { Loader2, Save } from 'lucide-react';
+import pb from '@/lib/pocketbaseClient';
 
 const EditPropertyPage = () => {
   const { id } = useParams();

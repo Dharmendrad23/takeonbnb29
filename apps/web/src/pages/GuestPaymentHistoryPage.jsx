@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import pb from '@/lib/pocketbaseClient';
 
 const GuestPaymentHistoryPage = () => {
   const { currentUser } = useAuth();

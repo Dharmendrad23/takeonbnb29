@@ -8,6 +8,7 @@ import api from '@/lib/api.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import pb from '@/lib/pocketbaseClient';
 
 export const ReviewForm = ({ propertyId, onReviewAdded }) => {
   const { currentUser } = useAuth();

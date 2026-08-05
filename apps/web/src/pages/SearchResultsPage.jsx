@@ -8,6 +8,7 @@ import PropertyCardSkeleton from '@/components/PropertyCardSkeleton.jsx';
 import { Search, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import pb from '@/lib/pocketbaseClient';
 
 const SearchResultsPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();

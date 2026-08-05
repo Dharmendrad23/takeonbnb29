@@ -4,6 +4,7 @@ import { Star, MapPin, AlertCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '@/lib/api.js';
 import { Button } from '@/components/ui/button';
+import pb from '@/lib/pocketbaseClient';
 
 const SwappingPropertyCard = ({ property, interval = 5000, delay = 0 }) => {
   const navigate = useNavigate();

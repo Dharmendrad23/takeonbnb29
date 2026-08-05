@@ -6,6 +6,7 @@ import { MapPin, Star, Filter, Search } from 'lucide-react';
 import { formatCurrency } from '@/lib/bookingUtils.js';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import pb from '@/lib/pocketbaseClient';
 
 const CategoryFilter = () => {
   const location = useLocation();

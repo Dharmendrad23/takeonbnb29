@@ -28,6 +28,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import api from '@/lib/api.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
+import pb from '@/lib/pocketbaseClient';
 
 export const PropertyHeader = ({ property }) => {
   const { currentUser } = useAuth();

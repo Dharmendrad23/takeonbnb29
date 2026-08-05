@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
 import api from '@/lib/api.js';
+import pb from '@/lib/pocketbaseClient';
 
 const HostPropertyCard = ({ property, onEdit, onDelete }) => {
   const imageUrl = property.coverImage 

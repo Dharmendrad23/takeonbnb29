@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDate, isPastDate } from '@/lib/bookingUtils.js';
 import { differenceInDays, parseISO } from 'date-fns';
+import pb from '@/lib/pocketbaseClient';
 
 const GuestUpcomingTripsPage = () => {
   const { currentUser } = useAuth();

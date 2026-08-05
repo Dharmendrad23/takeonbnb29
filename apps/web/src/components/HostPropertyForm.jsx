@@ -9,6 +9,7 @@ import { FormFieldWrapper } from '@/components/FormFieldWrapper.jsx';
 import { toast } from 'sonner';
 import api from '@/lib/api.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
+import pb from '@/lib/pocketbaseClient';
 
 const HostPropertyForm = ({ property = null, onClose, onSuccess }) => {
   const { currentUser } = useAuth();

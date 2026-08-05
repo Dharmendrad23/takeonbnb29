@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { useFavorites } from '@/hooks/useFavorites.js';
 import { Button } from '@/components/ui/button';
 import api from '@/lib/api.js';
+import pb from '@/lib/pocketbaseClient';
 
 const PropertyCard = memo(({ property, isHostView = false }) => {
   const navigate = useNavigate();

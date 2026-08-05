@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '@/lib/api.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
+import pb from '@/lib/pocketbaseClient';
 
 export const useRealtimeBookings = (options = {}) => {
   const [bookings, setBookings] = useState([]);

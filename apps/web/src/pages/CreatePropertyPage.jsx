@@ -14,6 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import api from '@/lib/api.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { toast } from 'sonner';
+import pb from '@/lib/pocketbaseClient';
 
 const CreatePropertyPage = () => {
   const navigate = useNavigate();

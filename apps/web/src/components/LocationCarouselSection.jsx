@@ -6,6 +6,7 @@ import PropertyCard from '@/components/PropertyCard.jsx';
 import PropertyCardSkeleton from '@/components/PropertyCardSkeleton.jsx';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils.js';
+import pb from '@/lib/pocketbaseClient';
 
 // Helper to chunk arrays for multi-row carousel
 const chunkArray = (arr, size) => {

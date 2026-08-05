@@ -5,6 +5,7 @@ import api from '@/lib/api.js';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
+import pb from '@/lib/pocketbaseClient';
 
 export const ReviewsSection = ({ propertyId }) => {
   const [reviews, setReviews] = useState([]);

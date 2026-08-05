@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { formatCurrencyINR, formatDate, isPastDate } from '@/lib/bookingUtils.js';
 import { Badge } from '@/components/ui/badge';
+import pb from '@/lib/pocketbaseClient';
 
 const GuestDashboardHome = () => {
   const { currentUser } = useAuth();

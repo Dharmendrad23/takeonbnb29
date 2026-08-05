@@ -6,6 +6,7 @@ import api from '@/lib/api.js';
 import { formatCurrencyINR } from '@/lib/bookingUtils.js';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import pb from '@/lib/pocketbaseClient';
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--blue-500, 217 91% 60%))', 'hsl(var(--purple-500, 270 90% 65%))', 'hsl(var(--emerald-500, 142 71% 45%))'];
 

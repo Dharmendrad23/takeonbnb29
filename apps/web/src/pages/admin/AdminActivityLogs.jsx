@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet';
 import api from '@/lib/api.js';
 import { Activity, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import pb from '@/lib/pocketbaseClient';
 
 const AdminActivityLogs = () => {
   const [logs, setLogs] = useState([]);

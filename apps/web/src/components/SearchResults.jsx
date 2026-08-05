@@ -5,6 +5,7 @@ import api from '@/lib/api.js';
 import { MapPin, Star, BedDouble, Bath, Users, SearchX } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+import pb from '@/lib/pocketbaseClient';
 
 const SearchResults = ({ criteria }) => {
   const [properties, setProperties] = useState([]);

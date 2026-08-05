@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import api from '@/lib/api.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { toast } from 'sonner';
+import pb from '@/lib/pocketbaseClient';
 
 const HostBookingCalendar = () => {
   const { currentUser } = useAuth();

@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatCurrency, calculateTotalPrice, checkDateOverlap } from '@/lib/bookingUtils.js';
 import { toast } from 'sonner';
+import pb from '@/lib/pocketbaseClient';
 
 const BookingPage = () => {
   const { id } = useParams(); // propertyId

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDate } from '@/lib/bookingUtils.js';
 import { toast } from 'sonner';
+import pb from '@/lib/pocketbaseClient';
 
 const GuestReviewsPage = () => {
   const { currentUser } = useAuth();

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '@/lib/api.js';
 import { toast } from 'sonner';
+import pb from '@/lib/pocketbaseClient';
 
 export const usePaymentAutoDetect = (bookingId) => {
   const [isVerified, setIsVerified] = useState(false);

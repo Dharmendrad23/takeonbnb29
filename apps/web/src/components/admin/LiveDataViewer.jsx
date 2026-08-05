@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import pb from '@/lib/pocketbaseClient';
 
 const LiveDataViewer = ({ collectionName, refreshTrigger }) => {
   const [data, setData] = useState([]);

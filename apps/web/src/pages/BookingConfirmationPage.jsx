@@ -5,6 +5,7 @@ import api from '@/lib/api.js';
 import { CheckCircle2, Download, Home, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatCurrency, formatDate } from '@/lib/bookingUtils.js';
+import pb from '@/lib/pocketbaseClient';
 
 const BookingConfirmationPage = () => {
   const { bookingId } = useParams();

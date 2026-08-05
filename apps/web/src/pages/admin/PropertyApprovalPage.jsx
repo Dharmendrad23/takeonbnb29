@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Textarea } from '@/components/ui/textarea';
 import { MapPin, User, Mail, Phone, Calendar, CheckCircle2, XCircle, Home } from 'lucide-react';
 import { toast } from 'sonner';
+import pb from '@/lib/pocketbaseClient';
 
 const PropertyApprovalPage = () => {
   const [properties, setProperties] = useState([]);

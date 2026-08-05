@@ -8,6 +8,7 @@ import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tool
 import api from '@/lib/api.js';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import pb from '@/lib/pocketbaseClient';
 
 const StatCard = ({ title, value, icon: Icon, colorClass, isLoading, trend }) => (
   <div className="bg-card border border-border p-6 rounded-3xl shadow-sm transition-all duration-300 hover:shadow-md relative overflow-hidden group">

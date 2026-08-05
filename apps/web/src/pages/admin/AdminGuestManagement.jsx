@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import api from '@/lib/api.js';
 import { toast } from 'sonner';
+import pb from '@/lib/pocketbaseClient';
 
 const AdminGuestManagement = () => {
   const [users, setUsers] = useState([]);

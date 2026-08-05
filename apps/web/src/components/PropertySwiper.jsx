@@ -8,6 +8,7 @@ import { formatCurrencyINR } from '@/lib/bookingUtils.js';
 import { Link } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
 import { motion } from 'framer-motion';
+import pb from '@/lib/pocketbaseClient';
 
 const PropertySwiper = ({ properties = [], loading = false }) => {
   const [emblaRef, emblaApi] = useEmblaCarousel(

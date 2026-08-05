@@ -6,6 +6,7 @@ import GuestDashboardLayout from '@/components/GuestDashboardLayout.jsx';
 import PropertyCard from '@/components/PropertyCard.jsx';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Heart } from 'lucide-react';
+import pb from '@/lib/pocketbaseClient';
 
 const GuestFavoritesPage = () => {
   const { currentUser } = useAuth();

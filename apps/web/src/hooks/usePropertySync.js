@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import api from '@/lib/api.js';
+import pb from '@/lib/pocketbaseClient';
 
 export const usePropertySync = (callback) => {
   useEffect(() => {

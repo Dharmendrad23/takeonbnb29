@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatCurrencyINR } from '@/lib/bookingUtils.js';
 import { toast } from 'sonner';
+import pb from '@/lib/pocketbaseClient';
 
 const GuestWishlistPage = () => {
   const { currentUser } = useAuth();

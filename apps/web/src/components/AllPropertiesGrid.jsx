@@ -3,6 +3,7 @@ import api from '@/lib/api.js';
 import SwappingPropertyCard from '@/components/SwappingPropertyCard.jsx';
 import PropertyCardSkeleton from '@/components/PropertyCardSkeleton.jsx';
 import { AlertCircle } from 'lucide-react';
+import pb from '@/lib/pocketbaseClient';
 
 const AllPropertiesGrid = () => {
   const [properties, setProperties] = useState([]);

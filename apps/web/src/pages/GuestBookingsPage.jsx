@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import GuestDashboardLayout from '@/components/GuestDashboardLayout.jsx';
+import pb from '@/lib/pocketbaseClient';
 
 const GuestBookingsPage = () => {
   const { currentUser } = useAuth();

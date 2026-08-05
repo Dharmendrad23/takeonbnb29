@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '@/lib/api.js';
+import pb from '@/lib/pocketbaseClient';
 
 export const useRealtimeProperties = (options = {}) => {
   const [properties, setProperties] = useState([]);

@@ -6,6 +6,7 @@ import HostDashboardLayout from '@/components/HostDashboardLayout.jsx';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import pb from '@/lib/pocketbaseClient';
 
 const HostSettingsPage = () => {
   const { currentUser } = useAuth();

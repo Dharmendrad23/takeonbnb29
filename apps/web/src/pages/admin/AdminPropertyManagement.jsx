@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import api from '@/lib/api.js';
 import { formatCurrency } from '@/lib/bookingUtils.js';
 import { toast } from 'sonner';
+import pb from '@/lib/pocketbaseClient';
 
 const AdminPropertyManagement = () => {
   const [properties, setProperties] = useState([]);

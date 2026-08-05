@@ -9,6 +9,7 @@ import { Calendar } from 'lucide-react';
 import api from '@/lib/api.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { toast } from 'sonner';
+import pb from '@/lib/pocketbaseClient';
 
 const GuestDashboard = () => {
   const { currentUser } = useAuth();

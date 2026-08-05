@@ -9,6 +9,7 @@ import api from '@/lib/api.js';
 import { formatCurrencyINR, formatDate } from '@/lib/bookingUtils.js';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
+import pb from '@/lib/pocketbaseClient';
 
 const AdminBookingManagement = () => {
   const [bookings, setBookings] = useState([]);
