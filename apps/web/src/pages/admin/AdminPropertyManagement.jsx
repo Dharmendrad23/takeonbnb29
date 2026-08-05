@@ -12,6 +12,13 @@ import { formatCurrency } from '@/lib/bookingUtils.js';
 import { toast } from 'sonner';
 import pb from '@/lib/pocketbaseClient';
 
+const PROPERTY_TYPE_OPTIONS = [
+  { value: 'apartment', label: 'Apartment' },
+  { value: 'house', label: 'House' },
+  { value: 'villa', label: 'Villa' },
+  { value: 'room', label: 'Private Room' },
+];
+
 const AdminPropertyManagement = () => {
   const [properties, setProperties] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -20,7 +27,7 @@ const AdminPropertyManagement = () => {
   const [editingId, setEditingId] = useState(null);
   
   const [formData, setFormData] = useState({
-    title: '', description: '', location: '', propertyType: 'Villas',
+    title: '', description: '', location: '', propertyType: 'villa',
     pricePerNight: '', bedrooms: '', bathrooms: '', guestCapacity: '', status: 'Live'
   });
 
@@ -57,7 +64,7 @@ const AdminPropertyManagement = () => {
   const openCreateModal = () => {
     setEditingId(null);
     setFormData({
-      title: '', description: '', location: '', propertyType: 'Villas',
+      title: '', description: '', location: '', propertyType: 'villa',
       pricePerNight: '', bedrooms: '', bathrooms: '', guestCapacity: '', status: 'Live'
     });
     setIsModalOpen(true);
@@ -67,7 +74,7 @@ const AdminPropertyManagement = () => {
     setEditingId(property.id);
     setFormData({
       title: property.title, description: property.description, location: property.location,
-      propertyType: property.propertyType, pricePerNight: property.pricePerNight,
+      propertyType: String(property.propertyType || 'villa').toLowerCase(), pricePerNight: property.pricePerNight,
       bedrooms: property.bedrooms, bathrooms: property.bathrooms, guestCapacity: property.guestCapacity,
       status: property.status
     });
@@ -96,7 +103,8 @@ const AdminPropertyManagement = () => {
       setIsModalOpen(false);
     } catch (err) {
       console.error(err);
-      toast.error("Failed to save property");
+      const message = err?.response?.data?.message || err.message || "Failed to save property";
+      toast.error(message);
     }
   };
 
@@ -151,9 +159,11 @@ const AdminPropertyManagement = () => {
                     <Select value={formData.propertyType} onValueChange={(v) => handleSelectChange('propertyType', v)}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Villas">Villas</SelectItem>
-                        <SelectItem value="Hotels">Hotels</SelectItem>
-                        <SelectItem value="Apartments">Apartments</SelectItem>
+                        {PROPERTY_TYPE_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
