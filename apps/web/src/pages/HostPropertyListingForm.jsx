@@ -12,11 +12,23 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import axios from "axios";
 import { useAuth } from '@/contexts/AuthContext.jsx';
+import { buildApiUrl } from '@/lib/api.js';
 
 const STEPS = [
   { id: 1, title: 'Basic Info', icon: Home },
   { id: 2, title: 'Amenities', icon: ListChecks },
   { id: 3, title: 'Media', icon: ImageIcon }
+];
+
+const DEFAULT_AMENITIES = [
+  { id: 'wifi', name: 'WiFi' },
+  { id: 'kitchen', name: 'Kitchen' },
+  { id: 'parking', name: 'Free parking' },
+  { id: 'pool', name: 'Pool' },
+  { id: 'ac', name: 'Air conditioning' },
+  { id: 'tv', name: 'TV' },
+  { id: 'heating', name: 'Heating' },
+  { id: 'garden', name: 'Garden' },
 ];
 
 const HostPropertyListingForm = () => {
@@ -28,36 +40,30 @@ const HostPropertyListingForm = () => {
 
   // Step 1 State
   const [formData, setFormData] = useState({
-    title: '', description: '', location: '', propertyType: 'Villas',
+    title: '', description: '', location: '', propertyType: 'villa',
     pricePerNight: '', bedrooms: '', bathrooms: '', guestCapacity: ''
   });
 
   // Step 2 State
-  const [availableAmenities, setAvailableAmenities] = useState([]);
+  const [availableAmenities, setAvailableAmenities] = useState(DEFAULT_AMENITIES);
   const [selectedAmenities, setSelectedAmenities] = useState([]);
 
   // Step 3 State
   const [photos, setPhotos] = useState([]);
   const fileInputRef = useRef(null);
 
-  // Fetch amenities
-  useEffect(() => {
-    const fetchAmenities = async () => {
-      try {
-        const { data } = await axios.get("http://localhost:3001/amenities");
-        setAvailableAmenities(data);
-      } catch (err) {
-        console.error("Failed to fetch amenities", err);
-      }
-    };
-    fetchAmenities();
-  }, []);
+  const toDataUrl = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error(`Failed to read ${file.name}`));
+    reader.readAsDataURL(file);
+  });
 
   // Fetch city suggestions from existing live properties
   useEffect(() => {
     const fetchCities = async () => {
       try {
-        const { data } = await axios.get("http://localhost:3001/properties", {
+        const { data } = await axios.get(buildApiUrl('/api/properties'), {
           params: { status: 'Live' }
         });
 
@@ -153,24 +159,23 @@ const HostPropertyListingForm = () => {
 
     setIsSubmitting(true);
     try {
-      const data = new FormData();
-      data.append('title', formData.title);
-      data.append('description', formData.description);
-      data.append('location', formData.location);
-      data.append('propertyType', formData.propertyType);
-      data.append('pricePerNight', Number(formData.pricePerNight));
-      data.append('bedrooms', Number(formData.bedrooms));
-      data.append('bathrooms', Number(formData.bathrooms));
-      data.append('guestCapacity', Number(formData.guestCapacity));
-      data.append('hostId', currentUser.id);
-      data.append('status', 'Submitted');
+      const imageData = await Promise.all(photos.map((photo) => toDataUrl(photo.file)));
+      const payload = {
+        title: formData.title,
+        description: formData.description,
+        location: formData.location,
+        propertyType: formData.propertyType,
+        pricePerNight: Number(formData.pricePerNight),
+        bedrooms: Number(formData.bedrooms),
+        bathrooms: Number(formData.bathrooms),
+        guestCapacity: Number(formData.guestCapacity),
+        hostId: currentUser.id,
+        status: 'Draft',
+        amenities: selectedAmenities,
+        photos: imageData,
+      };
 
-      selectedAmenities.forEach(id => data.append('amenities', id));
-      photos.forEach(photo => data.append('photos', photo.file));
-
-      await axios.post("http://localhost:3001/properties", data, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      await axios.post(buildApiUrl('/api/properties'), payload);
 
       toast.success('Property submitted successfully!');
       navigate('/host/dashboard');
@@ -270,9 +275,10 @@ const HostPropertyListingForm = () => {
                     <Select value={formData.propertyType} onValueChange={(val) => handleSelectChange('propertyType', val)}>
                       <SelectTrigger className="h-12 bg-background border-border text-foreground"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Villas">Villas</SelectItem>
-                        <SelectItem value="Hotels">Hotels</SelectItem>
-                        <SelectItem value="Apartments">Apartments</SelectItem>
+                        <SelectItem value="villa">Villa</SelectItem>
+                        <SelectItem value="house">House</SelectItem>
+                        <SelectItem value="apartment">Apartment</SelectItem>
+                        <SelectItem value="room">Room</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

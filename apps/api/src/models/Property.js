@@ -35,6 +35,29 @@ const propertySchema = new mongoose.Schema(
       min: 1,
     },
 
+    bedrooms: {
+      type: Number,
+      default: 1,
+      min: 1,
+    },
+
+    bathrooms: {
+      type: Number,
+      default: 1,
+      min: 1,
+    },
+
+    guestCapacity: {
+      type: Number,
+      default: 1,
+      min: 1,
+    },
+
+    status: {
+      type: String,
+      default: "Draft",
+    },
+
     amenities: [
       {
         type: String,
