@@ -41,28 +41,29 @@ process.on("SIGTERM", async () => {
 
 app.use(helmet());
 
-// Parse comma-separated CORS origins into an array
-function getCorsOrigins() {
-  const corsEnv = process.env.CORS_ORIGIN || "*";
-  if (corsEnv === "*") return "*";
-  
-  // Parse comma-separated values
-  const origins = corsEnv.split(',').map(o => o.trim()).filter(Boolean);
-  console.log('[CORS] Configured origins:', origins);
-  return origins;
-}
+// Configure CORS with proper origin array handling
+const ALLOWED_ORIGINS = [
+	'https://takeonbnb.com',
+	'https://www.takeonbnb.com',
+	'https://takeonbnb29.onrender.com',
+	'https://takeonbnb29.netlify.app',
+	...(process.env.CORS_ORIGIN
+		? process.env.CORS_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean)
+		: []),
+];
 
-const corsOrigin = getCorsOrigins();
+console.log('[CORS] Configured allowed origins:', ALLOWED_ORIGINS);
 
-// Log which branch/version is deployed
-console.log('[DEPLOYMENT] Version: 2.2.0 - CORS fix v2');
-
-app.use(
-  cors({
-    origin: corsOrigin,
-    credentials: true,
-  })
-);
+app.use(cors({
+	origin: (origin, callback) => {
+		// Allow requests with no Origin header (mobile apps, server-to-server, curl)
+		if (!origin) return callback(null, true);
+		if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
+		console.warn(`[CORS] Blocked origin: ${origin}`);
+		callback(null, false);
+	},
+	credentials: true,
+}));
 
 app.use(morgan("combined"));
 app.use(globalRateLimit);
