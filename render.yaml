@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: takeonbnb-frontend
+    env: node
+    buildCommand: npm install --legacy-peer-deps && npm run build
+    startCommand: npm run start --prefix apps/web
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: VITE_API_URL
+        value: https://takeonbnb29.onrender.com
+      - key: CI
+        value: "false"

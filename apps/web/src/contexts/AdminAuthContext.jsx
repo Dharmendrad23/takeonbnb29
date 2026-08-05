@@ -9,14 +9,28 @@ export const useAdminAuth = () => {
   return context;
 };
 
-const VITE_API_URL = import.meta.env.VITE_API_URL;
+// Determine API host - try multiple strategies to ensure we get the correct URL
+function getApiHost() {
+  // Strategy 1: Check environment variable (set at build time by Vite)
+  const VITE_API_URL = import.meta.env.VITE_API_URL;
+  if (VITE_API_URL && VITE_API_URL !== 'undefined') {
+    console.log('[AdminAuth] Using VITE_API_URL:', VITE_API_URL);
+    return VITE_API_URL;
+  }
 
-// Determine API host: use env var, or default to render API domain
-// This handles both dev (.env.local) and production (where env var may not be set)
-const API_HOST = VITE_API_URL || 'https://takeonbnb29.onrender.com';
+  // Strategy 2: Check if we're on production domain
+  if (typeof window !== 'undefined' && window.location.hostname === 'takeonbnb.com') {
+    console.log('[AdminAuth] Detected production domain, using Render API');
+    return 'https://takeonbnb29.onrender.com';
+  }
 
-console.log('[AdminAuth] VITE_API_URL from environment:', VITE_API_URL);
-console.log('[AdminAuth] Final API_HOST being used:', API_HOST);
+  // Strategy 3: Use hardcoded fallback for Render deployment
+  console.log('[AdminAuth] Using hardcoded Render API fallback');
+  return 'https://takeonbnb29.onrender.com';
+}
+
+const API_HOST = getApiHost();
+console.log('[AdminAuth] Final API_HOST:', API_HOST);
 
 export const AdminAuthProvider = ({ children }) => {
   const [adminUser, setAdminUser] = useState(null);
