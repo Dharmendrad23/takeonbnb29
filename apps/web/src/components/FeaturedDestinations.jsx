@@ -11,12 +11,86 @@ import "swiper/css/navigation";
 import "swiper/css/pagination";
 
 const destinations = [
-  { id: 1, name: 'Goa', count: '2,450+', span: 'col-span-1 md:col-span-2 row-span-2', image: 'https://images.unsplash.com/photo-1676972382977-50d1be95d6da?auto=format&fit=crop&q=80&w=800', path: '/destination/Goa' },
-  { id: 2, name: 'Jaipur', count: '1,890+', span: 'col-span-1 md:col-span-2 row-span-1', image: 'https://images.unsplash.com/photo-1617516203158-1b87bb39caa7?auto=format&fit=crop&q=80&w=800', path: '/destination/Jaipur' },
-  { id: 3, name: 'Kerala', count: '3,120+', span: 'col-span-1 md:col-span-1 row-span-1', image: 'https://images.unsplash.com/photo-1459100652174-45f3b5ca9d04?auto=format&fit=crop&q=80&w=600', path: '/destination/Kerala' },
-  { id: 4, name: 'Manali', count: '1,650+', span: 'col-span-1 md:col-span-1 row-span-1', image: 'https://images.unsplash.com/photo-1518526394840-1478aa7da9ef?auto=format&fit=crop&q=80&w=600', path: '/destination/Manali' },
-  { id: 5, name: 'Udaipur', count: '1,420+', span: 'col-span-1 md:col-span-1 row-span-1', image: 'https://images.unsplash.com/photo-1504705759706-c5ee7158f8bb?auto=format&fit=crop&q=80&w=600', path: '/destination/Udaipur' },
-  { id: 6, name: 'Darjeeling', count: '980+', span: 'col-span-1 md:col-span-1 row-span-1', image: 'https://images.unsplash.com/photo-1667404838370-223748e74703?auto=format&fit=crop&q=80&w=600', path: '/destination/Darjeeling' }
+  {
+    id: 1,
+    name: 'Dehradun',
+    count: '2,850+',
+    span: 'col-span-1 md:col-span-2 row-span-2',
+    image: 'https://images.unsplash.com/photo-1627993029759-8f0d7f1d8d6d?auto=format&fit=crop&q=80&w=1200',
+    path: '/destination/dehradun'
+  },
+  {
+    id: 2,
+    name: 'Mussoorie',
+    count: '2,150+',
+    span: 'col-span-1 md:col-span-2 row-span-1',
+    image: 'https://images.unsplash.com/photo-1595815771614-ade9d652a65d?auto=format&fit=crop&q=80&w=1200',
+    path: '/destination/mussoorie'
+  },
+  {
+    id: 3,
+    name: 'Rishikesh',
+    count: '3,480+',
+    span: 'col-span-1 md:col-span-1 row-span-1',
+    image: 'https://images.unsplash.com/photo-1593693397690-362cb9666fc2?auto=format&fit=crop&q=80&w=800',
+    path: '/destination/rishikesh'
+  },
+  {
+    id: 4,
+    name: 'Nainital',
+    count: '2,760+',
+    span: 'col-span-1 md:col-span-1 row-span-1',
+    image: 'https://images.unsplash.com/photo-1626621341517-bbf3d9990f1e?auto=format&fit=crop&q=80&w=800',
+    path: '/destination/nainital'
+  },
+  {
+    id: 5,
+    name: 'Goa',
+    count: '450+',
+    span: 'col-span-1 md:col-span-1 row-span-1',
+    image: 'https://images.unsplash.com/photo-1676972382977-50d1be95d6da?auto=format&fit=crop&q=80&w=800',
+    path: '/destination/goa'
+  },
+  {
+    id: 6,
+    name: 'Jaipur',
+    count: '1,890+',
+    span: 'col-span-1 md:col-span-1 row-span-1',
+    image: 'https://images.unsplash.com/photo-1617516203158-1b87bb39caa7?auto=format&fit=crop&q=80&w=800',
+    path: '/destination/jaipur'
+  },
+  {
+    id: 7,
+    name: 'Kerala',
+    count: '3,120+',
+    span: 'col-span-1 md:col-span-1 row-span-1',
+    image: 'https://images.unsplash.com/photo-1459100652174-45f3b5ca9d04?auto=format&fit=crop&q=80&w=800',
+    path: '/destination/kerala'
+  },
+  {
+    id: 8,
+    name: 'Manali',
+    count: '650+',
+    span: 'col-span-1 md:col-span-1 row-span-1',
+    image: 'https://images.unsplash.com/photo-1518526394840-1478aa7da9ef?auto=format&fit=crop&q=80&w=800',
+    path: '/destination/manali'
+  },
+  {
+    id: 9,
+    name: 'Udaipur',
+    count: '420+',
+    span: 'col-span-1 md:col-span-1 row-span-1',
+    image: 'https://images.unsplash.com/photo-1504705759706-c5ee7158f8bb?auto=format&fit=crop&q=80&w=800',
+    path: '/destination/udaipur'
+  },
+  {
+    id: 10,
+    name: 'Darjeeling',
+    count: '980+',
+    span: 'col-span-1 md:col-span-1 row-span-1',
+    image: 'https://images.unsplash.com/photo-1667404838370-223748e74703?auto=format&fit=crop&q=80&w=800',
+    path: '/destination/darjeeling'
+  }
 ];
 const FeaturedDestinations = () => {
   const navigate = useNavigate();
