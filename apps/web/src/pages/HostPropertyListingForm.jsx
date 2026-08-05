@@ -160,22 +160,23 @@ const HostPropertyListingForm = () => {
     setIsSubmitting(true);
     try {
       const imageData = await Promise.all(photos.map((photo) => toDataUrl(photo.file)));
-      const payload = {
-        title: formData.title,
-        description: formData.description,
-        location: formData.location,
-        propertyType: formData.propertyType,
-        pricePerNight: Number(formData.pricePerNight),
-        bedrooms: Number(formData.bedrooms),
-        bathrooms: Number(formData.bathrooms),
-        guestCapacity: Number(formData.guestCapacity),
-        hostId: currentUser.id,
-        status: 'Draft',
-        amenities: selectedAmenities,
-        photos: imageData,
-      };
+      const payload = new URLSearchParams();
+      payload.append('title', formData.title);
+      payload.append('description', formData.description);
+      payload.append('location', formData.location);
+      payload.append('propertyType', formData.propertyType);
+      payload.append('pricePerNight', String(Number(formData.pricePerNight)));
+      payload.append('bedrooms', String(Number(formData.bedrooms)));
+      payload.append('bathrooms', String(Number(formData.bathrooms)));
+      payload.append('guestCapacity', String(Number(formData.guestCapacity)));
+      payload.append('hostId', currentUser.id);
+      payload.append('status', 'Live');
+      selectedAmenities.forEach((id) => payload.append('amenities', id));
+      imageData.forEach((photo) => payload.append('photos', photo));
 
-      await axios.post(buildApiUrl('/api/properties'), payload);
+      await axios.post(buildApiUrl('/api/properties'), payload.toString(), {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      });
 
       toast.success('Property submitted successfully!');
       navigate('/host/dashboard');
