@@ -170,7 +170,7 @@ const HostPropertyListingForm = () => {
       payload.append('bathrooms', String(Number(formData.bathrooms)));
       payload.append('guestCapacity', String(Number(formData.guestCapacity)));
       payload.append('hostId', currentUser.id);
-      payload.append('status', 'Live');
+      payload.append('status', 'pending');
       selectedAmenities.forEach((id) => payload.append('amenities', id));
       imageData.forEach((photo) => payload.append('photos', photo));
 
@@ -178,7 +178,7 @@ const HostPropertyListingForm = () => {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       });
 
-      toast.success('Property submitted successfully!');
+      toast.success('Property submitted for review! It will go live once approved by our team.');
       navigate('/host/dashboard');
     } catch (error) {
       console.error('Submit error:', error);

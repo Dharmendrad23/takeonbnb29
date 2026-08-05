@@ -25,8 +25,8 @@ const AdminPropertyApprovalPage = () => {
     setIsLoading(true);
     try {
       const filterStr = search 
-        ? `status="Submitted" && (title ~ "${search}" || location ~ "${search}")`
-        : `status="Submitted"`;
+        ? `status="pending" && (title ~ "${search}" || location ~ "${search}")`
+        : `status="pending"`;
 
       const records = await pb.collection('properties').getList(1, 50, {
         filter: filterStr,
@@ -50,8 +50,8 @@ const AdminPropertyApprovalPage = () => {
   const handleApprove = async (id) => {
     try {
       await pb.collection('properties').update(id, {
-        status: 'Approved',
-        approvalStatus: 'approved'
+        status: 'Live',
+        rejectionReason: ''
       }, { $autoCancel: false });
       toast.success("Property Approved successfully");
       fetchPendingProperties();
@@ -75,8 +75,7 @@ const AdminPropertyApprovalPage = () => {
 
     try {
       await pb.collection('properties').update(selectedProperty.id, {
-        status: 'Draft', // Return to draft so host can fix
-        approvalStatus: 'rejected',
+        status: 'rejected',
         rejectionReason: rejectionReason
       }, { $autoCancel: false });
       

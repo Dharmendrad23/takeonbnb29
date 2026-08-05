@@ -13,7 +13,7 @@ const PropertyList = () => {
       try {
         setIsLoading(true);
 
-        const { data } = await api.get("/properties");
+        const { data } = await api.get("/properties", { params: { status: 'Live' } });
 
         setProperties(data);
       } catch (err) {

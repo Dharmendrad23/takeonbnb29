@@ -28,7 +28,7 @@ const AdminPropertyManagement = () => {
   
   const [formData, setFormData] = useState({
     title: '', description: '', location: '', propertyType: 'villa',
-    pricePerNight: '', bedrooms: '', bathrooms: '', guestCapacity: '', status: 'Live'
+    pricePerNight: '', bedrooms: '', bathrooms: '', guestCapacity: '', status: 'pending'
   });
 
   const fetchProperties = async () => {
@@ -65,7 +65,7 @@ const AdminPropertyManagement = () => {
     setEditingId(null);
     setFormData({
       title: '', description: '', location: '', propertyType: 'villa',
-      pricePerNight: '', bedrooms: '', bathrooms: '', guestCapacity: '', status: 'Live'
+      pricePerNight: '', bedrooms: '', bathrooms: '', guestCapacity: '', status: 'pending'
     });
     setIsModalOpen(true);
   };
@@ -188,9 +188,9 @@ const AdminPropertyManagement = () => {
                     <Select value={formData.status} onValueChange={(v) => handleSelectChange('status', v)}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Draft">Draft</SelectItem>
-                        <SelectItem value="Pending">Pending</SelectItem>
+                        <SelectItem value="pending">Pending</SelectItem>
                         <SelectItem value="Live">Live</SelectItem>
+                        <SelectItem value="rejected">Rejected</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -253,7 +253,8 @@ const AdminPropertyManagement = () => {
                   <td>
                     <Badge variant="outline" className={
                       property.status === 'Live' ? 'bg-success/10 text-success border-success/20' : 
-                      property.status === 'Pending' ? 'bg-warning/10 text-warning border-warning/20' : ''
+                      property.status?.toLowerCase() === 'pending' ? 'bg-warning/10 text-warning border-warning/20' :
+                      property.status?.toLowerCase() === 'rejected' ? 'bg-destructive/10 text-destructive border-destructive/20' : ''
                     }>
                       {property.status}
                     </Badge>

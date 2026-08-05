@@ -55,7 +55,12 @@ const propertySchema = new mongoose.Schema(
 
     status: {
       type: String,
-      default: "Draft",
+      default: "pending",
+    },
+
+    rejectionReason: {
+      type: String,
+      default: "",
     },
 
     amenities: [

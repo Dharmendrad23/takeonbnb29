@@ -51,6 +51,8 @@ import HostPropertiesPage from '@/pages/HostPropertiesPage.jsx';
 // Admin Pages
 import AdminLoginPage from '@/pages/admin/AdminLoginPage.jsx';
 import AdminDashboard from '@/pages/admin/AdminDashboard.jsx';
+import AdminPropertyManagement from '@/pages/admin/AdminPropertyManagement.jsx';
+import AdminPropertyApprovalPage from '@/pages/admin/AdminPropertyApprovalPage.jsx';
 
 // Wrapping layout for general pages
 const AppLayout = ({ children }) => {
@@ -131,6 +133,8 @@ function App() {
                 <Route path="/admin/login" element={<AdminLoginPage />} />
                 <Route path="/admin" element={<AdminProtectedRoute><AdminLayout /></AdminProtectedRoute>}>
                   <Route index element={<AdminDashboard />} />
+                  <Route path="properties" element={<AdminPropertyManagement />} />
+                  <Route path="properties/pending" element={<AdminPropertyApprovalPage />} />
                 </Route>
 
                 {/* Catch-all 404 */}

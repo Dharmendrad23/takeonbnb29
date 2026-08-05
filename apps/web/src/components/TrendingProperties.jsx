@@ -19,7 +19,7 @@ export default function TrendingProperties() {
   useEffect(() => {
     async function load() {
       try {
-        const { data } = await api.get("/properties");
+        const { data } = await api.get("/properties", { params: { status: 'Live' } });
         setProperties(data || []);
       } catch (e) {
         console.error(e);

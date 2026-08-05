@@ -13,7 +13,7 @@ export default function LuxuryVillas() {
         setLoading(true);
         setError(null);
 
-        const { data } = await api.get("/properties");
+        const { data } = await api.get("/properties", { params: { status: 'Live' } });
 
         const filtered = data.filter((p) => {
           const type = (p.propertyType || "").toLowerCase();

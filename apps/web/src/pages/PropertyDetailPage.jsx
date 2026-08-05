@@ -30,7 +30,11 @@ const PropertyDetailPage = () => {
       try {
         setLoading(true);
       const { data } = await api.get(`/properties/${id}`);
-setProperty(data);
+if (data.status !== 'Live') {
+  setError('Property not found or unavailable.');
+} else {
+  setProperty(data);
+}
 
       } catch (err) {
         console.error("Error fetching property:", err);

@@ -13,7 +13,7 @@ export default function MountainVillas() {
         setLoading(true);
         setError(null);
 
-        const { data } = await api.get("/properties");
+        const { data } = await api.get("/properties", { params: { status: 'Live' } });
 
         const filtered = data.filter((p) => {
           const location = (p.location || "").toLowerCase();
