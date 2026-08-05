@@ -10,13 +10,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import axios from "axios";
+import api from "@/lib/api.js";
 import { useAuth } from '@/contexts/AuthContext.jsx';
 
 const STEPS = [
   { id: 1, title: 'Basic Info', icon: Home },
   { id: 2, title: 'Amenities', icon: ListChecks },
   { id: 3, title: 'Media', icon: ImageIcon }
+];
+
+const DEFAULT_AMENITIES = [
+  { id: 'wifi', name: 'WiFi' },
+  { id: 'kitchen', name: 'Kitchen' },
+  { id: 'free-parking', name: 'Free parking' },
+  { id: 'pool', name: 'Pool' },
+  { id: 'air-conditioning', name: 'Air conditioning' },
+  { id: 'tv', name: 'TV' },
+  { id: 'heating', name: 'Heating' },
+  { id: 'garden', name: 'Garden' },
 ];
 
 const HostPropertyListingForm = () => {
@@ -40,24 +51,15 @@ const HostPropertyListingForm = () => {
   const [photos, setPhotos] = useState([]);
   const fileInputRef = useRef(null);
 
-  // Fetch amenities
   useEffect(() => {
-    const fetchAmenities = async () => {
-      try {
-        const { data } = await axios.get("http://localhost:3001/amenities");
-        setAvailableAmenities(data);
-      } catch (err) {
-        console.error("Failed to fetch amenities", err);
-      }
-    };
-    fetchAmenities();
+    setAvailableAmenities(DEFAULT_AMENITIES);
   }, []);
 
   // Fetch city suggestions from existing live properties
   useEffect(() => {
     const fetchCities = async () => {
       try {
-        const { data } = await axios.get("http://localhost:3001/properties", {
+        const { data } = await api.get("/properties", {
           params: { status: 'Live' }
         });
 
@@ -168,7 +170,7 @@ const HostPropertyListingForm = () => {
       selectedAmenities.forEach(id => data.append('amenities', id));
       photos.forEach(photo => data.append('photos', photo.file));
 
-      await axios.post("http://localhost:3001/properties", data, {
+      await api.post("/properties", data, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 

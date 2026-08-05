@@ -6,6 +6,7 @@ import bookingsRouter from "./bookingsMongo.js";
 import propertyRouter from "./propertyRoutes.js";
 import dashboardRouter from "./dashboard.js";
 import adminRouter from "./admin.js";
+import hostRouter from "./host.js";
 import whatsappRouter from "./whatsapp.js";
 import notificationsRouter from "./notifications.js";
 import stripeRouter from "./stripe.js";
@@ -21,6 +22,7 @@ export default () => {
   appRouter.use("/properties", propertyRouter);
 appRouter.use("/dashboard", dashboardRouter);
   appRouter.use("/admin", adminRouter);
+  appRouter.use("/host", hostRouter);
   appRouter.use("/whatsapp", whatsappRouter);
   appRouter.use("/notifications", notificationsRouter);
   appRouter.use("/stripe", stripeRouter);

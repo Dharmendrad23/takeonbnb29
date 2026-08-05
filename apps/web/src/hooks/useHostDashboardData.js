@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
+import api from "@/lib/api.js";
 import { useAuth } from "@/contexts/AuthContext.jsx";
-
-const API_HOST = `${window.location.protocol}//${window.location.hostname}:3001`;
 
 export const useHostDashboardData = () => {
   const { currentUser } = useAuth();
@@ -15,11 +14,7 @@ export const useHostDashboardData = () => {
   const [error, setError] = useState(null);
 
   const earnings = bookings
-    .filter(
-      (b) =>
-        b.status === "completed" ||
-        b.status === "confirmed"
-    )
+    .filter((b) => b.status === "completed" || b.status === "confirmed")
     .reduce((sum, b) => sum + (b.totalPrice || 0), 0);
 
   const totalBookings = bookings.length;
@@ -36,29 +31,16 @@ export const useHostDashboardData = () => {
       try {
         setLoading(true);
 
-        const token = localStorage.getItem("authToken");
-
-        const response = await fetch(
-          `${API_HOST}/dashboard?hostId=${hostId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.message);
-        }
+        const { data } = await api.get("/dashboard", {
+          params: { hostId },
+        });
 
         setProperties(data.properties || []);
         setBookings(data.bookings || []);
         setReviews(data.reviews || []);
       } catch (err) {
         console.error(err);
-        setError(err.message);
+        setError(err.response?.data?.message || err.message);
       } finally {
         setLoading(false);
       }

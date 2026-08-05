@@ -1,10 +1,5 @@
-import axios from "axios";
+import { buildApiUrl } from "./apiBase.js";
 
-const api = axios.create({
-  baseURL: "http://localhost:3001",
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
-
-export default api;
+export default {
+  fetch: (path, options = {}) => fetch(buildApiUrl(path), options),
+};

@@ -23,15 +23,16 @@ const HostLoginPage = () => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const user = await loginWithEmail(email, password);
-      if (user.userType !== 'host') {
+      const authData = await loginWithEmail(email, password);
+      const user = authData.record || authData.user || authData;
+      const role = user.role || user.userType;
+      if (role !== 'host') {
         toast.error('This account is not registered as a host.');
-        // Optionally log them out or redirect
       } else {
         navigate('/host/dashboard');
       }
     } catch (error) {
-      toast.error(' email or password');
+      toast.error(error.message || 'Invalid email or password');
     } finally {
       setIsLoading(false);
     }
@@ -54,8 +55,10 @@ const HostLoginPage = () => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const user = await verifyOTP(otpCode);
-      if (user.userType !== 'host') {
+      const authData = await verifyOTP(otpCode);
+      const user = authData.record || authData.user || authData;
+      const role = user.role || user.userType;
+      if (role !== 'host') {
         toast.error('This account is not registered as a host.');
       } else {
         navigate('/host/dashboard');

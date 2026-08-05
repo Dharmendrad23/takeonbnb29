@@ -43,8 +43,20 @@ app.use(helmet());
 
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || "*",
-    credentials: true,
+    origin: (origin, callback) => {
+      const configuredOrigins = (process.env.CORS_ORIGIN || "")
+        .split(",")
+        .map((value) => value.trim())
+        .filter(Boolean);
+
+      if (!origin || configuredOrigins.length === 0 || configuredOrigins.includes("*") || configuredOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error("CORS origin not allowed"));
+    },
+    credentials: false,
   })
 );
 
@@ -65,6 +77,7 @@ app.use(
 );
 
 // API Routes
+app.use("/api", routes());
 app.use("/hcgi/api", routes());
 app.use("/", routes());
 
@@ -81,7 +94,7 @@ const port = process.env.PORT || 3001;
 connectDB()
   .then(() => {
     app.listen(port, () => {
-      logger.info(`🚀 API Server running on http://localhost:${port}`);
+      logger.info(`🚀 API Server running on port ${port}`);
     });
   })
   .catch((err) => {

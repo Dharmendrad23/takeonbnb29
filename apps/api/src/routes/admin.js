@@ -2,8 +2,12 @@ import express from "express";
 import ActivityLog from "../models/ActivityLog.js";
 import Booking from "../models/Booking.js";
 import logger from "../utils/logger.js";
+import { loginAsAdmin } from "../controllers/authController.js";
 
 const router = express.Router();
+
+// POST /admin/login
+router.post("/login", loginAsAdmin);
 
 // POST /admin/activity-log
 router.post("/activity-log", async (req, res) => {

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import api from '@/lib/api.js';
 
 const AuthContext = createContext();
 
@@ -11,9 +12,6 @@ export const useAuth = () => {
   }
   return context;
 };
-
-// 👇 Agar tumhara backend alag port par hai, sirf yahan change karo
-const API_HOST = `${window.location.protocol}//${window.location.hostname}:3001`;
 
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
@@ -40,18 +38,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await fetch(`${API_HOST}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Invalid email or password');
-      }
-
+      const { data } = await api.post('/auth/login', { email, password });
       const { token, user } = data;
 
       localStorage.setItem('authToken', token);
@@ -61,23 +48,13 @@ export const AuthProvider = ({ children }) => {
       return { record: user, token };
     } catch (error) {
       console.error('Login error:', error);
-      throw new Error(error.message || 'Invalid email or password');
+      throw new Error(error.response?.data?.message || error.message || 'Invalid email or password');
     }
   };
 
   const signup = async (email, password, name, role = 'guest') => {
     try {
-      const response = await fetch(`${API_HOST}/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, name, role }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to create account.');
-      }
+      await api.post('/auth/register', { email, password, name, role });
 
       // Register ke baad login call karke token/session set karte hain
       return await login(email, password);
@@ -97,13 +74,7 @@ export const AuthProvider = ({ children }) => {
 
   const requestOTP = async (email) => {
     try {
-      const response = await fetch(`${API_HOST}/otp/request-login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Failed to send OTP');
+      const { data } = await api.post('/otp/request-login', { email });
 
       setPendingOtpId(data.otpId);
       setPendingOtpEmail(email);
@@ -119,13 +90,7 @@ export const AuthProvider = ({ children }) => {
       const otpId = otpIdOverride || pendingOtpId;
       if (!otpId) throw new Error('OTP session missing. Please request a new OTP.');
 
-      const response = await fetch(`${API_HOST}/otp/verify-login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ otpId, code }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Invalid OTP code');
+      const { data } = await api.post('/otp/verify-login', { otpId, code });
 
       localStorage.setItem('authToken', data.token);
       localStorage.setItem('authUser', JSON.stringify(data.user));
@@ -136,7 +101,7 @@ export const AuthProvider = ({ children }) => {
       return { record: data.user, token: data.token };
     } catch (error) {
       console.error('OTP verify error:', error);
-      throw error;
+      throw new Error(error.response?.data?.message || error.message || 'Invalid OTP code');
     }
   };
 
@@ -144,13 +109,7 @@ export const AuthProvider = ({ children }) => {
 
   const requestSignupOTP = async (email) => {
     try {
-      const response = await fetch(`${API_HOST}/otp/request-signup`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Failed to send OTP');
+      const { data } = await api.post('/otp/request-signup', { email });
 
       setPendingOtpId(data.otpId);
       setPendingOtpEmail(email);
@@ -163,19 +122,13 @@ export const AuthProvider = ({ children }) => {
 
   const signupWithOTP = async (email, password, role, name, otpId, otpCode) => {
     try {
-      const response = await fetch(`${API_HOST}/otp/verify-signup`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          otpId: otpId || pendingOtpId,
-          code: otpCode,
-          name,
-          password,
-          role,
-        }),
+      const { data } = await api.post('/otp/verify-signup', {
+        otpId: otpId || pendingOtpId,
+        code: otpCode,
+        name,
+        password,
+        role,
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Failed to verify OTP');
 
       localStorage.setItem('authToken', data.token);
       localStorage.setItem('authUser', JSON.stringify(data.user));

@@ -104,23 +104,24 @@ const BookingFlowModal = ({ isOpen, onClose, property, initialDates, initialGues
       formData.append('bookingStep', 5);
 
      const { data } = await api.post("/bookings", formData, {
-  headers: {
-    "Content-Type": "multipart/form-data",
-  },
-});
+       headers: {
+         "Content-Type": "multipart/form-data",
+       },
+     });
 
-setBookingId(data._id || data.id);
+     setBookingId(data._id || data.id);
 
       try {
         await apiServerClient.fetch('/bookings/send-booking-confirmation-message', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-  bookingId: data._id || data.id,
-})
-        toast.success('Booking submitted successfully. A confirmation message has been sent.');
-      } catch (messageError) {
-        console.error('Failed to send booking confirmation message:', messageError);
+         body: JSON.stringify({
+           bookingId: data._id || data.id,
+         }),
+       });
+       toast.success('Booking submitted successfully. A confirmation message has been sent.');
+     } catch (messageError) {
+       console.error('Failed to send booking confirmation message:', messageError);
         toast.success('Booking submitted successfully. We will follow up with confirmation shortly.');
       }
       
