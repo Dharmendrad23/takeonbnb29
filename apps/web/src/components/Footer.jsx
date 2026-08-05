@@ -4,11 +4,8 @@ import { Link } from 'react-router-dom';
 import { Facebook, Instagram, Twitter, Linkedin, Mail, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useAdminAuth } from '@/contexts/AdminAuthContext.jsx';
 
 const Footer = () => {
-  const { isAuthenticated: isAdminAuthenticated } = useAdminAuth();
-
   return (
     <footer className="bg-[#111111] text-[#F5F5F5] pt-20 pb-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -83,10 +80,10 @@ const Footer = () => {
             <Link to="/terms" className="text-sm text-gray-500 hover:text-white transition-colors">Terms of Service</Link>
             <Link to="/cancellation" className="text-sm text-gray-500 hover:text-white transition-colors">Cancellation Policy</Link>
             <Link
-              to={isAdminAuthenticated ? '/admin' : '/admin/login'}
+              to="/admin/login"
               className="text-sm text-gray-500 hover:text-white transition-colors"
             >
-              Admin Panel
+              Admin Login
             </Link>
           </div>
         </div>
