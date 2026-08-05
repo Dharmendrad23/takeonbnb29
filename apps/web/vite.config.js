@@ -231,6 +231,19 @@ const addTransformIndexHtml = {
 		const tags = [
 			{
 				tag: 'script',
+				attrs: { type: 'importmap' },
+				children: JSON.stringify({
+					imports: {
+						react: 'https://esm.sh/react@18.3.1',
+						'react/jsx-runtime': 'https://esm.sh/react@18.3.1/jsx-runtime',
+						'react/jsx-dev-runtime': 'https://esm.sh/react@18.3.1/jsx-dev-runtime',
+						'react-dom': 'https://esm.sh/react-dom@18.3.1',
+					},
+				}),
+				injectTo: 'head',
+			},
+			{
+				tag: 'script',
 				attrs: { type: 'module' },
 				children: configHorizonsRuntimeErrorHandler,
 				injectTo: 'head',

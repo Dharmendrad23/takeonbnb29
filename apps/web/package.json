@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "vite --host :: --port 3000",
-    "build": "node tools/generate-llms.js || true && vite build --outDir ../../dist/apps/web",
+    "build": "node tools/generate-llms.js || true && vite build --outDir ../../dist/apps/web && node -e \"const fs=require('node:fs');const path=require('node:path');const file=path.resolve('../../dist/apps/web/index.html');let html=fs.readFileSync(file,'utf8');if(!html.includes('type=\"importmap\"')){const importmap=String.raw`<script type=\"importmap\">{\"imports\":{\"react\":\"https://esm.sh/react@18.3.1\",\"react/jsx-runtime\":\"https://esm.sh/react@18.3.1/jsx-runtime\",\"react/jsx-dev-runtime\":\"https://esm.sh/react@18.3.1/jsx-dev-runtime\",\"react-dom\":\"https://esm.sh/react-dom@18.3.1\"}} </script>`;html=html.replace('</head>', importmap+' </head>');fs.writeFileSync(file, html);} \"",
     "start": "vite preview --outDir ../../dist/apps/web --host :: --port 3000",
     "lint": "eslint . --quiet",
     "lint:warn": "eslint ."
