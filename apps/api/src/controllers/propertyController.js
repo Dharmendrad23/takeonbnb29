@@ -13,7 +13,7 @@ export const getProperties = async (req, res) => {
       query.hostId = req.query.hostId;
     }
 
-    const properties = await Property.find(query).sort({ createdAt: -1 });
+   const properties = await Property.find(query).lean();
     res.json(properties);
   } catch (err) {
     res.status(500).json({ message: err.message });
