@@ -88,8 +88,8 @@ if (propertyId) {
     if (diffDays > 0) {
       nights = diffDays;
       subtotal = nights * activePricePerNight;
-      taxes = subtotal * 0.18; // 18% GST
-      serviceFee = subtotal * 0.05; // 5% platform fee
+      taxes = subtotal * 0.18; // 5% GST
+      serviceFee = subtotal * 0.02; // 2% platform fee
       total = subtotal + taxes + serviceFee;
     }
   }
