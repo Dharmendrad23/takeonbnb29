@@ -1,19 +1,42 @@
 import express from "express";
-
-import {
-  getProperties,
-  getPropertyById,
-  createProperty,
-  updateProperty,
-  deleteProperty,
-} from "../controllers/propertyController.js";
+import Property from "../models/Property.js";
 
 const router = express.Router();
 
-router.get("/", getProperties);
-router.get("/:id", getPropertyById);
-router.post("/", createProperty);
-router.put("/:id", updateProperty);
-router.delete("/:id", deleteProperty);
+// Get all approved properties
+router.get("/", async (req, res) => {
+  try {
+    const properties = await Property.find({
+      status: "approved",
+    }).sort({ createdAt: -1 });
+
+    res.status(200).json(properties);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch properties",
+    });
+  }
+});
+
+// Get property by id
+router.get("/:id", async (req, res) => {
+  try {
+    const property = await Property.findById(req.params.id);
+
+    if (!property) {
+      return res.status(404).json({
+        message: "Property not found",
+      });
+    }
+
+    res.json(property);
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+    });
+  }
+});
 
 export default router;

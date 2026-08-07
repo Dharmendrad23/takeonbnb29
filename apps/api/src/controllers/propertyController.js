@@ -13,10 +13,19 @@ export const getProperties = async (req, res) => {
       query.hostId = req.query.hostId;
     }
 
-    const properties = await Property.find(query).sort({ createdAt: -1 });
-    res.json(properties);
+    // Fetch first, then sort in Node.js
+    const properties = await Property.find(query).lean();
+
+    properties.sort((a, b) => {
+      return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+    });
+
+    return res.json(properties);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error("GET PROPERTIES ERROR:", err);
+    return res.status(500).json({
+      message: err.message,
+    });
   }
 };
 
@@ -29,9 +38,9 @@ export const getPropertyById = async (req, res) => {
       return res.status(404).json({ message: "Property not found" });
     }
 
-    res.json(property);
+    return res.json(property);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    return res.status(500).json({ message: err.message });
   }
 };
 
@@ -39,9 +48,9 @@ export const getPropertyById = async (req, res) => {
 export const createProperty = async (req, res) => {
   try {
     const property = await Property.create(req.body);
-    res.status(201).json(property);
+    return res.status(201).json(property);
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    return res.status(400).json({ message: err.message });
   }
 };
 
@@ -58,9 +67,9 @@ export const updateProperty = async (req, res) => {
       return res.status(404).json({ message: "Property not found" });
     }
 
-    res.json(property);
+    return res.json(property);
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    return res.status(400).json({ message: err.message });
   }
 };
 
@@ -73,8 +82,8 @@ export const deleteProperty = async (req, res) => {
       return res.status(404).json({ message: "Property not found" });
     }
 
-    res.json({ message: "Property deleted successfully" });
+    return res.json({ message: "Property deleted successfully" });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    return res.status(500).json({ message: err.message });
   }
 };
