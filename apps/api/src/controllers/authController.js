@@ -53,10 +53,15 @@ const buildLoginHandler = (expectedRole) => async (req, res) => {
     );
 
     res.json({
-      success: true,
-      token,
-      user: sanitizeUser(user),
-    });
+  success: true,
+  token,
+  user: {
+    id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+  },
+});
   } catch (err) {
     console.error(err);
 
