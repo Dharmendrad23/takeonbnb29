@@ -13,17 +13,17 @@ const destinations = [
   {
     id: 1,
     name: 'Dehradun',
-    count: '40+',
+    count: '15+',
     span: 'col-span-1 md:col-span-2 row-span-2',
-    image: 'https://images.unsplash.com/photo-1626621341517-bbf3d9990f1e?auto=format&fit=crop&q=80&w=1200',
+    image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Guru_Ram_Rai_Darbar_Sahib,_Dehradun.jpg?width=1200',
     path: '/destination/dehradun'
   },
   {
     id: 2,
     name: 'Mussoorie',
-    count: '50+',
+    count: '20+',
     span: 'col-span-1 md:col-span-2 row-span-1',
-    image: 'https://images.unsplash.com/photo-1622037022824-0c71d511ad76?auto=format&fit=crop&q=80&w=1200',
+    image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Panoramic_view_of_Mussoorie,_Uttarakhand.jpg?width=1200',
     path: '/destination/mussoorie'
   },
   {
@@ -31,15 +31,15 @@ const destinations = [
     name: 'Rishikesh',
     count: '20+',
     span: 'col-span-1 md:col-span-1 row-span-1',
-    image: 'https://images.unsplash.com/photo-1593693397690-362cb9666fc2?auto=format&fit=crop&q=80&w=1200',
+    image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Scenic_View_of_Rishikesh_with_Ganga_River_and_Hills_in_Background.jpg?width=1200',
     path: '/destination/rishikesh'
   },
   {
     id: 4,
     name: 'Nainital',
-    count: '60+',
+    count: '10+',
     span: 'col-span-1 md:col-span-1 row-span-1',
-    image: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&q=80&w=1200',
+    image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Naini_Lake_Nainital.jpg?width=1200',
     path: '/destination/nainital'
   },
   {
@@ -47,7 +47,7 @@ const destinations = [
     name: 'Goa',
     count: '20+',
     span: 'col-span-1 md:col-span-1 row-span-1',
-    image: 'https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?auto=format&fit=crop&q=80&w=1200',
+    image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Goa_beautiful_beach.JPG?width=1200',
     path: '/destination/goa'
   },
   {
@@ -55,41 +55,17 @@ const destinations = [
     name: 'Jaipur',
     count: '18+',
     span: 'col-span-1 md:col-span-1 row-span-1',
-    image: 'https://images.unsplash.com/photo-1599661046289-e31897846e41?auto=format&fit=crop&q=80&w=1200',
+    image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Hawa_Mahal_2011.jpg?width=1200',
     path: '/destination/jaipur'
   },
   {
     id: 7,
-    name: 'Kerala',
-    count: '20+',
-    span: 'col-span-1 md:col-span-1 row-span-1',
-    image: 'https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&q=80&w=1200',
-    path: '/destination/kerala'
-  },
-  {
-    id: 8,
     name: 'Manali',
     count: '65+',
     span: 'col-span-1 md:col-span-1 row-span-1',
-    image: 'https://images.unsplash.com/photo-1518526394840-1478aa7da9ef?auto=format&fit=crop&q=80&w=1200',
+    image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Manali_Himachal_India_(17).JPG?width=1200',
     path: '/destination/manali'
-  },
-  {
-    id: 9,
-    name: 'Udaipur',
-    count: '30+',
-    span: 'col-span-1 md:col-span-1 row-span-1',
-    image: 'https://images.unsplash.com/photo-1524492412937-b28074a5d7da?auto=format&fit=crop&q=80&w=1200',
-    path: '/destination/udaipur'
-  },
-  {
-    id: 10,
-    name: 'Darjeeling',
-    count: '18+',
-    span: 'col-span-1 md:col-span-1 row-span-1',
-    image: 'https://images.unsplash.com/photo-1544634076-a90160ddf22e?auto=format&fit=crop&q=80&w=1200',
-    path: '/destination/darjeeling'
-  }
+  },Autoplay
 ];
 
 const FeaturedDestinations = () => {
