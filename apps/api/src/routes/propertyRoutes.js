@@ -6,9 +6,11 @@ const router = express.Router();
 // Get all approved properties
 router.get("/", async (req, res) => {
   try {
-    const properties = await Property.find({
-      status: "approved",
-    }).sort({ createdAt: -1 });
+   const properties = await Property.find({
+  status: "approved",
+})
+  .select("-photos")
+  .sort({ createdAt: -1 });
 
     res.status(200).json(properties);
   } catch (error) {
