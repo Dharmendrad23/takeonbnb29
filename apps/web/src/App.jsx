@@ -49,6 +49,7 @@ import CancellationPolicyPage from '@/pages/CancellationPolicyPage.jsx';
 import NotFoundPage from '@/pages/NotFoundPage.jsx';
 
 // Checkout / Payment Pages
+import BookingPage from '@/pages/BookingPage.jsx';
 import CheckoutPage from '@/pages/CheckoutPage.jsx';
 import SuccessPage from '@/pages/SuccessPage.jsx';
 import CancelPage from '@/pages/CancelPage.jsx';
@@ -181,6 +182,52 @@ function App() {
                   element={
                     <AppLayout>
                       <DestinationPage />
+                    </AppLayout>
+                  }
+                />
+
+                {/* Booking & Payment Routes */}
+                <Route
+                  path="/booking/:id"
+                  element={
+                    <AppLayout>
+                      <BookingPage />
+                    </AppLayout>
+                  }
+                />
+
+                <Route
+                  path="/checkout"
+                  element={
+                    <AppLayout>
+                      <CheckoutPage />
+                    </AppLayout>
+                  }
+                />
+
+                <Route
+                  path="/success"
+                  element={
+                    <AppLayout>
+                      <SuccessPage />
+                    </AppLayout>
+                  }
+                />
+
+                <Route
+                  path="/cancel"
+                  element={
+                    <AppLayout>
+                      <CancelPage />
+                    </AppLayout>
+                  }
+                />
+
+                <Route
+                  path="/booking-confirmation"
+                  element={
+                    <AppLayout>
+                      <BookingConfirmationPage />
                     </AppLayout>
                   }
                 />

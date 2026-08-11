@@ -3,52 +3,144 @@ import Stripe from 'stripe';
 import logger from '../utils/logger.js';
 
 const router = express.Router();
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-// POST /stripe/create-checkout - Create Stripe Checkout Session
+// POST /stripe/create-checkout
 router.post('/create-checkout', async (req, res) => {
-  const { amount, productName, successUrl, cancelUrl } = req.body;
+  try {
+    const {
+      amount,
+      productName,
+      successUrl,
+      cancelUrl,
+      bookingId,
+    } = req.body;
 
-  if (!amount || !productName || !successUrl || !cancelUrl) {
-    return res.status(400).json({ error: 'amount, productName, successUrl, and cancelUrl are required' });
-  }
+    if (!amount || !productName || !successUrl || !cancelUrl) {
+      return res.status(400).json({
+        success: false,
+        error:
+          'amount, productName, successUrl, and cancelUrl are required',
+      });
+    }
 
-  const session = await stripe.checkout.sessions.create({
-    payment_method_types: ['card'],
-    line_items: [
-      {
-        price_data: {
-          currency: 'usd',
-          product_data: {
-            name: productName,
+    const numericAmount = Number(amount);
+
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid payment amount',
+      });
+    }
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      mode: 'payment',
+
+      line_items: [
+        {
+          price_data: {
+            currency: 'inr',
+
+            product_data: {
+              name: productName,
+            },
+
+            // Stripe INR amount is in paise
+            unit_amount: Math.round(numericAmount * 100),
           },
-          unit_amount: Math.round(amount * 100),
-        },
-        quantity: 1,
-      },
-    ],
-    mode: 'payment',
-    success_url: successUrl,
-    cancel_url: cancelUrl,
-  });
 
-  logger.info(`Stripe Checkout Session created: ${session.id}`);
-  res.json({ url: session.url });
+          quantity: 1,
+        },
+      ],
+
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+
+      metadata: {
+        bookingId: bookingId ? String(bookingId) : '',
+      },
+    });
+
+    logger.info(
+      `Stripe Checkout Session created: ${session.id}`
+    );
+
+    return res.json({
+      success: true,
+      url: session.url,
+      sessionId: session.id,
+    });
+  } catch (error) {
+    console.error('Stripe checkout error:', error);
+
+    logger.error(
+      `Stripe checkout error: ${error.message}`
+    );
+
+    return res.status(500).json({
+      success: false,
+      error:
+        error.message ||
+        'Failed to create Stripe checkout session',
+    });
+  }
 });
 
-// GET /stripe/session/:sessionId - Retrieve Stripe Checkout Session
+// GET /stripe/session/:sessionId
 router.get('/session/:sessionId', async (req, res) => {
-  const { sessionId } = req.params;
+  try {
+    const { sessionId } = req.params;
 
-  const session = await stripe.checkout.sessions.retrieve(sessionId);
+    if (!sessionId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Session ID is required',
+      });
+    }
 
-  logger.info(`Stripe session retrieved: ${sessionId}`);
-  res.json({
-    id: session.id,
-    status: session.payment_status,
-    amountTotal: session.amount_total,
-    customerEmail: session.customer_details?.email,
-  });
+    const session =
+      await stripe.checkout.sessions.retrieve(sessionId);
+
+    logger.info(
+      `Stripe session retrieved: ${sessionId}`
+    );
+
+    return res.json({
+      success: true,
+
+      id: session.id,
+
+      status: session.payment_status,
+
+      paymentStatus: session.payment_status,
+
+      amountTotal: session.amount_total,
+
+      currency: session.currency,
+
+      customerEmail:
+        session.customer_details?.email || '',
+
+      bookingId:
+        session.metadata?.bookingId || null,
+
+      metadata: session.metadata || {},
+    });
+  } catch (error) {
+    console.error(
+      'Stripe session verification error:',
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      error:
+        error.message ||
+        'Failed to verify Stripe session',
+    });
+  }
 });
 
 export default router;
