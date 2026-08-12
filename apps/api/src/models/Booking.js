@@ -10,8 +10,33 @@ const bookingSchema = new mongoose.Schema(
 
     guestId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Guest",
+      ref: "User",
       required: true,
+    },
+
+    guestFullName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    guestEmail: {
+      type: String,
+      required: true,
+      trim: true,
+      lowercase: true,
+    },
+
+    guestMobileNumber: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    propertyName: {
+      type: String,
+      default: "",
+      trim: true,
     },
 
     checkInDate: {
@@ -36,6 +61,12 @@ const bookingSchema = new mongoose.Schema(
       min: 0,
     },
 
+    totalAmount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
     specialRequests: {
       type: String,
       default: "",
@@ -50,6 +81,46 @@ const bookingSchema = new mongoose.Schema(
         "completed",
       ],
       default: "pending",
+    },
+
+    bookingStatus: {
+      type: String,
+      enum: [
+        "pending",
+        "confirmed",
+        "cancelled",
+        "completed",
+        "pending_verification",
+      ],
+      default: "pending",
+    },
+
+    paymentStatus: {
+      type: String,
+      enum: [
+        "pending",
+        "paid",
+        "failed",
+        "refunded",
+      ],
+      default: "pending",
+    },
+
+    paymentMethod: {
+      type: String,
+      default: "",
+    },
+
+    transactionId: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    upiId: {
+      type: String,
+      default: "",
+      trim: true,
     },
   },
   {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Home } from "lucide-react";
@@ -19,7 +19,7 @@ export default function TrendingProperties() {
   useEffect(() => {
     async function load() {
       try {
-        const { data } = await api.get("/properties", { params: { status: 'Live' } });
+        const { data } = await api.get("/properties");
         setProperties(data || []);
       } catch (e) {
         console.error(e);
@@ -75,7 +75,7 @@ export default function TrendingProperties() {
             <div className="embla__container">
               {properties.map((property) => (
                 <motion.div
-                  key={property._id}
+                  key={property.id || property._id}
                   className="embla__slide"
                 >
                   <PropertyCard property={property} />
@@ -88,3 +88,4 @@ export default function TrendingProperties() {
     </section>
   );
 }
+

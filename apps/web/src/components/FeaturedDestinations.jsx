@@ -65,7 +65,7 @@ const destinations = [
     span: 'col-span-1 md:col-span-1 row-span-1',
     image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Manali_Himachal_India_(17).JPG?width=1200',
     path: '/destination/manali'
-  },Autoplay
+  },
 ];
 
 const FeaturedDestinations = () => {

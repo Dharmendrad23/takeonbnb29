@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import PropertyGrid from './PropertyGrid.jsx';
 import api from '@/lib/api.js';
 
@@ -13,7 +13,7 @@ export default function BeachVillas() {
         setLoading(true);
         setError(null);
 
-        const { data } = await api.get("/properties", { params: { status: 'Live' } });
+        const { data } = await api.get("/properties", { params: { status: 'approved' } });
 
         const filtered = data.filter((p) => {
           const location = (p.location || "").toLowerCase();

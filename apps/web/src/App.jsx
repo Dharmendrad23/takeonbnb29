@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+﻿import React, { useEffect } from 'react';
 import {
   Route,
   Routes,
@@ -402,6 +402,15 @@ function App() {
                     element={<AdminActivityLogs />}
                   />
                 </Route>
+                <Route
+                  path="/checkout"
+                  element={
+                    <AppLayout>
+                      <CheckoutPage />
+                    </AppLayout>
+                  }
+                />
+
 
                 {/* Catch-all 404 */}
                 <Route
@@ -430,3 +439,4 @@ function App() {
 }
 
 export default App;
+

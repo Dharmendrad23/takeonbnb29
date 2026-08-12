@@ -17,7 +17,7 @@ const PriceBreakdown = ({ pricePerNight, nights, subtotal, serviceFee, taxes, to
           <span className="font-medium">{formatCurrency(subtotal)}</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">Service fee (10%)</span>
+          <span className="text-muted-foreground">Service fee (6%)</span>
           <span className="font-medium">{formatCurrency(serviceFee)}</span>
         </div>
         <div className="flex justify-between text-sm">
