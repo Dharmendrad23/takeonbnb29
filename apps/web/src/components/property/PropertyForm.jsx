@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, ChevronRight, ChevronLeft, UploadCloud, X, Loader2, Home, MapPin, ListChecks, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -172,7 +172,7 @@ const PropertyForm = ({ hostId, defaultStatus = 'pending', onSuccess, submitLabe
       selectedAmenities.forEach((id) => payload.append('amenities', id));
       imageData.forEach((photo) => payload.append('photos', photo));
 
-      const { data } = await axios.post(buildApiUrl('/api/properties'), payload.toString(), {
+      const { data } = await axios.post(buildApiUrl('/api/properties'), payload, {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       });
 
@@ -279,7 +279,7 @@ const PropertyForm = ({ hostId, defaultStatus = 'pending', onSuccess, submitLabe
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-foreground">Price per Night (₹) <span className="text-destructive">*</span></Label>
+                    <Label className="text-foreground">Price per Night (â‚¹) <span className="text-destructive">*</span></Label>
                     <Input type="number" min="1" name="pricePerNight" value={formData.pricePerNight} onChange={handleInputChange} placeholder="5000" className="h-12 bg-background border-border font-semibold text-lg" />
                   </div>
                 </div>
@@ -406,3 +406,4 @@ const PropertyForm = ({ hostId, defaultStatus = 'pending', onSuccess, submitLabe
 };
 
 export default PropertyForm;
+
