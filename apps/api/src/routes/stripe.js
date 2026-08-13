@@ -1,4 +1,4 @@
-import express from 'express';
+﻿import express from 'express';
 import Stripe from 'stripe';
 import logger from '../utils/logger.js';
 
@@ -18,7 +18,7 @@ router.post('/create-checkout', async (req, res) => {
     line_items: [
       {
         price_data: {
-          currency: 'usd',
+          currency: 'inr',
           product_data: {
             name: productName,
           },

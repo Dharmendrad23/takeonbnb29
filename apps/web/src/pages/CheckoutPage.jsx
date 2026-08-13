@@ -53,7 +53,7 @@ const CheckoutPage = () => {
   return (
     <div className="min-h-[85vh] bg-muted/20 py-12 px-4">
       <Helmet>
-        <title>Checkout | TakeOn BnB</title>
+        <title>Checkout | Take On BnB</title>
       </Helmet>
       
       <div className="max-w-5xl mx-auto">
@@ -178,8 +178,8 @@ const CheckoutPage = () => {
                 </div>
                 
                 <div className="flex justify-between items-center pt-4 border-t border-border">
-                  <span className="font-extrabold text-foreground text-lg">Total (USD)</span>
-                  <span className="font-extrabold text-foreground text-xl">${totalAmount}</span>
+                  <span className="font-extrabold text-foreground text-lg">Total (INR)</span>
+                  <span className="font-extrabold text-foreground text-xl">INR {totalAmount}</span>
                 </div>
               </div>
             </div>
