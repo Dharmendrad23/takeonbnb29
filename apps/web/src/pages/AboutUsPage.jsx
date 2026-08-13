@@ -14,7 +14,7 @@ const AboutUsPage = () => {
   return (
     <div className="min-h-screen bg-background">
       <Helmet>
-        <title>About Us | TakeOn BnB</title>
+        <title>About Us | Take On BnB</title>
         <meta name="description" content="Learn more about TakeOn BnB, our mission, values, and the team behind your perfect stays." />
       </Helmet>
 

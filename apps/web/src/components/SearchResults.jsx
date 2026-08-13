@@ -171,7 +171,9 @@ const SearchResults = ({ criteria }) => {
               </div>
               
               <div className="pt-3 border-t border-border mt-auto">
-                <span className="font-extrabold text-foreground text-lg">${property.pricePerNight}</span>
+                <span className="font-extrabold text-foreground text-lg">
+  ₹{Number(property.pricePerNight || 0).toLocaleString('en-IN')}
+</span>
                 <span className="text-muted-foreground text-sm font-medium"> / night</span>
               </div>
             </Link>

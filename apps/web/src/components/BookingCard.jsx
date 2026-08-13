@@ -48,7 +48,9 @@ const BookingCard = ({ booking, onReview, onCancel }) => {
 
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-2xl font-bold">${booking.totalPrice}</span>
+             <span className="text-2xl font-bold">
+  ₹{Number(booking.totalPrice || 0).toLocaleString('en-IN')}
+</span>
               <span className="text-muted-foreground text-sm ml-2">total</span>
             </div>
             <div className="flex space-x-2">
