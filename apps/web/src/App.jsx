@@ -82,7 +82,6 @@ import AdminGuestManagement from '@/pages/admin/AdminGuestManagement.jsx';
 import AdminRevenueTracking from '@/pages/admin/AdminRevenueTracking.jsx';
 import AdminActivityLogs from '@/pages/admin/AdminActivityLogs.jsx';
 
-// Wrapping layout for general pages
 const AppLayout = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -139,7 +138,7 @@ function App() {
 
               <Routes>
 
-                {/* Public Routes */}
+                {/* HOME */}
                 <Route
                   path="/"
                   element={
@@ -149,6 +148,7 @@ function App() {
                   }
                 />
 
+                {/* PROPERTIES */}
                 <Route
                   path="/properties"
                   element={
@@ -185,6 +185,7 @@ function App() {
                   }
                 />
 
+                {/* AUTH */}
                 <Route
                   path="/login"
                   element={
@@ -221,7 +222,7 @@ function App() {
                   }
                 />
 
-                {/* Static Pages */}
+                {/* STATIC PAGES */}
                 <Route
                   path="/about"
                   element={
@@ -285,7 +286,26 @@ function App() {
                   }
                 />
 
-                {/* Guest Protected Routes */}
+                {/* CHECKOUT - BOTH ROUTES */}
+                <Route
+                  path="/checkout"
+                  element={
+                    <AppLayout>
+                      <CheckoutPage />
+                    </AppLayout>
+                  }
+                />
+
+                <Route
+                  path="/checkout/:propertyId"
+                  element={
+                    <AppLayout>
+                      <CheckoutPage />
+                    </AppLayout>
+                  }
+                />
+
+                {/* GUEST DASHBOARD */}
                 <Route
                   path="/guest/dashboard"
                   element={
@@ -318,7 +338,6 @@ function App() {
                     </ProtectedRoute>
                   }
                 />
-
 
                 <Route
                   path="/guest/payments"
@@ -374,7 +393,8 @@ function App() {
                     </ProtectedRoute>
                   }
                 />
-                {/* Host Protected Routes */}
+
+                {/* HOST */}
                 <Route
                   path="/host/dashboard"
                   element={
@@ -408,7 +428,7 @@ function App() {
                   }
                 />
 
-                {/* Admin Routes */}
+                {/* ADMIN */}
                 <Route
                   path="/admin/login"
                   element={<AdminLoginPage />}
@@ -457,17 +477,8 @@ function App() {
                     element={<AdminActivityLogs />}
                   />
                 </Route>
-                <Route
-                  path="/checkout"
-                  element={
-                    <AppLayout>
-                      <CheckoutPage />
-                    </AppLayout>
-                  }
-                />
 
-
-                {/* Catch-all 404 */}
+                {/* 404 */}
                 <Route
                   path="*"
                   element={
@@ -494,7 +505,3 @@ function App() {
 }
 
 export default App;
-
-
-
-

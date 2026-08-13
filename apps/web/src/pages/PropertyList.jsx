@@ -1,256 +1,187 @@
-import React, { memo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import {
-  Heart,
-  Star,
-  MapPin,
-  BedDouble,
-  Bath,
-  Users,
-} from 'lucide-react';
-import { motion } from 'framer-motion';
-import { useFavorites } from '@/hooks/useFavorites.js';
-import { Button } from '@/components/ui/button';
+import React, { useEffect, useState } from "react";
+import { Search, SlidersHorizontal, Loader2, Home } from "lucide-react";
+import PropertyCard from "@/components/PropertyCard";
+import PropertyCardSkeleton from "@/components/PropertyCardSkeleton";
+import api from "@/lib/api";
 
-const FALLBACK_IMAGE =
-  'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80';
+const PropertyList = () => {
+  const [properties, setProperties] = useState([]);
+  const [filteredProperties, setFilteredProperties] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
 
-const PropertyCard = memo(({ property, isHostView = false }) => {
-  const navigate = useNavigate();
-  const { favorites, toggleFavorite } = useFavorites();
+  // Load all properties
+  useEffect(() => {
+    async function loadProperties() {
+      try {
+        setLoading(true);
 
-  // MongoDB uses _id, while some old frontend code uses id.
-  const propertyId = property?._id || property?.id;
+        // SAME API AS HOME PAGE
+        const { data } = await api.get("/properties");
 
-  const isFavorite = propertyId
-    ? favorites.includes(propertyId)
-    : false;
+        console.log("Properties:", data);
 
-  const handleFavoriteClick = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+        const propertyData = Array.isArray(data)
+          ? data
+          : data?.properties || data?.data || [];
 
-    if (!propertyId) {
-      console.error('[PROPERTY CARD] Missing property ID:', property);
-      return;
-    }
-
-    toggleFavorite(propertyId);
-  };
-
-  const handleCardClick = () => {
-    if (!propertyId) {
-      console.error(
-        '[PROPERTY CARD] Cannot open property: missing ID',
-        property
-      );
-      return;
-    }
-
-    if (isHostView) {
-      navigate(`/host/edit-property/${propertyId}`);
-    } else {
-      navigate(`/property/${propertyId}`);
-    }
-  };
-
-  const handleBookNow = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (!propertyId) {
-      console.error(
-        '[PROPERTY CARD] Cannot book property: missing ID',
-        property
-      );
-      return;
-    }
-
-    navigate(`/property/${propertyId}?book=true`);
-  };
-
-  const formatPrice = (price) => {
-    const numericPrice = Number(price || 0);
-
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0,
-    }).format(numericPrice);
-  };
-
-  /*
-   * MongoDB properties can contain:
-   *
-   * photos: [
-   *   "https://example.com/image.jpg"
-   * ]
-   *
-   * or relative paths.
-   *
-   * We DO NOT use PocketBase here.
-   */
-  const getImageUrl = () => {
-    if (property?.coverImage) {
-      return property.coverImage;
-    }
-
-    if (
-      Array.isArray(property?.photos) &&
-      property.photos.length > 0
-    ) {
-      const firstPhoto = property.photos[0];
-
-      if (typeof firstPhoto === 'string') {
-        return firstPhoto;
-      }
-
-      if (
-        firstPhoto &&
-        typeof firstPhoto === 'object'
-      ) {
-        return (
-          firstPhoto.url ||
-          firstPhoto.src ||
-          firstPhoto.image ||
-          FALLBACK_IMAGE
-        );
+        setProperties(propertyData);
+        setFilteredProperties(propertyData);
+      } catch (error) {
+        console.error("Failed to load properties:", error);
+        setProperties([]);
+        setFilteredProperties([]);
+      } finally {
+        setLoading(false);
       }
     }
 
-    return FALLBACK_IMAGE;
-  };
+    loadProperties();
+  }, []);
 
-  const imageUrl = getImageUrl();
+  // Search properties
+  useEffect(() => {
+    const query = search.toLowerCase().trim();
+
+    if (!query) {
+      setFilteredProperties(properties);
+      return;
+    }
+
+    const filtered = properties.filter((property) => {
+      const title = property?.title || "";
+
+      const location =
+        typeof property?.location === "string"
+          ? property.location
+          : property?.location?.city ||
+            property?.location?.address ||
+            property?.city ||
+            "";
+
+      return (
+        title.toLowerCase().includes(query) ||
+        location.toLowerCase().includes(query)
+      );
+    });
+
+    setFilteredProperties(filtered);
+  }, [search, properties]);
 
   return (
-    <motion.div
-      variants={{
-        hidden: {
-          opacity: 0,
-          y: 20,
-        },
-        show: {
-          opacity: 1,
-          y: 0,
-        },
-      }}
-      className="group flex flex-col h-full w-full bg-card rounded-[1.5rem] border border-border overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer"
-      onClick={handleCardClick}
-    >
-      {/* IMAGE */}
-      <div className="relative aspect-[4/3] overflow-hidden bg-muted">
-        <img
-          src={imageUrl}
-          alt={property?.title || 'Property'}
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-          loading="lazy"
-          onError={(e) => {
-            if (e.currentTarget.src !== FALLBACK_IMAGE) {
-              e.currentTarget.src = FALLBACK_IMAGE;
-            }
-          }}
-        />
+    <div className="min-h-screen bg-background">
 
-        {/* Wishlist */}
-        {!isHostView && (
-          <button
-            type="button"
-            className="absolute top-4 right-4 p-2.5 rounded-full bg-background/80 backdrop-blur-md text-foreground z-10 flex items-center justify-center transition-transform hover:scale-110 active:scale-95 shadow-sm"
-            aria-label="Save to wishlist"
-            onClick={handleFavoriteClick}
-          >
-            <Heart
-              className={`w-5 h-5 transition-colors duration-300 ${
-                isFavorite
-                  ? 'fill-primary text-primary'
-                  : 'fill-transparent text-foreground hover:text-primary'
-              }`}
-            />
-          </button>
-        )}
+      {/* HEADER */}
+      <section className="border-b border-border bg-muted/30">
+        <div className="max-w-7xl mx-auto px-4 py-12">
 
-        {/* Rating */}
-        {!isHostView &&
-          property?.rating !== undefined &&
-          property?.rating !== null && (
-            <div className="absolute top-4 left-4 bg-background/90 backdrop-blur-md px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm z-10">
-              <Star className="w-4 h-4 fill-primary text-primary" />
+          <h1 className="text-3xl md:text-5xl font-bold">
+            Explore Properties
+          </h1>
 
-              <span className="font-bold text-sm text-foreground">
-                {Number(property.rating).toFixed(1)}
-              </span>
-            </div>
-          )}
-      </div>
-
-      {/* CONTENT */}
-      <div className="flex flex-col p-5 flex-1">
-        <div className="mb-2">
-          <h3 className="text-lg font-bold text-foreground leading-tight line-clamp-1 group-hover:text-primary transition-colors">
-            {property?.title || 'Untitled Property'}
-          </h3>
-
-          <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-1.5 truncate">
-            <MapPin className="w-4 h-4 shrink-0 text-primary" />
-
-            <span className="truncate font-medium">
-              {property?.location || 'Location unavailable'}
-            </span>
+          <p className="text-muted-foreground mt-3 text-lg">
+            Discover amazing stays and book your perfect getaway.
           </p>
-        </div>
 
-        {/* PROPERTY DETAILS */}
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground mt-3 mb-5">
-          <span className="flex items-center gap-1.5 font-medium">
-            <BedDouble className="w-4 h-4" />
-            {property?.bedrooms || 0} Beds
-          </span>
+          {/* SEARCH BAR */}
+          <div className="mt-8 flex flex-col md:flex-row gap-3">
 
-          <span className="flex items-center gap-1.5 font-medium">
-            <Bath className="w-4 h-4" />
-            {property?.bathrooms || 0} Baths
-          </span>
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
 
-          <span className="flex items-center gap-1.5 font-medium">
-            <Users className="w-4 h-4" />
-            {property?.guestCapacity || 0} Guests
-          </span>
-        </div>
-
-        {/* PRICE + BOOK */}
-        <div className="mt-auto pt-4 border-t border-border flex items-center justify-between gap-4">
-          <div className="flex flex-col">
-            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-0.5">
-              Price
-            </span>
-
-            <div className="flex items-baseline gap-1">
-              <span className="text-xl font-extrabold text-foreground tracking-tight">
-                {formatPrice(property?.pricePerNight)}
-              </span>
-
-              <span className="text-sm text-muted-foreground font-medium">
-                / night
-              </span>
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search by property name or location..."
+                className="w-full h-14 pl-12 pr-4 rounded-xl border border-border bg-background outline-none focus:ring-2 focus:ring-primary"
+              />
             </div>
+
+            <button
+              type="button"
+              className="h-14 px-6 rounded-xl border border-border bg-background flex items-center justify-center gap-2 font-semibold hover:bg-muted transition-colors"
+            >
+              <SlidersHorizontal className="w-5 h-5" />
+              Filters
+            </button>
+
           </div>
 
-          {!isHostView && (
-            <Button
-              type="button"
-              className="rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-brand transition-all hover:-translate-y-0.5"
-              onClick={handleBookNow}
-            >
-              Book Now
-            </Button>
-          )}
         </div>
-      </div>
-    </motion.div>
+      </section>
+
+      {/* PROPERTIES */}
+      <section className="max-w-7xl mx-auto px-4 py-12">
+
+        {!loading && (
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold">
+              Available Properties
+            </h2>
+
+            <p className="text-muted-foreground mt-1">
+              {filteredProperties.length} properties found
+            </p>
+          </div>
+        )}
+
+        {/* LOADING */}
+        {loading && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <PropertyCardSkeleton key={index} />
+            ))}
+          </div>
+        )}
+
+        {/* NO PROPERTY */}
+        {!loading && filteredProperties.length === 0 && (
+          <div className="py-24 text-center">
+
+            <Home
+              className="mx-auto mb-5 text-muted-foreground"
+              size={60}
+            />
+
+            <h2 className="text-2xl font-bold">
+              No Properties Found
+            </h2>
+
+            <p className="text-muted-foreground mt-2">
+              No properties are available at the moment.
+            </p>
+
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className="mt-6 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold"
+              >
+                Clear Search
+              </button>
+            )}
+
+          </div>
+        )}
+
+        {/* PROPERTY GRID */}
+        {!loading && filteredProperties.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+
+            {filteredProperties.map((property, index) => (
+              <PropertyCard
+                key={property?._id || property?.id || index}
+                property={property}
+              />
+            ))}
+
+          </div>
+        )}
+
+      </section>
+    </div>
   );
-});
+};
 
-PropertyCard.displayName = 'PropertyCard';
-
-export default PropertyCard;
+export default PropertyList;
