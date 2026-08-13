@@ -319,6 +319,61 @@ function App() {
                   }
                 />
 
+
+                <Route
+                  path="/guest/payments"
+                  element={
+                    <ProtectedRoute requireGuest>
+                      <AppLayout>
+                        <GuestPaymentHistoryPage />
+                      </AppLayout>
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/guest/favorites"
+                  element={
+                    <ProtectedRoute requireGuest>
+                      <AppLayout>
+                        <GuestFavoritesPage />
+                      </AppLayout>
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/guest/messages"
+                  element={
+                    <ProtectedRoute requireGuest>
+                      <AppLayout>
+                        <GuestMessagesPage />
+                      </AppLayout>
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/guest/reviews"
+                  element={
+                    <ProtectedRoute requireGuest>
+                      <AppLayout>
+                        <GuestReviewsPage />
+                      </AppLayout>
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/guest/settings"
+                  element={
+                    <ProtectedRoute requireGuest>
+                      <AppLayout>
+                        <GuestSettingsPage />
+                      </AppLayout>
+                    </ProtectedRoute>
+                  }
+                />
                 {/* Host Protected Routes */}
                 <Route
                   path="/host/dashboard"
@@ -439,4 +494,7 @@ function App() {
 }
 
 export default App;
+
+
+
 
