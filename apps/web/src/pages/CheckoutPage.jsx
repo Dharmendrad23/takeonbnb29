@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Helmet } from 'react-helmet';
 import CheckoutButton from '@/components/CheckoutButton.jsx';
 import { ShieldCheck, MapPin, Calendar, Users, Landmark, Copy, CheckCircle2, CreditCard } from 'lucide-react';
@@ -164,22 +164,22 @@ const CheckoutPage = () => {
                 <h3 className="font-bold text-foreground mb-4">Price details</h3>
                 <div className="space-y-3 text-sm mb-6">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">${bookingData.pricing.pricePerNight} x {bookingData.pricing.nights} nights</span>
-                    <span className="font-medium text-foreground">${bookingData.pricing.pricePerNight * bookingData.pricing.nights}</span>
+                    <span className="text-muted-foreground">₹{bookingData.pricing.pricePerNight} x {bookingData.pricing.nights} nights</span>
+                    <span className="font-medium text-foreground">₹{bookingData.pricing.pricePerNight * bookingData.pricing.nights}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Cleaning fee</span>
-                    <span className="font-medium text-foreground">${bookingData.pricing.cleaningFee}</span>
+                    <span className="font-medium text-foreground">₹{bookingData.pricing.cleaningFee}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Service fee</span>
-                    <span className="font-medium text-foreground">${bookingData.pricing.serviceFee}</span>
+                    <span className="font-medium text-foreground">₹{bookingData.pricing.serviceFee}</span>
                   </div>
                 </div>
                 
                 <div className="flex justify-between items-center pt-4 border-t border-border">
                   <span className="font-extrabold text-foreground text-lg">Total (INR)</span>
-                  <span className="font-extrabold text-foreground text-xl">INR {totalAmount}</span>
+                  <span className="font-extrabold text-foreground text-xl">₹{totalAmount}</span>
                 </div>
               </div>
             </div>
