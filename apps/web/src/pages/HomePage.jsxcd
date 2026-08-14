@@ -3,7 +3,6 @@ import { Helmet } from "react-helmet";
 
 import HeroBanner from "@/components/HeroBanner.jsx";
 
-// Lazy loaded sections
 const FeaturedDestinations = lazy(() =>
   import("@/components/FeaturedDestinations.jsx")
 );
@@ -59,56 +58,45 @@ const HomePage = () => {
           content="Discover and book luxury vacation rentals, villas, cottages and unique stays with Take on BnB."
         />
 
-        <link
-          rel="preconnect"
-          href="https://images.unsplash.com"
-        />
+        <link rel="preconnect" href="https://images.unsplash.com" />
       </Helmet>
 
-      {/* Hero Section */}
       <HeroBanner />
 
-      {/* Featured Destinations */}
       <Suspense fallback={<SectionLoader />}>
         <FeaturedDestinations />
       </Suspense>
 
-      {/* All Trending Properties */}
+      {/* ALL LIVE APPROVED PROPERTIES */}
       <Suspense fallback={<SectionLoader />}>
         <TrendingProperties />
       </Suspense>
 
-      {/* Luxury Villas */}
+      {/* CATEGORY BASED PROPERTIES */}
       <Suspense fallback={<SectionLoader />}>
         <LuxuryVillas />
       </Suspense>
 
-      {/* Pool Villas */}
       <Suspense fallback={<SectionLoader />}>
         <PoolVillas />
       </Suspense>
 
-      {/* Browse by Category */}
       <Suspense fallback={<SectionLoader />}>
         <PropertyCategories />
       </Suspense>
 
-      {/* Mountain Escapes */}
       <Suspense fallback={<SectionLoader />}>
         <MountainVillas />
       </Suspense>
 
-      {/* Why Choose Us */}
       <Suspense fallback={<SectionLoader />}>
         <WhyChooseTakeOnBnB />
       </Suspense>
 
-      {/* Testimonials */}
       <Suspense fallback={<SectionLoader />}>
         <Testimonials />
       </Suspense>
 
-      {/* FAQ */}
       <Suspense fallback={<SectionLoader />}>
         <FAQ />
       </Suspense>
