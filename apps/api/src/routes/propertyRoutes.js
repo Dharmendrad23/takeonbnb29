@@ -3,7 +3,10 @@ import Property from "../models/Property.js";
 
 const router = express.Router();
 
-// Create a new property
+/* =====================================================
+   CREATE PROPERTY - HOST SUBMISSION
+===================================================== */
+
 router.post("/", async (req, res) => {
   try {
     const {
@@ -26,7 +29,9 @@ router.post("/", async (req, res) => {
       !description ||
       !location ||
       !propertyType ||
-      !pricePerNight
+      pricePerNight === undefined ||
+      pricePerNight === null ||
+      pricePerNight === ""
     ) {
       return res.status(400).json({
         success: false,
@@ -34,7 +39,6 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // Convert repeated URLSearchParams fields into arrays
     const amenitiesArray = Array.isArray(amenities)
       ? amenities
       : amenities
@@ -47,19 +51,15 @@ router.post("/", async (req, res) => {
         ? [photos]
         : [];
 
-    if (photosArray.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Please upload at least one property photo",
-      });
-    }
-
+    // IMPORTANT:
+    // Host se submit hone wali har property pending rahegi.
+    // Sirf admin approve karega.
     const property = await Property.create({
       hostId,
-      title: title.trim(),
-      description: description.trim(),
-      location: location.trim(),
-      propertyType,
+      title: String(title).trim(),
+      description: String(description).trim(),
+      location: String(location).trim(),
+      propertyType: String(propertyType).toLowerCase(),
       pricePerNight: Number(pricePerNight),
       bedrooms: Number(bedrooms) || 1,
       bathrooms: Number(bathrooms) || 1,
@@ -71,10 +71,10 @@ router.post("/", async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: "Property submitted successfully and is pending approval",
+      message:
+        "Property submitted successfully and is pending admin approval",
       property,
     });
-
   } catch (error) {
     console.error("Create property error:", error);
 
@@ -85,31 +85,64 @@ router.post("/", async (req, res) => {
   }
 });
 
-// Get all approved properties
+
+/* =====================================================
+   GET ALL PROPERTIES
+
+   /api/properties
+   /api/properties?status=pending
+   /api/properties?status=approved
+   /api/properties?hostId=xxxxx
+===================================================== */
+
 router.get("/", async (req, res) => {
   try {
-    const properties = await Property.find({
-      status: "approved",
-    })
-      .select("-photos")
-      .sort({ createdAt: -1 });
+    const query = {};
 
-    res.status(200).json(properties);
+    if (req.query.status) {
+      query.status = String(
+        req.query.status
+      ).toLowerCase();
+    }
 
+    if (req.query.hostId) {
+      query.hostId = req.query.hostId;
+    }
+
+    // IMPORTANT FIX:
+    // MongoDB database sort hata diya.
+    // Pehle data fetch hoga, phir Node.js me sort hoga.
+    const properties = await Property.find(query).lean();
+
+    properties.sort((a, b) => {
+      return (
+        new Date(b.createdAt || 0) -
+        new Date(a.createdAt || 0)
+      );
+    });
+
+    return res.status(200).json(properties);
   } catch (error) {
-    console.error(error);
+    console.error("Get properties error:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: "Failed to fetch properties",
+      message:
+        error.message ||
+        "Failed to fetch properties",
     });
   }
 });
 
-// Get property by id
+
+/* =====================================================
+   GET SINGLE PROPERTY
+===================================================== */
+
 router.get("/:id", async (req, res) => {
   try {
-    const property = await Property.findById(req.params.id);
+    const property =
+      await Property.findById(req.params.id).lean();
 
     if (!property) {
       return res.status(404).json({
@@ -118,12 +151,259 @@ router.get("/:id", async (req, res) => {
       });
     }
 
-    res.json(property);
-
+    return res.status(200).json(property);
   } catch (error) {
-    res.status(500).json({
+    console.error(
+      "Get single property error:",
+      error
+    );
+
+    return res.status(500).json({
       success: false,
-      message: error.message,
+      message:
+        error.message ||
+        "Failed to fetch property",
+    });
+  }
+});
+
+
+/* =====================================================
+   ADMIN APPROVE / REJECT PROPERTY
+
+   PATCH /api/properties/:id/status
+
+   Body:
+   {
+     "status": "approved"
+   }
+===================================================== */
+
+router.patch("/:id/status", async (req, res) => {
+  try {
+    const {
+      status,
+      rejectionReason = "",
+    } = req.body;
+
+    const normalizedStatus =
+      String(status || "").toLowerCase();
+
+    const allowedStatuses = [
+      "pending",
+      "approved",
+      "rejected",
+    ];
+
+    if (
+      !allowedStatuses.includes(
+        normalizedStatus
+      )
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid property status",
+      });
+    }
+
+    const updateData = {
+      status: normalizedStatus,
+      rejectionReason:
+        normalizedStatus === "rejected"
+          ? rejectionReason
+          : "",
+    };
+
+    const property =
+      await Property.findByIdAndUpdate(
+        req.params.id,
+        updateData,
+        {
+          new: true,
+          runValidators: true,
+        }
+      );
+
+    if (!property) {
+      return res.status(404).json({
+        success: false,
+        message: "Property not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message:
+        `Property ${normalizedStatus} successfully`,
+      property,
+    });
+  } catch (error) {
+    console.error(
+      "Update property status error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        error.message ||
+        "Failed to update property status",
+    });
+  }
+});
+
+
+/* =====================================================
+   UPDATE PROPERTY DETAILS
+===================================================== */
+
+router.put("/:id", async (req, res) => {
+  try {
+    const {
+      title,
+      description,
+      location,
+      propertyType,
+      pricePerNight,
+      bedrooms,
+      bathrooms,
+      guestCapacity,
+      amenities,
+      photos,
+    } = req.body;
+
+    const updateData = {};
+
+    if (title !== undefined) {
+      updateData.title = String(title).trim();
+    }
+
+    if (description !== undefined) {
+      updateData.description =
+        String(description).trim();
+    }
+
+    if (location !== undefined) {
+      updateData.location =
+        String(location).trim();
+    }
+
+    if (propertyType !== undefined) {
+      updateData.propertyType =
+        String(propertyType).toLowerCase();
+    }
+
+    if (pricePerNight !== undefined) {
+      updateData.pricePerNight =
+        Number(pricePerNight);
+    }
+
+    if (bedrooms !== undefined) {
+      updateData.bedrooms =
+        Number(bedrooms);
+    }
+
+    if (bathrooms !== undefined) {
+      updateData.bathrooms =
+        Number(bathrooms);
+    }
+
+    if (guestCapacity !== undefined) {
+      updateData.guestCapacity =
+        Number(guestCapacity);
+    }
+
+    if (amenities !== undefined) {
+      updateData.amenities =
+        Array.isArray(amenities)
+          ? amenities
+          : amenities
+            ? [amenities]
+            : [];
+    }
+
+    if (photos !== undefined) {
+      updateData.photos =
+        Array.isArray(photos)
+          ? photos
+          : photos
+            ? [photos]
+            : [];
+    }
+
+    const property =
+      await Property.findByIdAndUpdate(
+        req.params.id,
+        updateData,
+        {
+          new: true,
+          runValidators: true,
+        }
+      );
+
+    if (!property) {
+      return res.status(404).json({
+        success: false,
+        message: "Property not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message:
+        "Property updated successfully",
+      property,
+    });
+  } catch (error) {
+    console.error(
+      "Update property error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        error.message ||
+        "Failed to update property",
+    });
+  }
+});
+
+
+/* =====================================================
+   DELETE PROPERTY
+===================================================== */
+
+router.delete("/:id", async (req, res) => {
+  try {
+    const property =
+      await Property.findByIdAndDelete(
+        req.params.id
+      );
+
+    if (!property) {
+      return res.status(404).json({
+        success: false,
+        message: "Property not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message:
+        "Property deleted successfully",
+    });
+  } catch (error) {
+    console.error(
+      "Delete property error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        error.message ||
+        "Failed to delete property",
     });
   }
 });

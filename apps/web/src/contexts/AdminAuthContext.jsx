@@ -1,27 +1,27 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { toast } from 'sonner';
-import { buildApiUrl } from '@/lib/api.js';
+import React, { createContext, useContext, useState, useEffect } from "react";
+import { toast } from "sonner";
+import { buildApiUrl } from "@/lib/api.js";
 
-const AdminAuthContext = createContext();
+const AdminAuthContext = createContext(null);
 
 const normalizeAdminUser = (user) => {
   if (!user) return null;
-  return { ...user, id: user.id || user._id };
-};
 
-const toFormBody = (data) => {
-  const params = new URLSearchParams();
-  Object.entries(data).forEach(([key, value]) => {
-    if (value !== undefined && value !== null) {
-      params.append(key, String(value));
-    }
-  });
-  return params.toString();
+  return {
+    ...user,
+    id: user.id || user._id,
+  };
 };
 
 export const useAdminAuth = () => {
   const context = useContext(AdminAuthContext);
-  if (!context) throw new Error('useAdminAuth must be used within AdminAuthProvider');
+
+  if (!context) {
+    throw new Error(
+      "useAdminAuth must be used within AdminAuthProvider"
+    );
+  }
+
   return context;
 };
 
@@ -29,99 +29,144 @@ export const AdminAuthProvider = ({ children }) => {
   const [adminUser, setAdminUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Restore session from localStorage on app load
+  // Restore admin session
   useEffect(() => {
-    const token = localStorage.getItem('adminToken');
-    const saved = localStorage.getItem('adminUser');
-    if (token && saved) {
-      try {
-        const user = normalizeAdminUser(JSON.parse(saved));
-        if (user.role === 'admin') {
+    try {
+      const token = localStorage.getItem("adminToken");
+      const savedUser = localStorage.getItem("adminUser");
+
+      if (token && savedUser) {
+        const user = normalizeAdminUser(JSON.parse(savedUser));
+
+        if (user?.role === "admin") {
           setAdminUser(user);
         } else {
-          localStorage.removeItem('adminToken');
-          localStorage.removeItem('adminUser');
+          localStorage.removeItem("adminToken");
+          localStorage.removeItem("adminUser");
         }
-      } catch {
-        localStorage.removeItem('adminToken');
-        localStorage.removeItem('adminUser');
       }
+    } catch (error) {
+      console.error("Admin session restore error:", error);
+
+      localStorage.removeItem("adminToken");
+      localStorage.removeItem("adminUser");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   const login = async (email, password) => {
+    const loginUrl = buildApiUrl("/api/auth/login");
+
+    console.log("ADMIN LOGIN URL:", loginUrl);
+
     try {
-      const loginUrl = buildApiUrl('/api/auth/login');
-
-      console.log('[AdminAuth] Starting login request...');
-      console.log('[AdminAuth] URL:', loginUrl);
-      console.log('[AdminAuth] Email:', email);
-      console.log('[AdminAuth] Password length:', password?.length || 0);
-
       const response = await fetch(loginUrl, {
-        method: 'POST',
+        method: "POST",
+
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
+          "Content-Type": "application/json",
         },
-        body: toFormBody({ email, password }),
-        credentials: 'include',
+
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          password,
+        }),
       });
 
-      console.log('[AdminAuth] Response status:', response.status);
-      console.log('[AdminAuth] Response headers:', {
-        contentType: response.headers.get('content-type'),
-      });
+      const contentType = response.headers.get("content-type");
 
-      const data = await response.json();
-      console.log('[AdminAuth] Response JSON:', { success: data.success, message: data.message, hasToken: !!data.token, hasUser: !!data.user });
+      let data;
 
-      if (!response.ok) {
-        console.error('[AdminAuth] Login failed:', data.message || data.error);
-        throw new Error(data.message || data.error || 'Invalid credentials');
+      if (contentType && contentType.includes("application/json")) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+
+        console.error("NON JSON RESPONSE:", text);
+
+        throw new Error(
+          "Server returned an invalid response. Check API URL."
+        );
       }
 
-      const { token, user: rawUser } = data;
-      const user = normalizeAdminUser(rawUser);
+      console.log("ADMIN LOGIN RESPONSE:", data);
 
-      if (user.role !== 'admin') {
-        console.error('[AdminAuth] User role is not admin:', user.role);
-        throw new Error('Access denied. Admin account required.');
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.message ||
+          data.error ||
+          "Invalid email or password"
+        );
       }
 
-      console.log('[AdminAuth] Login successful, saving tokens...');
-      localStorage.setItem('adminToken', token);
-      localStorage.setItem('adminUser', JSON.stringify(user));
+      const token = data.token;
+      const user = normalizeAdminUser(data.user);
+
+      if (!token) {
+        throw new Error("Login token not received from server");
+      }
+
+      if (!user) {
+        throw new Error("User information not received from server");
+      }
+
+      if (user.role !== "admin") {
+        throw new Error(
+          `Access denied. Your role is "${user.role}", admin role required.`
+        );
+      }
+
+      // Save session
+      localStorage.setItem("adminToken", token);
+      localStorage.setItem(
+        "adminUser",
+        JSON.stringify(user)
+      );
+
       setAdminUser(user);
-      toast.success(`Welcome back, ${user.name || 'Admin'}`);
-      console.log('[AdminAuth] Login completed successfully');
-      return { token, user };
-    } catch (err) {
-      console.error('[AdminAuth] Login error:', {
-        name: err.name,
-        message: err.message,
-        stack: err.stack,
-      });
-      throw err;
+
+      toast.success(
+        `Welcome back, ${user.name || "Admin"}`
+      );
+
+      return {
+        token,
+        user,
+      };
+
+    } catch (error) {
+      console.error("ADMIN LOGIN ERROR:", error);
+
+      throw new Error(
+        error.message || "Unable to login"
+      );
     }
   };
 
   const logoutAdmin = () => {
-    localStorage.removeItem('adminToken');
-    localStorage.removeItem('adminUser');
+    localStorage.removeItem("adminToken");
+    localStorage.removeItem("adminUser");
+
     setAdminUser(null);
-    toast.success('Logged out successfully');
+
+    toast.success("Logged out successfully");
+  };
+
+  const value = {
+    adminUser,
+    loading,
+    login,
+    logoutAdmin,
+
+    isAuthenticated: !!adminUser,
+
+    isAdmin:
+      adminUser?.role === "admin",
   };
 
   return (
-    <AdminAuthContext.Provider value={{
-      adminUser,
-      loading,
-      login,
-      logoutAdmin,
-      isAuthenticated: !!adminUser,
-      isAdmin: adminUser?.role === 'admin',
-    }}>
+    <AdminAuthContext.Provider value={value}>
       {children}
     </AdminAuthContext.Provider>
   );

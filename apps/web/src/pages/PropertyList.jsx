@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Search, SlidersHorizontal, Loader2, Home } from "lucide-react";
+import { Search, SlidersHorizontal, Home, RefreshCw } from "lucide-react";
 import PropertyCard from "@/components/PropertyCard";
 import PropertyCardSkeleton from "@/components/PropertyCardSkeleton";
 import api from "@/lib/api";
@@ -9,33 +9,60 @@ const PropertyList = () => {
   const [filteredProperties, setFilteredProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [error, setError] = useState("");
 
-  // Load all properties
-  useEffect(() => {
-    async function loadProperties() {
-      try {
-        setLoading(true);
+  // Load properties directly from database API
+  const loadProperties = async () => {
+    try {
+      setLoading(true);
+      setError("");
 
-        // SAME API AS HOME PAGE
-        const { data } = await api.get("/properties");
+      console.log("Loading properties from API...");
 
-        console.log("Properties:", data);
+      const response = await api.get("/properties");
 
-        const propertyData = Array.isArray(data)
-          ? data
-          : data?.properties || data?.data || [];
+      console.log("Properties API response:", response.data);
 
-        setProperties(propertyData);
-        setFilteredProperties(propertyData);
-      } catch (error) {
-        console.error("Failed to load properties:", error);
-        setProperties([]);
-        setFilteredProperties([]);
-      } finally {
-        setLoading(false);
-      }
+      // Support multiple backend response formats
+      const propertyData = Array.isArray(response.data)
+        ? response.data
+        : Array.isArray(response.data?.properties)
+          ? response.data.properties
+          : Array.isArray(response.data?.items)
+            ? response.data.items
+            : Array.isArray(response.data?.data)
+              ? response.data.data
+              : [];
+
+      // Show all properties except explicitly rejected/pending ones
+      const visibleProperties = propertyData.filter((property) => {
+        return (
+          property?.status !== "pending" &&
+          property?.status !== "rejected"
+        );
+      });
+
+      console.log("Visible properties:", visibleProperties);
+
+      setProperties(visibleProperties);
+      setFilteredProperties(visibleProperties);
+    } catch (error) {
+      console.error("Failed to load properties:", error);
+
+      setError(
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to load properties."
+      );
+
+      setProperties([]);
+      setFilteredProperties([]);
+    } finally {
+      setLoading(false);
     }
+  };
 
+  useEffect(() => {
     loadProperties();
   }, []);
 
@@ -49,19 +76,25 @@ const PropertyList = () => {
     }
 
     const filtered = properties.filter((property) => {
-      const title = property?.title || "";
+      const title = String(property?.title || "").toLowerCase();
 
       const location =
         typeof property?.location === "string"
           ? property.location
           : property?.location?.city ||
             property?.location?.address ||
+            property?.location?.name ||
             property?.city ||
             "";
 
+      const propertyType = String(
+        property?.propertyType || property?.type || ""
+      ).toLowerCase();
+
       return (
-        title.toLowerCase().includes(query) ||
-        location.toLowerCase().includes(query)
+        title.includes(query) ||
+        String(location).toLowerCase().includes(query) ||
+        propertyType.includes(query)
       );
     });
 
@@ -93,7 +126,7 @@ const PropertyList = () => {
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by property name or location..."
+                placeholder="Search by property name, location..."
                 className="w-full h-14 pl-12 pr-4 rounded-xl border border-border bg-background outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
@@ -114,7 +147,7 @@ const PropertyList = () => {
       {/* PROPERTIES */}
       <section className="max-w-7xl mx-auto px-4 py-12">
 
-        {!loading && (
+        {!loading && !error && (
           <div className="mb-8">
             <h2 className="text-2xl font-bold">
               Available Properties
@@ -135,8 +168,35 @@ const PropertyList = () => {
           </div>
         )}
 
+        {/* ERROR */}
+        {!loading && error && (
+          <div className="py-24 text-center">
+            <Home
+              className="mx-auto mb-5 text-destructive"
+              size={60}
+            />
+
+            <h2 className="text-2xl font-bold">
+              Properties Load Nahi Ho Rahi
+            </h2>
+
+            <p className="text-muted-foreground mt-2 max-w-lg mx-auto">
+              {error}
+            </p>
+
+            <button
+              type="button"
+              onClick={loadProperties}
+              className="mt-6 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold inline-flex items-center gap-2"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Try Again
+            </button>
+          </div>
+        )}
+
         {/* NO PROPERTY */}
-        {!loading && filteredProperties.length === 0 && (
+        {!loading && !error && filteredProperties.length === 0 && (
           <div className="py-24 text-center">
 
             <Home
@@ -145,11 +205,15 @@ const PropertyList = () => {
             />
 
             <h2 className="text-2xl font-bold">
-              No Properties Found
+              {search
+                ? "No Matching Properties Found"
+                : "No Properties Found"}
             </h2>
 
             <p className="text-muted-foreground mt-2">
-              No properties are available at the moment.
+              {search
+                ? "Try searching with another property name or location."
+                : "No properties are available at the moment."}
             </p>
 
             {search && (
@@ -166,7 +230,7 @@ const PropertyList = () => {
         )}
 
         {/* PROPERTY GRID */}
-        {!loading && filteredProperties.length > 0 && (
+        {!loading && !error && filteredProperties.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
 
             {filteredProperties.map((property, index) => (

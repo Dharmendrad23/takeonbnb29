@@ -17,12 +17,21 @@ const app = express();
 
 app.set("trust proxy", true);
 
+/* =========================================
+   ERROR HANDLING
+========================================= */
+
 process.on("uncaughtException", (error) => {
   logger.error("Uncaught exception:", error);
 });
 
 process.on("unhandledRejection", (reason, promise) => {
-  logger.error("Unhandled rejection at:", promise, "reason:", reason);
+  logger.error(
+    "Unhandled rejection at:",
+    promise,
+    "reason:",
+    reason
+  );
 });
 
 process.on("SIGINT", async () => {
@@ -33,42 +42,80 @@ process.on("SIGINT", async () => {
 process.on("SIGTERM", async () => {
   logger.info("SIGTERM signal received");
 
-  await new Promise((resolve) => setTimeout(resolve, 3000));
+  await new Promise((resolve) =>
+    setTimeout(resolve, 3000)
+  );
 
   logger.info("Exiting");
   process.exit(0);
 });
 
+/* =========================================
+   SECURITY
+========================================= */
+
 app.use(helmet());
 
-// Configure CORS with proper origin array handling
-const ALLOWED_ORIGINS = Array.from(new Set([
-	'https://takeonbnb.com',
-	'https://www.takeonbnb.com',
-	'https://takeonbnb29.onrender.com',
-	'https://takeonbnb29.netlify.app',
-	'http://localhost:3000',
-	'http://127.0.0.1:3000',
-	'https://localhost:3000',
-	...(process.env.CORS_ORIGIN
-		? process.env.CORS_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean)
-		: []),
-]));
+/* =========================================
+   CORS
+========================================= */
 
-console.log('[CORS] Configured allowed origins:', ALLOWED_ORIGINS);
+const ALLOWED_ORIGINS = Array.from(
+  new Set([
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
 
-app.use(cors({
-	origin: (origin, callback) => {
-		// Allow requests with no Origin header (mobile apps, server-to-server, curl)
-		if (!origin) return callback(null, true);
-		if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
-		console.warn(`[CORS] Blocked origin: ${origin}`);
-		callback(null, false);
-	},
-	credentials: true,
-}));
+    "https://takeonbnb.com",
+    "https://www.takeonbnb.com",
+
+    "https://takeonbnb29.netlify.app",
+    "https://takeonbnb29.onrender.com",
+
+    ...(process.env.CORS_ORIGIN
+      ? process.env.CORS_ORIGIN
+          .split(",")
+          .map((origin) => origin.trim())
+          .filter(Boolean)
+      : []),
+  ])
+);
+
+console.log(
+  "[CORS] Allowed origins:",
+  ALLOWED_ORIGINS
+);
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow Postman, curl, server-to-server requests
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      if (ALLOWED_ORIGINS.includes(origin)) {
+        return callback(null, true);
+      }
+
+      console.warn(
+        `[CORS] Blocked origin: ${origin}`
+      );
+
+      return callback(
+        new Error("Not allowed by CORS")
+      );
+    },
+
+    credentials: true,
+  })
+);
+
+/* =========================================
+   MIDDLEWARE
+========================================= */
 
 app.use(morgan("combined"));
+
 app.use(globalRateLimit);
 
 app.use(
@@ -84,34 +131,76 @@ app.use(
   })
 );
 
-// API Routes
-app.use("/api", (req, res, next) => {
-  console.log('[API Middleware]', req.method, req.path);
-  next();
-}, routes());
-app.use("/hcgi/api", (req, res, next) => {
-  console.log('[HCGI Middleware]', req.method, req.path);
-  next();
-}, routes());
+/* =========================================
+   API ROUTES
+========================================= */
+
+app.use(
+  "/api",
+  (req, res, next) => {
+    console.log(
+      `[API] ${req.method} ${req.path}`
+    );
+
+    next();
+  },
+  routes()
+);
+
+/* =========================================
+   HCGI API ROUTES
+========================================= */
+
+app.use(
+  "/hcgi/api",
+  (req, res, next) => {
+    console.log(
+      `[HCGI API] ${req.method} ${req.path}`
+    );
+
+    next();
+  },
+  routes()
+);
+
+/* =========================================
+   ERROR MIDDLEWARE
+========================================= */
 
 app.use(errorMiddleware);
 
+/* =========================================
+   404
+========================================= */
+
 app.use((req, res) => {
   res.status(404).json({
+    success: false,
     error: "Route not found",
+    path: req.originalUrl,
   });
 });
+
+/* =========================================
+   START SERVER
+========================================= */
 
 const port = process.env.PORT || 3001;
 
 connectDB()
   .then(() => {
     app.listen(port, () => {
-      logger.info(`🚀 API Server running on http://localhost:${port}`);
+      logger.info(
+        `🚀 API Server running on http://localhost:${port}`
+      );
     });
   })
   .catch((err) => {
-    logger.error("❌ Failed to connect to MongoDB:", err);
+    logger.error(
+      "❌ Failed to connect to MongoDB:",
+      err
+    );
+
     process.exit(1);
   });
 
