@@ -11,8 +11,8 @@ export const getApiBaseUrl = () => {
     return configured.replace(/\/$/, "");
   }
 
-  // LOCAL BACKEND
-  return "http://localhost:3001";
+  // Production fallback
+  return "https://takeonbnb29.onrender.com";
 };
 
 export const buildApiUrl = (path = "") => {
