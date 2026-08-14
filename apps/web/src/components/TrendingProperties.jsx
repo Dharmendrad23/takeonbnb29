@@ -2,11 +2,11 @@
 import useEmblaCarousel from "embla-carousel-react";
 import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Home } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import PropertyCard from "./PropertyCard";
 import PropertyCardSkeleton from "./PropertyCardSkeleton";
-
-const API_URL = "https://takeonbnb29.onrender.com/api/properties";
+import api from "@/lib/api.js";
 
 export default function TrendingProperties() {
   const [emblaRef, emblaApi] = useEmblaCarousel({
@@ -18,38 +18,63 @@ export default function TrendingProperties() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const controller = new AbortController();
+    let mounted = true;
 
     async function loadProperties() {
       try {
-        const response = await fetch(API_URL, {
-          signal: controller.signal,
-        });
+        setLoading(true);
 
-        if (!response.ok) {
-          throw new Error(`Failed to load properties: ${response.status}`);
-        }
+        const response = await api.get("/properties");
 
-        const result = await response.json();
+        const result = response.data;
 
-        // API array ya object dono handle karega
         const propertyList = Array.isArray(result)
           ? result
-          : result.properties || result.data || [];
+          : result?.properties ||
+            result?.items ||
+            result?.data ||
+            [];
 
-        setProperties(propertyList);
+        // Sirf approved properties website par
+        const approvedProperties = propertyList.filter(
+          (property) =>
+            String(property.status || "").toLowerCase() === "approved"
+        );
+
+        console.log(
+          "Total Properties:",
+          propertyList.length
+        );
+
+        console.log(
+          "Approved Properties:",
+          approvedProperties.length
+        );
+
+        if (mounted) {
+          setProperties(approvedProperties);
+        }
       } catch (error) {
-        if (error.name !== "AbortError") {
-          console.error("Property loading error:", error);
+        console.error(
+          "Property loading error:",
+          error
+        );
+
+        if (mounted) {
+          setProperties([]);
         }
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     }
 
     loadProperties();
 
-    return () => controller.abort();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   return (
@@ -73,7 +98,6 @@ export default function TrendingProperties() {
                 variant="outline"
                 size="icon"
                 onClick={() => emblaApi?.scrollPrev()}
-                aria-label="Previous properties"
               >
                 <ChevronLeft />
               </Button>
@@ -82,7 +106,6 @@ export default function TrendingProperties() {
                 variant="outline"
                 size="icon"
                 onClick={() => emblaApi?.scrollNext()}
-                aria-label="Next properties"
               >
                 <ChevronRight />
               </Button>
@@ -98,28 +121,44 @@ export default function TrendingProperties() {
           </div>
         ) : properties.length === 0 ? (
           <div className="text-center py-20">
-            <Home className="mx-auto mb-4 text-primary" size={50} />
+            <Home
+              className="mx-auto mb-4 text-primary"
+              size={50}
+            />
 
             <h2 className="text-2xl font-bold mb-2">
               No Properties Found
             </h2>
 
             <p className="text-muted-foreground">
-              New properties will appear here soon.
+              Approved properties will appear here.
             </p>
           </div>
         ) : (
-          <div className="embla overflow-hidden" ref={emblaRef}>
+          <div
+            className="embla overflow-hidden"
+            ref={emblaRef}
+          >
             <div className="embla__container flex gap-6">
               {properties.map((property) => (
                 <motion.div
-                  key={property._id || property.id}
+                  key={property.id || property._id}
                   className="embla__slide flex-[0_0_85%] sm:flex-[0_0_45%] lg:flex-[0_0_30%]"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
+                  initial={{
+                    opacity: 0,
+                    y: 20,
+                  }}
+                  animate={{
+                    opacity: 1,
+                    y: 0,
+                  }}
+                  transition={{
+                    duration: 0.3,
+                  }}
                 >
-                  <PropertyCard property={property} />
+                  <PropertyCard
+                    property={property}
+                  />
                 </motion.div>
               ))}
             </div>

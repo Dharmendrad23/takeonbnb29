@@ -1,18 +1,34 @@
 import axios from "axios";
 
+const PRODUCTION_API_URL = "https://takeonbnb29.onrender.com";
+
 export const getApiBaseUrl = () => {
   const configured = import.meta.env.VITE_API_URL;
 
+  // Development mode: local API use kar sakte hain
+  if (import.meta.env.DEV) {
+    if (
+      configured &&
+      configured !== "undefined" &&
+      configured !== ""
+    ) {
+      return configured.replace(/\/$/, "");
+    }
+
+    return "http://localhost:3001";
+  }
+
+  // Production: localhost kabhi use nahi hoga
   if (
     configured &&
     configured !== "undefined" &&
-    configured !== ""
+    configured !== "" &&
+    !configured.includes("localhost")
   ) {
     return configured.replace(/\/$/, "");
   }
 
-  // Production fallback
-  return "https://takeonbnb29.onrender.com";
+  return PRODUCTION_API_URL;
 };
 
 export const buildApiUrl = (path = "") => {
@@ -60,6 +76,11 @@ api.interceptors.response.use(
       if (Array.isArray(response.data.items)) {
         response.data.items =
           response.data.items.map(normalizeRecord);
+      }
+
+      if (Array.isArray(response.data.properties)) {
+        response.data.properties =
+          response.data.properties.map(normalizeRecord);
       }
     }
 
