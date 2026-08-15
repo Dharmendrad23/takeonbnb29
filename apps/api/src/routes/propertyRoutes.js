@@ -89,6 +89,9 @@ router.post("/", async (req, res) => {
    TEST PROPERTY DATABASE
 
    GET /api/properties/test-db
+
+   IMPORTANT:
+   Ye route /:id se pehle hona chahiye
 ===================================================== */
 
 router.get("/test-db", async (req, res) => {
@@ -130,8 +133,6 @@ router.get("/test-db", async (req, res) => {
       count
     );
 
-    console.log("=================================");
-
     return res.status(200).json({
       success: true,
       message:
@@ -140,6 +141,7 @@ router.get("/test-db", async (req, res) => {
       database: mongoose.connection.name,
       totalProperties: count,
     });
+
   } catch (error) {
     console.error("=================================");
     console.error("TEST DB ERROR:");
@@ -156,7 +158,8 @@ router.get("/test-db", async (req, res) => {
       codeName: error.codeName || null,
       readyState:
         mongoose.connection.readyState,
-      database: mongoose.connection.name || null,
+      database:
+        mongoose.connection.name || null,
     });
   }
 });
@@ -181,15 +184,15 @@ router.get("/", async (req, res) => {
       return res.status(503).json({
         success: false,
         message: "MongoDB is not connected",
+        readyState: mongoose.connection.readyState,
       });
     }
 
     const query = {};
 
     if (req.query.status) {
-      query.status = String(
-        req.query.status
-      ).toLowerCase();
+      query.status =
+        String(req.query.status).toLowerCase();
     }
 
     if (req.query.hostId) {
@@ -219,6 +222,7 @@ router.get("/", async (req, res) => {
     );
 
     return res.status(200).json(properties);
+
   } catch (error) {
     console.error("=================================");
     console.error("GET PROPERTIES ERROR:");
@@ -253,10 +257,21 @@ router.get("/:id", async (req, res) => {
       id
     );
 
-    if (!mongoose.connection.readyState === 1) {
+    if (
+      mongoose.connection.readyState !== 1
+    ) {
       return res.status(503).json({
         success: false,
         message: "MongoDB is not connected",
+        readyState:
+          mongoose.connection.readyState,
+      });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid property ID",
       });
     }
 
@@ -273,6 +288,7 @@ router.get("/:id", async (req, res) => {
     }
 
     return res.status(200).json(property);
+
   } catch (error) {
     console.error(
       "GET SINGLE PROPERTY ERROR:",
@@ -309,6 +325,24 @@ router.patch("/:id/status", async (req, res) => {
       rejectionReason = "",
     } = req.body;
 
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid property ID",
+      });
+    }
+
+    if (
+      mongoose.connection.readyState !== 1
+    ) {
+      return res.status(503).json({
+        success: false,
+        message: "MongoDB is not connected",
+      });
+    }
+
     const normalizedStatus =
       String(status || "").toLowerCase();
 
@@ -338,12 +372,12 @@ router.patch("/:id/status", async (req, res) => {
     };
 
     console.log(
-      `Updating property ${req.params.id} to ${normalizedStatus}`
+      `Updating property ${id} to ${normalizedStatus}`
     );
 
     const property =
       await Property.findByIdAndUpdate(
-        req.params.id,
+        id,
         updateData,
         {
           new: true,
@@ -364,6 +398,7 @@ router.patch("/:id/status", async (req, res) => {
         `Property ${normalizedStatus} successfully`,
       property,
     });
+
   } catch (error) {
     console.error(
       "UPDATE STATUS ERROR:",
@@ -384,12 +419,19 @@ router.patch("/:id/status", async (req, res) => {
 
 /* =====================================================
    UPDATE PROPERTY DETAILS
-
-   PUT /api/properties/:id
 ===================================================== */
 
 router.put("/:id", async (req, res) => {
   try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid property ID",
+      });
+    }
+
     const {
       title,
       description,
@@ -465,7 +507,7 @@ router.put("/:id", async (req, res) => {
 
     const property =
       await Property.findByIdAndUpdate(
-        req.params.id,
+        id,
         updateData,
         {
           new: true,
@@ -486,6 +528,7 @@ router.put("/:id", async (req, res) => {
         "Property updated successfully",
       property,
     });
+
   } catch (error) {
     console.error(
       "UPDATE PROPERTY ERROR:",
@@ -506,16 +549,21 @@ router.put("/:id", async (req, res) => {
 
 /* =====================================================
    DELETE PROPERTY
-
-   DELETE /api/properties/:id
 ===================================================== */
 
 router.delete("/:id", async (req, res) => {
   try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid property ID",
+      });
+    }
+
     const property =
-      await Property.findByIdAndDelete(
-        req.params.id
-      );
+      await Property.findByIdAndDelete(id);
 
     if (!property) {
       return res.status(404).json({
@@ -529,6 +577,7 @@ router.delete("/:id", async (req, res) => {
       message:
         "Property deleted successfully",
     });
+
   } catch (error) {
     console.error(
       "DELETE PROPERTY ERROR:",
@@ -545,6 +594,5 @@ router.delete("/:id", async (req, res) => {
     });
   }
 });
-
 
 export default router;
