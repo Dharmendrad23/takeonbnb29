@@ -15,46 +15,53 @@ const AllPropertiesGrid = () => {
         setIsLoading(true);
         setError(null);
 
-        console.log("Fetching properties from MongoDB API...");
+        console.log("Loading homepage properties from MongoDB API...");
 
         const response = await api.get("/properties");
 
-        console.log("Properties API response:", response.data);
+        console.log("Homepage API response:", response.data);
 
-        let propertyData = [];
+        // API different formats handle karega
+        const propertyData = Array.isArray(response.data)
+          ? response.data
+          : Array.isArray(response.data?.properties)
+            ? response.data.properties
+            : Array.isArray(response.data?.items)
+              ? response.data.items
+              : Array.isArray(response.data?.data)
+                ? response.data.data
+                : [];
 
-        if (Array.isArray(response.data)) {
-          propertyData = response.data;
-        } else if (Array.isArray(response.data?.properties)) {
-          propertyData = response.data.properties;
-        } else if (Array.isArray(response.data?.items)) {
-          propertyData = response.data.items;
-        }
+        console.log("Total properties received:", propertyData.length);
 
-        // Sirf approved/live properties frontend par show hongi
-        const liveProperties = propertyData.filter((property) => {
-          const status = String(
-            property.status || property.approvalStatus || ""
-          ).toLowerCase();
+        // Sirf approved properties website par show hongi
+        const approvedProperties = propertyData.filter((property) => {
+          const status = String(property?.status || "")
+            .trim()
+            .toLowerCase();
 
-          return (
-            status === "approved" ||
-            status === "live" ||
-            status === "active"
-          );
+          return status === "approved";
         });
 
-        console.log("Live properties:", liveProperties);
+        console.log(
+          "Approved properties:",
+          approvedProperties.length
+        );
 
-        setProperties(liveProperties);
+        setProperties(approvedProperties);
       } catch (err) {
-        console.error("Failed to fetch properties:", err);
+        console.error(
+          "Failed to fetch homepage properties:",
+          err
+        );
 
         setError(
-          err.response?.data?.message ||
-            err.message ||
-            "Failed to load properties"
+          err?.response?.data?.message ||
+          err?.message ||
+          "Failed to load properties"
         );
+
+        setProperties([]);
       } finally {
         setIsLoading(false);
       }
@@ -68,7 +75,7 @@ const AllPropertiesGrid = () => {
       <section className="py-16 bg-background">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-8">
-            All Properties
+            Explore All Stays
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -85,10 +92,10 @@ const AllPropertiesGrid = () => {
     return (
       <section className="py-16 bg-background">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 text-center py-20">
-          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
 
           <h3 className="text-xl font-bold text-foreground mb-2">
-            Unable to load properties
+            Properties could not be loaded
           </h3>
 
           <p className="text-muted-foreground">
@@ -106,11 +113,11 @@ const AllPropertiesGrid = () => {
           <AlertCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
 
           <h3 className="text-xl font-bold text-foreground mb-2">
-            No properties available
+            No Properties Found
           </h3>
 
           <p className="text-muted-foreground">
-            No approved properties are currently available.
+            Approved properties will appear here.
           </p>
         </div>
       </section>
@@ -120,6 +127,7 @@ const AllPropertiesGrid = () => {
   return (
     <section className="py-16 bg-background border-y border-border/50">
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
+
         <div className="mb-10">
           <h2 className="text-[24px] md:text-[32px] font-bold text-foreground tracking-tight">
             Explore All Stays
@@ -132,7 +140,10 @@ const AllPropertiesGrid = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {properties.map((prop, idx) => (
-            <div key={prop.id || prop._id || idx} className="w-full">
+            <div
+              key={prop?._id || prop?.id || idx}
+              className="w-full"
+            >
               <SwappingPropertyCard
                 property={prop}
                 interval={5000 + (idx % 4) * 1000}
@@ -141,6 +152,7 @@ const AllPropertiesGrid = () => {
             </div>
           ))}
         </div>
+
       </div>
     </section>
   );
