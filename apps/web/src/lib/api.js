@@ -5,29 +5,15 @@ const PRODUCTION_API_URL = "https://takeonbnb29.onrender.com";
 export const getApiBaseUrl = () => {
   const configured = import.meta.env.VITE_API_URL;
 
-  // Development mode: local API use kar sakte hain
-  if (import.meta.env.DEV) {
-    if (
-      configured &&
-      configured !== "undefined" &&
-      configured !== ""
-    ) {
-      return configured.replace(/\/$/, "");
-    }
-
-    return "http://localhost:3001";
-  }
-
-  // Production: localhost kabhi use nahi hoga
   if (
     configured &&
     configured !== "undefined" &&
-    configured !== "" &&
-    !configured.includes("localhost")
+    configured !== ""
   ) {
     return configured.replace(/\/$/, "");
   }
 
+  // Development aur Production dono me Render API
   return PRODUCTION_API_URL;
 };
 
@@ -44,6 +30,7 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  timeout: 30000,
 });
 
 const normalizeRecord = (record) => {
