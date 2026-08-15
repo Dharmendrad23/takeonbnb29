@@ -89,7 +89,7 @@ router.post("/", async (req, res) => {
         : [];
 
     const property = await Property.create({
-      hostId,
+      hostId: String(hostId),
       title: String(title).trim(),
       description: String(description).trim(),
       location: String(location).trim(),
@@ -100,6 +100,8 @@ router.post("/", async (req, res) => {
       guestCapacity: Number(guestCapacity) || 1,
       amenities: amenitiesArray,
       photos: photosArray,
+
+      // PROPERTY DIRECTLY LIVE
       status: "approved",
     });
 
@@ -117,48 +119,70 @@ router.post("/", async (req, res) => {
     });
   }
 });
+
 /* =====================================================
    GET ALL PROPERTIES
+   IMPORTANT: ONLY ONE GET "/" ROUTE
 ===================================================== */
 
 router.get("/", async (req, res) => {
   try {
     console.log("[Properties] GET request received");
 
-    // IMPORTANT:
-    // Database par sort() use nahi karna.
-    // Pehle records fetch karo.
+    /*
+      IMPORTANT:
+      No MongoDB .sort()
+      No huge database sorting
+      Limit records for safe response
+    */
+
     const properties = await Property.find({})
+      .limit(100)
+      .maxTimeMS(15000)
       .lean()
       .exec();
 
-    console.log(`[Properties] Found ${properties.length} properties`);
+    console.log(
+      `[Properties] Found ${properties.length} properties`
+    );
 
     let filteredProperties = properties;
 
-    // Filter by status
+    /* FILTER BY STATUS IN JAVASCRIPT */
+
     if (req.query.status) {
-      const requestedStatus = String(req.query.status).toLowerCase();
+      const requestedStatus = String(
+        req.query.status
+      ).toLowerCase();
 
-      filteredProperties = filteredProperties.filter((property) => {
-        return (
-          String(property.status || "").toLowerCase() ===
-          requestedStatus
-        );
-      });
+      filteredProperties = filteredProperties.filter(
+        (property) =>
+          String(
+            property.status || ""
+          ).toLowerCase() === requestedStatus
+      );
     }
 
-    // Filter by hostId
+    /* FILTER BY HOST ID IN JAVASCRIPT */
+
     if (req.query.hostId) {
-      const requestedHostId = String(req.query.hostId);
+      const requestedHostId = String(
+        req.query.hostId
+      );
 
-      filteredProperties = filteredProperties.filter((property) => {
-        return String(property.hostId || "") === requestedHostId;
-      });
+      filteredProperties = filteredProperties.filter(
+        (property) =>
+          String(property.hostId || "") ===
+          requestedHostId
+      );
     }
 
-    // Sort in JavaScript, NOT MongoDB
-    filteredProperties = filteredProperties.sort((a, b) => {
+    /*
+      SORT IN JAVASCRIPT ONLY
+      MongoDB memory error nahi aayega
+    */
+
+    filteredProperties.sort((a, b) => {
       const dateA = a.createdAt
         ? new Date(a.createdAt).getTime()
         : 0;
@@ -170,14 +194,20 @@ router.get("/", async (req, res) => {
       return dateB - dateA;
     });
 
-    return res.status(200).json(filteredProperties);
+    return res.status(200).json({
+      success: true,
+      count: filteredProperties.length,
+      properties: filteredProperties,
+    });
 
   } catch (error) {
     console.error("GET PROPERTIES ERROR:", error);
 
     return res.status(500).json({
       success: false,
-      message: error.message || "Failed to fetch properties",
+      message:
+        error.message ||
+        "Failed to fetch properties",
     });
   }
 });
@@ -186,30 +216,78 @@ router.get("/", async (req, res) => {
    UPDATE PROPERTY STATUS
 ===================================================== */
 
-router.get("/", async (req, res) => {
+router.patch("/:id/status", async (req, res) => {
   try {
-    console.log("[Properties] Simple GET started");
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid property ID",
+      });
+    }
 
-    const properties = await Property.find({})
-      .limit(100)
-      .lean();
+    const { status, rejectionReason = "" } = req.body;
 
-    console.log("[Properties] Properties found:", properties.length);
+    const normalizedStatus = String(
+      status || ""
+    ).toLowerCase();
+
+    const allowedStatuses = [
+      "pending",
+      "approved",
+      "rejected",
+      "live",
+    ];
+
+    if (!allowedStatuses.includes(normalizedStatus)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid property status",
+      });
+    }
+
+    const property =
+      await Property.findByIdAndUpdate(
+        req.params.id,
+        {
+          status: normalizedStatus,
+          rejectionReason:
+            normalizedStatus === "rejected"
+              ? rejectionReason
+              : "",
+        },
+        {
+          new: true,
+          runValidators: true,
+        }
+      )
+        .maxTimeMS(10000)
+        .exec();
+
+    if (!property) {
+      return res.status(404).json({
+        success: false,
+        message: "Property not found",
+      });
+    }
 
     return res.status(200).json({
       success: true,
-      count: properties.length,
-      properties: properties,
+      message: `Property ${normalizedStatus} successfully`,
+      property,
     });
+
   } catch (error) {
-    console.error("[Properties] GET ERROR:", error);
+    console.error("UPDATE STATUS ERROR:", error);
 
     return res.status(500).json({
       success: false,
-      message: error.message,
+      message:
+        error.message ||
+        "Failed to update property status",
     });
   }
 });
+
 /* =====================================================
    UPDATE PROPERTY
 ===================================================== */
@@ -245,68 +323,80 @@ router.put("/:id", async (req, res) => {
     });
 
     if (updateData.title !== undefined) {
-      updateData.title = String(updateData.title).trim();
+      updateData.title = String(
+        updateData.title
+      ).trim();
     }
 
     if (updateData.description !== undefined) {
-      updateData.description =
-        String(updateData.description).trim();
+      updateData.description = String(
+        updateData.description
+      ).trim();
     }
 
     if (updateData.location !== undefined) {
-      updateData.location =
-        String(updateData.location).trim();
+      updateData.location = String(
+        updateData.location
+      ).trim();
     }
 
     if (updateData.propertyType !== undefined) {
-      updateData.propertyType =
-        String(updateData.propertyType).toLowerCase();
+      updateData.propertyType = String(
+        updateData.propertyType
+      ).toLowerCase();
     }
 
     if (updateData.pricePerNight !== undefined) {
-      updateData.pricePerNight =
-        Number(updateData.pricePerNight);
+      updateData.pricePerNight = Number(
+        updateData.pricePerNight
+      );
     }
 
     if (updateData.bedrooms !== undefined) {
-      updateData.bedrooms =
-        Number(updateData.bedrooms);
+      updateData.bedrooms = Number(
+        updateData.bedrooms
+      );
     }
 
     if (updateData.bathrooms !== undefined) {
-      updateData.bathrooms =
-        Number(updateData.bathrooms);
+      updateData.bathrooms = Number(
+        updateData.bathrooms
+      );
     }
 
     if (updateData.guestCapacity !== undefined) {
-      updateData.guestCapacity =
-        Number(updateData.guestCapacity);
+      updateData.guestCapacity = Number(
+        updateData.guestCapacity
+      );
     }
 
     if (updateData.amenities !== undefined) {
-      updateData.amenities =
-        Array.isArray(updateData.amenities)
-          ? updateData.amenities
-          : [updateData.amenities];
+      updateData.amenities = Array.isArray(
+        updateData.amenities
+      )
+        ? updateData.amenities
+        : [updateData.amenities];
     }
 
     if (updateData.photos !== undefined) {
-      updateData.photos =
-        Array.isArray(updateData.photos)
-          ? updateData.photos
-          : [updateData.photos];
+      updateData.photos = Array.isArray(
+        updateData.photos
+      )
+        ? updateData.photos
+        : [updateData.photos];
     }
 
-    const property = await Property.findByIdAndUpdate(
-      req.params.id,
-      updateData,
-      {
-        new: true,
-        runValidators: true,
-      }
-    )
-      .maxTimeMS(10000)
-      .exec();
+    const property =
+      await Property.findByIdAndUpdate(
+        req.params.id,
+        updateData,
+        {
+          new: true,
+          runValidators: true,
+        }
+      )
+        .maxTimeMS(10000)
+        .exec();
 
     if (!property) {
       return res.status(404).json({
@@ -326,7 +416,9 @@ router.put("/:id", async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: error.message || "Failed to update property",
+      message:
+        error.message ||
+        "Failed to update property",
     });
   }
 });
@@ -344,11 +436,12 @@ router.delete("/:id", async (req, res) => {
       });
     }
 
-    const property = await Property.findByIdAndDelete(
-      req.params.id
-    )
-      .maxTimeMS(10000)
-      .exec();
+    const property =
+      await Property.findByIdAndDelete(
+        req.params.id
+      )
+        .maxTimeMS(10000)
+        .exec();
 
     if (!property) {
       return res.status(404).json({
@@ -367,7 +460,9 @@ router.delete("/:id", async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: error.message || "Failed to delete property",
+      message:
+        error.message ||
+        "Failed to delete property",
     });
   }
 });
@@ -385,7 +480,9 @@ router.get("/:id", async (req, res) => {
       });
     }
 
-    const property = await Property.findById(req.params.id)
+    const property = await Property.findById(
+      req.params.id
+    )
       .maxTimeMS(10000)
       .lean()
       .exec();
@@ -404,7 +501,9 @@ router.get("/:id", async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: error.message || "Failed to fetch property",
+      message:
+        error.message ||
+        "Failed to fetch property",
     });
   }
 });
