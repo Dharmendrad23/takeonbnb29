@@ -447,11 +447,13 @@ router.get("/:id", async (req, res) => {
       });
     }
 
-    const property =
-      await Property.findById(req.params.id)
-        .lean()
-        .maxTimeMS(15000)
-        .exec();
+    const property = await Property.findById(req.params.id)
+      .select(
+        "_id hostId title description location propertyType pricePerNight bedrooms bathrooms guestCapacity status rejectionReason amenities createdAt updatedAt"
+      )
+      .lean()
+      .maxTimeMS(10000)
+      .exec();
 
     if (!property) {
       return res.status(404).json({
@@ -462,19 +464,18 @@ router.get("/:id", async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      property,
+      property: {
+        ...property,
+        id: String(property._id),
+        photos: [],
+      },
     });
   } catch (error) {
-    console.error(
-      "GET SINGLE PROPERTY ERROR:",
-      error
-    );
+    console.error("GET SINGLE PROPERTY ERROR:", error);
 
     return res.status(500).json({
       success: false,
-      message:
-        error.message ||
-        "Failed to fetch property",
+      message: error.message || "Failed to fetch property",
     });
   }
 });
