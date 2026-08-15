@@ -120,36 +120,51 @@ router.post("/", async (req, res) => {
 
 /* =====================================================
    GET ALL PROPERTIES
-   FIXED: NO MONGODB SERVER-SIDE SORT
 ===================================================== */
 
 router.get("/", async (req, res) => {
   try {
-    const query = {};
+    console.log("[Properties] GET request received");
 
-    if (req.query.status) {
-      query.status = String(req.query.status).toLowerCase();
-    }
-
-    if (req.query.hostId) {
-      query.hostId = req.query.hostId;
-    }
-
-    // Fetch properties without MongoDB sorting
-    const properties = await Property.find(query)
-      .maxTimeMS(10000)
+    // Simple query - pehle saari properties fetch karo
+    const properties = await Property.find({})
       .lean()
       .exec();
 
-    // Sort in JavaScript to avoid MongoDB memory limit error
-    properties.sort((a, b) => {
+    console.log(
+      `[Properties] Found ${properties.length} properties`
+    );
+
+    // JavaScript mein filter karo, Mongo query hang avoid karne ke liye
+    let filteredProperties = properties;
+
+    if (req.query.status) {
+      const status = String(req.query.status).toLowerCase();
+
+      filteredProperties = properties.filter(
+        (property) =>
+          String(property.status || "").toLowerCase() === status
+      );
+    }
+
+    if (req.query.hostId) {
+      const hostId = String(req.query.hostId);
+
+      filteredProperties = filteredProperties.filter(
+        (property) =>
+          String(property.hostId || "") === hostId
+      );
+    }
+
+    // Latest properties first
+    filteredProperties.sort((a, b) => {
       const dateA = new Date(a.createdAt || 0).getTime();
       const dateB = new Date(b.createdAt || 0).getTime();
 
       return dateB - dateA;
     });
 
-    return res.status(200).json(properties);
+    return res.status(200).json(filteredProperties);
 
   } catch (error) {
     console.error("GET PROPERTIES ERROR:", error);
