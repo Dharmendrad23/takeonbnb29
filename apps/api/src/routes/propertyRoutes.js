@@ -118,63 +118,59 @@ router.post("/", async (req, res) => {
   }
 });
 /* =====================================================
-   GET ALL PROPERTIES - FAST DATABASE FETCH
+   GET ALL PROPERTIES
 ===================================================== */
 
 router.get("/", async (req, res) => {
   try {
     console.log("[Properties] GET request received");
 
-    // MongoDB connection check
-    if (mongoose.connection.readyState !== 1) {
-      return res.status(503).json({
-        success: false,
-        message: "Database is not connected",
+    // IMPORTANT:
+    // Database par sort() use nahi karna.
+    // Pehle records fetch karo.
+    const properties = await Property.find({})
+      .lean()
+      .exec();
+
+    console.log(`[Properties] Found ${properties.length} properties`);
+
+    let filteredProperties = properties;
+
+    // Filter by status
+    if (req.query.status) {
+      const requestedStatus = String(req.query.status).toLowerCase();
+
+      filteredProperties = filteredProperties.filter((property) => {
+        return (
+          String(property.status || "").toLowerCase() ===
+          requestedStatus
+        );
       });
     }
 
-    // Native MongoDB collection use karo
-    // Mongoose middleware/query issue avoid hoga
-    const collection = mongoose.connection.collection("properties");
-
-    const properties = await collection
-      .find({})
-      .sort({ createdAt: -1 })
-      .maxTimeMS(10000)
-      .toArray();
-
-    console.log(
-      `[Properties] Successfully fetched ${properties.length} properties`
-    );
-
-    // Optional filters
-    let filteredProperties = properties;
-
-    if (req.query.status) {
-      const status = String(req.query.status).toLowerCase();
-
-      filteredProperties = filteredProperties.filter(
-        (property) =>
-          String(property.status || "").toLowerCase() === status
-      );
-    }
-
+    // Filter by hostId
     if (req.query.hostId) {
-      const hostId = String(req.query.hostId);
+      const requestedHostId = String(req.query.hostId);
 
-      filteredProperties = filteredProperties.filter(
-        (property) =>
-          String(property.hostId || "") === hostId
-      );
+      filteredProperties = filteredProperties.filter((property) => {
+        return String(property.hostId || "") === requestedHostId;
+      });
     }
 
-    // Frontend compatibility: _id + id
-    const formattedProperties = filteredProperties.map((property) => ({
-      ...property,
-      id: property._id.toString(),
-    }));
+    // Sort in JavaScript, NOT MongoDB
+    filteredProperties = filteredProperties.sort((a, b) => {
+      const dateA = a.createdAt
+        ? new Date(a.createdAt).getTime()
+        : 0;
 
-    return res.status(200).json(formattedProperties);
+      const dateB = b.createdAt
+        ? new Date(b.createdAt).getTime()
+        : 0;
+
+      return dateB - dateA;
+    });
+
+    return res.status(200).json(filteredProperties);
 
   } catch (error) {
     console.error("GET PROPERTIES ERROR:", error);
