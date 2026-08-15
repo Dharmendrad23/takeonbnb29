@@ -51,9 +51,6 @@ router.post("/", async (req, res) => {
         ? [photos]
         : [];
 
-    // IMPORTANT:
-    // Host se submit hone wali har property pending rahegi.
-    // Sirf admin approve karega.
     const property = await Property.create({
       hostId,
       title: String(title).trim(),
@@ -75,12 +72,14 @@ router.post("/", async (req, res) => {
         "Property submitted successfully and is pending admin approval",
       property,
     });
+
   } catch (error) {
     console.error("Create property error:", error);
 
     return res.status(500).json({
       success: false,
-      message: error.message || "Failed to submit property",
+      message:
+        error.message || "Failed to submit property",
     });
   }
 });
@@ -97,6 +96,10 @@ router.post("/", async (req, res) => {
 
 router.get("/", async (req, res) => {
   try {
+    console.log("=================================");
+    console.log("GET /api/properties called");
+    console.log("Query params:", req.query);
+
     const query = {};
 
     if (req.query.status) {
@@ -109,10 +112,18 @@ router.get("/", async (req, res) => {
       query.hostId = req.query.hostId;
     }
 
-    // IMPORTANT FIX:
-    // MongoDB database sort hata diya.
-    // Pehle data fetch hoga, phir Node.js me sort hoga.
-    const properties = await Property.find(query).lean();
+    console.log("MongoDB query:", query);
+
+    const properties = await Property
+      .find(query)
+      .maxTimeMS(10000)
+      .lean()
+      .exec();
+
+    console.log(
+      "Properties found:",
+      properties.length
+    );
 
     properties.sort((a, b) => {
       return (
@@ -121,9 +132,19 @@ router.get("/", async (req, res) => {
       );
     });
 
+    console.log(
+      "Sending properties response"
+    );
+
     return res.status(200).json(properties);
+
   } catch (error) {
-    console.error("Get properties error:", error);
+    console.error("=================================");
+    console.error(
+      "GET PROPERTIES ERROR:"
+    );
+    console.error(error);
+    console.error("=================================");
 
     return res.status(500).json({
       success: false,
@@ -141,8 +162,16 @@ router.get("/", async (req, res) => {
 
 router.get("/:id", async (req, res) => {
   try {
-    const property =
-      await Property.findById(req.params.id).lean();
+    console.log(
+      "GET SINGLE PROPERTY:",
+      req.params.id
+    );
+
+    const property = await Property
+      .findById(req.params.id)
+      .maxTimeMS(10000)
+      .lean()
+      .exec();
 
     if (!property) {
       return res.status(404).json({
@@ -152,6 +181,7 @@ router.get("/:id", async (req, res) => {
     }
 
     return res.status(200).json(property);
+
   } catch (error) {
     console.error(
       "Get single property error:",
@@ -208,11 +238,16 @@ router.patch("/:id/status", async (req, res) => {
 
     const updateData = {
       status: normalizedStatus,
+
       rejectionReason:
         normalizedStatus === "rejected"
           ? rejectionReason
           : "",
     };
+
+    console.log(
+      `Updating property ${req.params.id} to ${normalizedStatus}`
+    );
 
     const property =
       await Property.findByIdAndUpdate(
@@ -221,6 +256,7 @@ router.patch("/:id/status", async (req, res) => {
         {
           new: true,
           runValidators: true,
+          maxTimeMS: 10000,
         }
       );
 
@@ -237,6 +273,7 @@ router.patch("/:id/status", async (req, res) => {
         `Property ${normalizedStatus} successfully`,
       property,
     });
+
   } catch (error) {
     console.error(
       "Update property status error:",
@@ -275,7 +312,8 @@ router.put("/:id", async (req, res) => {
     const updateData = {};
 
     if (title !== undefined) {
-      updateData.title = String(title).trim();
+      updateData.title =
+        String(title).trim();
     }
 
     if (description !== undefined) {
@@ -338,6 +376,7 @@ router.put("/:id", async (req, res) => {
         {
           new: true,
           runValidators: true,
+          maxTimeMS: 10000,
         }
       );
 
@@ -354,6 +393,7 @@ router.put("/:id", async (req, res) => {
         "Property updated successfully",
       property,
     });
+
   } catch (error) {
     console.error(
       "Update property error:",
@@ -378,7 +418,10 @@ router.delete("/:id", async (req, res) => {
   try {
     const property =
       await Property.findByIdAndDelete(
-        req.params.id
+        req.params.id,
+        {
+          maxTimeMS: 10000,
+        }
       );
 
     if (!property) {
@@ -393,6 +436,7 @@ router.delete("/:id", async (req, res) => {
       message:
         "Property deleted successfully",
     });
+
   } catch (error) {
     console.error(
       "Delete property error:",
