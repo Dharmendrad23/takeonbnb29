@@ -3,26 +3,26 @@ import axios from "axios";
 const PRODUCTION_API_URL = "https://takeonbnb29.onrender.com";
 
 export const getApiBaseUrl = () => {
-  const configured = import.meta.env.VITE_API_URL;
+  const configuredUrl = import.meta.env.VITE_API_URL;
 
   if (
-    configured &&
-    configured !== "undefined" &&
-    configured !== ""
+    configuredUrl &&
+    configuredUrl !== "undefined" &&
+    configuredUrl.trim() !== ""
   ) {
-    return configured.replace(/\/$/, "");
+    return configuredUrl.replace(/\/$/, "");
   }
 
-  // Development aur Production dono me Render API
   return PRODUCTION_API_URL;
 };
 
 export const buildApiUrl = (path = "") => {
+  const baseUrl = getApiBaseUrl();
   const normalizedPath = path.startsWith("/")
     ? path
     : `/${path}`;
 
-  return `${getApiBaseUrl()}${normalizedPath}`;
+  return `${baseUrl}${normalizedPath}`;
 };
 
 const api = axios.create({
@@ -30,17 +30,15 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  timeout: 30000,
+  timeout: 60000,
 });
 
 const normalizeRecord = (record) => {
-  if (
-    record &&
-    typeof record === "object" &&
-    !Array.isArray(record) &&
-    record._id &&
-    !record.id
-  ) {
+  if (!record || typeof record !== "object" || Array.isArray(record)) {
+    return record;
+  }
+
+  if (record._id && !record.id) {
     return {
       ...record,
       id: record._id,
@@ -52,31 +50,38 @@ const normalizeRecord = (record) => {
 
 api.interceptors.response.use(
   (response) => {
-    if (Array.isArray(response.data)) {
-      response.data = response.data.map(normalizeRecord);
-    } else if (
-      response.data &&
-      typeof response.data === "object"
-    ) {
-      response.data = normalizeRecord(response.data);
+    const data = response.data;
 
-      if (Array.isArray(response.data.items)) {
-        response.data.items =
-          response.data.items.map(normalizeRecord);
-      }
-
-      if (Array.isArray(response.data.properties)) {
-        response.data.properties =
-          response.data.properties.map(normalizeRecord);
+    if (Array.isArray(data)) {
+      response.data = data.map(normalizeRecord);
+    } else if (data && typeof data === "object") {
+      if (Array.isArray(data.properties)) {
+        response.data = {
+          ...data,
+          properties: data.properties.map(normalizeRecord),
+        };
+      } else if (Array.isArray(data.items)) {
+        response.data = {
+          ...data,
+          items: data.items.map(normalizeRecord),
+        };
+      } else if (Array.isArray(data.data)) {
+        response.data = {
+          ...data,
+          data: data.data.map(normalizeRecord),
+        };
+      } else {
+        response.data = normalizeRecord(data);
       }
     }
 
     return response;
   },
+
   (error) => {
     console.error(
-      "[API ERROR]",
-      error.response?.status,
+      "[TakeOnBNB API Error]",
+      error.response?.status || "NETWORK ERROR",
       error.response?.data || error.message
     );
 
