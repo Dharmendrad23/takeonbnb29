@@ -4,7 +4,34 @@ import Property from "../models/Property.js";
 const router = express.Router();
 
 /* =====================================================
-   CREATE PROPERTY - HOST SUBMISSION
+   DATABASE TEST ROUTE
+   IMPORTANT: This must come BEFORE "/:id"
+===================================================== */
+
+router.get("/test-db", async (req, res) => {
+  try {
+    console.log("TEST DB ROUTE CALLED");
+
+    const count = await Property.countDocuments({});
+
+    return res.status(200).json({
+      success: true,
+      message: "MongoDB Property database working",
+      totalProperties: count,
+    });
+  } catch (error) {
+    console.error("TEST DB ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+
+/* =====================================================
+   CREATE PROPERTY
 ===================================================== */
 
 router.post("/", async (req, res) => {
@@ -64,7 +91,7 @@ router.post("/", async (req, res) => {
       amenities: amenitiesArray,
       photos: photosArray,
 
-      // Host property admin approval ke liye pending rahegi
+      // Host property initially pending
       status: "pending",
     });
 
@@ -76,7 +103,7 @@ router.post("/", async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Create property error:", error);
+    console.error("CREATE PROPERTY ERROR:", error);
 
     return res.status(500).json({
       success: false,
@@ -88,55 +115,18 @@ router.post("/", async (req, res) => {
 
 
 /* =====================================================
-   TEST PROPERTY DATABASE
-===================================================== */
-
-router.get("/test-db", async (req, res) => {
-  try {
-    console.log("=================================");
-    console.log("TEST DB ROUTE CALLED");
-
-    const count = await Property
-      .countDocuments({})
-      .maxTimeMS(10000)
-      .exec();
-
-    console.log("TOTAL PROPERTIES:", count);
-    console.log("=================================");
-
-    return res.status(200).json({
-      success: true,
-      message: "Database connection working",
-      count,
-    });
-
-  } catch (error) {
-    console.error("=================================");
-    console.error("TEST DB ERROR:", error);
-    console.error("=================================");
-
-    return res.status(500).json({
-      success: false,
-      error: error.message,
-    });
-  }
-});
-
-
-/* =====================================================
    GET ALL PROPERTIES
 
    /api/properties
-   /api/properties?status=pending
    /api/properties?status=approved
+   /api/properties?status=pending
    /api/properties?hostId=xxxxx
 ===================================================== */
 
 router.get("/", async (req, res) => {
   try {
-    console.log("=================================");
-    console.log("GET /api/properties called");
-    console.log("Query params:", req.query);
+    console.log("GET /api/properties");
+    console.log("Query:", req.query);
 
     const query = {};
 
@@ -150,17 +140,15 @@ router.get("/", async (req, res) => {
       query.hostId = req.query.hostId;
     }
 
-    console.log("MongoDB query:", query);
+    console.log("MongoDB Query:", query);
 
     const properties = await Property
       .find(query)
-      .maxTimeMS(10000)
       .lean()
       .exec();
 
     console.log(
-      "Properties found:",
-      properties.length
+      `Properties found: ${properties.length}`
     );
 
     properties.sort((a, b) => {
@@ -173,10 +161,10 @@ router.get("/", async (req, res) => {
     return res.status(200).json(properties);
 
   } catch (error) {
-    console.error("=================================");
-    console.error("GET PROPERTIES ERROR:");
-    console.error(error);
-    console.error("=================================");
+    console.error(
+      "GET PROPERTIES ERROR:",
+      error
+    );
 
     return res.status(500).json({
       success: false,
@@ -190,13 +178,20 @@ router.get("/", async (req, res) => {
 
 /* =====================================================
    GET SINGLE PROPERTY
+   IMPORTANT: Keep this AFTER fixed routes
 ===================================================== */
 
 router.get("/:id", async (req, res) => {
   try {
+    const { id } = req.params;
+
+    console.log(
+      "GET SINGLE PROPERTY:",
+      id
+    );
+
     const property = await Property
-      .findById(req.params.id)
-      .maxTimeMS(10000)
+      .findById(id)
       .lean()
       .exec();
 
@@ -211,7 +206,7 @@ router.get("/:id", async (req, res) => {
 
   } catch (error) {
     console.error(
-      "Get single property error:",
+      "GET SINGLE PROPERTY ERROR:",
       error
     );
 
@@ -227,6 +222,13 @@ router.get("/:id", async (req, res) => {
 
 /* =====================================================
    ADMIN APPROVE / REJECT PROPERTY
+
+   PATCH /api/properties/:id/status
+
+   Body:
+   {
+     "status": "approved"
+   }
 ===================================================== */
 
 router.patch("/:id/status", async (req, res) => {
@@ -256,20 +258,22 @@ router.patch("/:id/status", async (req, res) => {
       });
     }
 
+    const updateData = {
+      status: normalizedStatus,
+
+      rejectionReason:
+        normalizedStatus === "rejected"
+          ? rejectionReason
+          : "",
+    };
+
     const property =
       await Property.findByIdAndUpdate(
         req.params.id,
-        {
-          status: normalizedStatus,
-          rejectionReason:
-            normalizedStatus === "rejected"
-              ? rejectionReason
-              : "",
-        },
+        updateData,
         {
           new: true,
           runValidators: true,
-          maxTimeMS: 10000,
         }
       );
 
@@ -289,7 +293,7 @@ router.patch("/:id/status", async (req, res) => {
 
   } catch (error) {
     console.error(
-      "Update property status error:",
+      "UPDATE STATUS ERROR:",
       error
     );
 
@@ -304,7 +308,7 @@ router.patch("/:id/status", async (req, res) => {
 
 
 /* =====================================================
-   UPDATE PROPERTY DETAILS
+   UPDATE PROPERTY
 ===================================================== */
 
 router.put("/:id", async (req, res) => {
@@ -325,7 +329,8 @@ router.put("/:id", async (req, res) => {
     const updateData = {};
 
     if (title !== undefined) {
-      updateData.title = String(title).trim();
+      updateData.title =
+        String(title).trim();
     }
 
     if (description !== undefined) {
@@ -368,8 +373,8 @@ router.put("/:id", async (req, res) => {
         Array.isArray(amenities)
           ? amenities
           : amenities
-            ? [amenities]
-            : [];
+          ? [amenities]
+          : [];
     }
 
     if (photos !== undefined) {
@@ -377,8 +382,8 @@ router.put("/:id", async (req, res) => {
         Array.isArray(photos)
           ? photos
           : photos
-            ? [photos]
-            : [];
+          ? [photos]
+          : [];
     }
 
     const property =
@@ -388,7 +393,6 @@ router.put("/:id", async (req, res) => {
         {
           new: true,
           runValidators: true,
-          maxTimeMS: 10000,
         }
       );
 
@@ -408,7 +412,7 @@ router.put("/:id", async (req, res) => {
 
   } catch (error) {
     console.error(
-      "Update property error:",
+      "UPDATE PROPERTY ERROR:",
       error
     );
 
@@ -430,10 +434,7 @@ router.delete("/:id", async (req, res) => {
   try {
     const property =
       await Property.findByIdAndDelete(
-        req.params.id,
-        {
-          maxTimeMS: 10000,
-        }
+        req.params.id
       );
 
     if (!property) {
@@ -451,7 +452,7 @@ router.delete("/:id", async (req, res) => {
 
   } catch (error) {
     console.error(
-      "Delete property error:",
+      "DELETE PROPERTY ERROR:",
       error
     );
 
@@ -463,5 +464,6 @@ router.delete("/:id", async (req, res) => {
     });
   }
 });
+
 
 export default router;
