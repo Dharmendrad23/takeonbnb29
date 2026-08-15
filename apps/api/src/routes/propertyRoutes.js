@@ -63,6 +63,8 @@ router.post("/", async (req, res) => {
       guestCapacity: Number(guestCapacity) || 1,
       amenities: amenitiesArray,
       photos: photosArray,
+
+      // Host property admin approval ke liye pending rahegi
       status: "pending",
     });
 
@@ -80,6 +82,42 @@ router.post("/", async (req, res) => {
       success: false,
       message:
         error.message || "Failed to submit property",
+    });
+  }
+});
+
+
+/* =====================================================
+   TEST PROPERTY DATABASE
+===================================================== */
+
+router.get("/test-db", async (req, res) => {
+  try {
+    console.log("=================================");
+    console.log("TEST DB ROUTE CALLED");
+
+    const count = await Property
+      .countDocuments({})
+      .maxTimeMS(10000)
+      .exec();
+
+    console.log("TOTAL PROPERTIES:", count);
+    console.log("=================================");
+
+    return res.status(200).json({
+      success: true,
+      message: "Database connection working",
+      count,
+    });
+
+  } catch (error) {
+    console.error("=================================");
+    console.error("TEST DB ERROR:", error);
+    console.error("=================================");
+
+    return res.status(500).json({
+      success: false,
+      error: error.message,
     });
   }
 });
@@ -132,17 +170,11 @@ router.get("/", async (req, res) => {
       );
     });
 
-    console.log(
-      "Sending properties response"
-    );
-
     return res.status(200).json(properties);
 
   } catch (error) {
     console.error("=================================");
-    console.error(
-      "GET PROPERTIES ERROR:"
-    );
+    console.error("GET PROPERTIES ERROR:");
     console.error(error);
     console.error("=================================");
 
@@ -162,11 +194,6 @@ router.get("/", async (req, res) => {
 
 router.get("/:id", async (req, res) => {
   try {
-    console.log(
-      "GET SINGLE PROPERTY:",
-      req.params.id
-    );
-
     const property = await Property
       .findById(req.params.id)
       .maxTimeMS(10000)
@@ -200,13 +227,6 @@ router.get("/:id", async (req, res) => {
 
 /* =====================================================
    ADMIN APPROVE / REJECT PROPERTY
-
-   PATCH /api/properties/:id/status
-
-   Body:
-   {
-     "status": "approved"
-   }
 ===================================================== */
 
 router.patch("/:id/status", async (req, res) => {
@@ -236,23 +256,16 @@ router.patch("/:id/status", async (req, res) => {
       });
     }
 
-    const updateData = {
-      status: normalizedStatus,
-
-      rejectionReason:
-        normalizedStatus === "rejected"
-          ? rejectionReason
-          : "",
-    };
-
-    console.log(
-      `Updating property ${req.params.id} to ${normalizedStatus}`
-    );
-
     const property =
       await Property.findByIdAndUpdate(
         req.params.id,
-        updateData,
+        {
+          status: normalizedStatus,
+          rejectionReason:
+            normalizedStatus === "rejected"
+              ? rejectionReason
+              : "",
+        },
         {
           new: true,
           runValidators: true,
@@ -312,8 +325,7 @@ router.put("/:id", async (req, res) => {
     const updateData = {};
 
     if (title !== undefined) {
-      updateData.title =
-        String(title).trim();
+      updateData.title = String(title).trim();
     }
 
     if (description !== undefined) {
