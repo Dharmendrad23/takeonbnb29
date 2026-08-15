@@ -20,9 +20,7 @@ router.get("/test-db", async (req, res) => {
       });
     }
 
-    const totalProperties = await Property.countDocuments({})
-      .maxTimeMS(10000)
-      .exec();
+    const totalProperties = await Property.countDocuments({});
 
     return res.status(200).json({
       success: true,
@@ -40,8 +38,9 @@ router.get("/test-db", async (req, res) => {
   }
 });
 
+
 /* =====================================================
-   CREATE PROPERTY - DIRECTLY LIVE
+   CREATE PROPERTY
 ===================================================== */
 
 router.post("/", async (req, res) => {
@@ -76,40 +75,47 @@ router.post("/", async (req, res) => {
       });
     }
 
-    const amenitiesArray = Array.isArray(amenities)
-      ? amenities
-      : amenities
-        ? [amenities]
-        : [];
-
-    const photosArray = Array.isArray(photos)
-      ? photos
-      : photos
-        ? [photos]
-        : [];
-
     const property = await Property.create({
       hostId: String(hostId),
-      title: String(title).trim(),
-      description: String(description).trim(),
-      location: String(location).trim(),
-      propertyType: String(propertyType).toLowerCase(),
-      pricePerNight: Number(pricePerNight),
-      bedrooms: Number(bedrooms) || 1,
-      bathrooms: Number(bathrooms) || 1,
-      guestCapacity: Number(guestCapacity) || 1,
-      amenities: amenitiesArray,
-      photos: photosArray,
 
-      // PROPERTY DIRECTLY LIVE
+      title: String(title).trim(),
+
+      description: String(description).trim(),
+
+      location: String(location).trim(),
+
+      propertyType: String(propertyType).toLowerCase(),
+
+      pricePerNight: Number(pricePerNight),
+
+      bedrooms: Number(bedrooms) || 1,
+
+      bathrooms: Number(bathrooms) || 1,
+
+      guestCapacity: Number(guestCapacity) || 1,
+
+      amenities: Array.isArray(amenities)
+        ? amenities
+        : amenities
+          ? [amenities]
+          : [],
+
+      photos: Array.isArray(photos)
+        ? photos
+        : photos
+          ? [photos]
+          : [],
+
+      // Direct live
       status: "approved",
     });
 
     return res.status(201).json({
       success: true,
-      message: "Property created and published successfully",
+      message: "Property created successfully",
       property,
     });
+
   } catch (error) {
     console.error("CREATE PROPERTY ERROR:", error);
 
@@ -120,6 +126,7 @@ router.post("/", async (req, res) => {
   }
 });
 
+
 /* =====================================================
    GET ALL PROPERTIES
    IMPORTANT: ONLY ONE GET "/" ROUTE
@@ -129,16 +136,14 @@ router.get("/", async (req, res) => {
   try {
     console.log("[Properties] GET request received");
 
-    /*
-      IMPORTANT:
-      No MongoDB .sort()
-      No huge database sorting
-      Limit records for safe response
-    */
-
-    const properties = await Property.find({})
+    // Small response, MongoDB sorting disabled
+    const properties = await Property.find(
+      {},
+      {
+        __v: 0,
+      }
+    )
       .limit(100)
-      .maxTimeMS(15000)
       .lean()
       .exec();
 
@@ -146,59 +151,51 @@ router.get("/", async (req, res) => {
       `[Properties] Found ${properties.length} properties`
     );
 
-    let filteredProperties = properties;
+    let result = properties;
 
-    /* FILTER BY STATUS IN JAVASCRIPT */
-
+    // Optional status filter
     if (req.query.status) {
       const requestedStatus = String(
         req.query.status
       ).toLowerCase();
 
-      filteredProperties = filteredProperties.filter(
-        (property) =>
-          String(
-            property.status || ""
-          ).toLowerCase() === requestedStatus
-      );
+      result = result.filter((property) => {
+        return (
+          String(property.status || "").toLowerCase() ===
+          requestedStatus
+        );
+      });
     }
 
-    /* FILTER BY HOST ID IN JAVASCRIPT */
-
+    // Optional hostId filter
     if (req.query.hostId) {
       const requestedHostId = String(
         req.query.hostId
       );
 
-      filteredProperties = filteredProperties.filter(
-        (property) =>
+      result = result.filter((property) => {
+        return (
           String(property.hostId || "") ===
           requestedHostId
-      );
+        );
+      });
     }
 
-    /*
-      SORT IN JAVASCRIPT ONLY
-      MongoDB memory error nahi aayega
-    */
-
-    filteredProperties.sort((a, b) => {
-      const dateA = a.createdAt
+    // Sort in JavaScript only
+    result.sort((a, b) => {
+      const aTime = a.createdAt
         ? new Date(a.createdAt).getTime()
         : 0;
 
-      const dateB = b.createdAt
+      const bTime = b.createdAt
         ? new Date(b.createdAt).getTime()
         : 0;
 
-      return dateB - dateA;
+      return bTime - aTime;
     });
 
-    return res.status(200).json({
-      success: true,
-      count: filteredProperties.length,
-      properties: filteredProperties,
-    });
+    // Direct array response for frontend
+    return res.status(200).json(result);
 
   } catch (error) {
     console.error("GET PROPERTIES ERROR:", error);
@@ -212,20 +209,28 @@ router.get("/", async (req, res) => {
   }
 });
 
+
 /* =====================================================
    UPDATE PROPERTY STATUS
 ===================================================== */
 
 router.patch("/:id/status", async (req, res) => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    if (
+      !mongoose.Types.ObjectId.isValid(
+        req.params.id
+      )
+    ) {
       return res.status(400).json({
         success: false,
         message: "Invalid property ID",
       });
     }
 
-    const { status, rejectionReason = "" } = req.body;
+    const {
+      status,
+      rejectionReason = "",
+    } = req.body;
 
     const normalizedStatus = String(
       status || ""
@@ -235,7 +240,6 @@ router.patch("/:id/status", async (req, res) => {
       "pending",
       "approved",
       "rejected",
-      "live",
     ];
 
     if (!allowedStatuses.includes(normalizedStatus)) {
@@ -250,6 +254,7 @@ router.patch("/:id/status", async (req, res) => {
         req.params.id,
         {
           status: normalizedStatus,
+
           rejectionReason:
             normalizedStatus === "rejected"
               ? rejectionReason
@@ -259,9 +264,7 @@ router.patch("/:id/status", async (req, res) => {
           new: true,
           runValidators: true,
         }
-      )
-        .maxTimeMS(10000)
-        .exec();
+      ).exec();
 
     if (!property) {
       return res.status(404).json({
@@ -277,7 +280,10 @@ router.patch("/:id/status", async (req, res) => {
     });
 
   } catch (error) {
-    console.error("UPDATE STATUS ERROR:", error);
+    console.error(
+      "UPDATE STATUS ERROR:",
+      error
+    );
 
     return res.status(500).json({
       success: false,
@@ -288,13 +294,18 @@ router.patch("/:id/status", async (req, res) => {
   }
 });
 
+
 /* =====================================================
    UPDATE PROPERTY
 ===================================================== */
 
 router.put("/:id", async (req, res) => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    if (
+      !mongoose.Types.ObjectId.isValid(
+        req.params.id
+      )
+    ) {
       return res.status(400).json({
         success: false,
         message: "Invalid property ID",
@@ -318,72 +329,65 @@ router.put("/:id", async (req, res) => {
 
     fields.forEach((field) => {
       if (req.body[field] !== undefined) {
-        updateData[field] = req.body[field];
+        updateData[field] =
+          req.body[field];
       }
     });
 
     if (updateData.title !== undefined) {
-      updateData.title = String(
-        updateData.title
-      ).trim();
+      updateData.title =
+        String(updateData.title).trim();
     }
 
     if (updateData.description !== undefined) {
-      updateData.description = String(
-        updateData.description
-      ).trim();
+      updateData.description =
+        String(updateData.description).trim();
     }
 
     if (updateData.location !== undefined) {
-      updateData.location = String(
-        updateData.location
-      ).trim();
+      updateData.location =
+        String(updateData.location).trim();
     }
 
     if (updateData.propertyType !== undefined) {
-      updateData.propertyType = String(
-        updateData.propertyType
-      ).toLowerCase();
+      updateData.propertyType =
+        String(
+          updateData.propertyType
+        ).toLowerCase();
     }
 
     if (updateData.pricePerNight !== undefined) {
-      updateData.pricePerNight = Number(
-        updateData.pricePerNight
-      );
+      updateData.pricePerNight =
+        Number(updateData.pricePerNight);
     }
 
     if (updateData.bedrooms !== undefined) {
-      updateData.bedrooms = Number(
-        updateData.bedrooms
-      );
+      updateData.bedrooms =
+        Number(updateData.bedrooms);
     }
 
     if (updateData.bathrooms !== undefined) {
-      updateData.bathrooms = Number(
-        updateData.bathrooms
-      );
+      updateData.bathrooms =
+        Number(updateData.bathrooms);
     }
 
     if (updateData.guestCapacity !== undefined) {
-      updateData.guestCapacity = Number(
-        updateData.guestCapacity
-      );
+      updateData.guestCapacity =
+        Number(updateData.guestCapacity);
     }
 
     if (updateData.amenities !== undefined) {
-      updateData.amenities = Array.isArray(
-        updateData.amenities
-      )
-        ? updateData.amenities
-        : [updateData.amenities];
+      updateData.amenities =
+        Array.isArray(updateData.amenities)
+          ? updateData.amenities
+          : [updateData.amenities];
     }
 
     if (updateData.photos !== undefined) {
-      updateData.photos = Array.isArray(
-        updateData.photos
-      )
-        ? updateData.photos
-        : [updateData.photos];
+      updateData.photos =
+        Array.isArray(updateData.photos)
+          ? updateData.photos
+          : [updateData.photos];
     }
 
     const property =
@@ -394,9 +398,7 @@ router.put("/:id", async (req, res) => {
           new: true,
           runValidators: true,
         }
-      )
-        .maxTimeMS(10000)
-        .exec();
+      ).exec();
 
     if (!property) {
       return res.status(404).json({
@@ -407,12 +409,16 @@ router.put("/:id", async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Property updated successfully",
+      message:
+        "Property updated successfully",
       property,
     });
 
   } catch (error) {
-    console.error("UPDATE PROPERTY ERROR:", error);
+    console.error(
+      "UPDATE PROPERTY ERROR:",
+      error
+    );
 
     return res.status(500).json({
       success: false,
@@ -423,13 +429,18 @@ router.put("/:id", async (req, res) => {
   }
 });
 
+
 /* =====================================================
    DELETE PROPERTY
 ===================================================== */
 
 router.delete("/:id", async (req, res) => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    if (
+      !mongoose.Types.ObjectId.isValid(
+        req.params.id
+      )
+    ) {
       return res.status(400).json({
         success: false,
         message: "Invalid property ID",
@@ -439,9 +450,7 @@ router.delete("/:id", async (req, res) => {
     const property =
       await Property.findByIdAndDelete(
         req.params.id
-      )
-        .maxTimeMS(10000)
-        .exec();
+      ).exec();
 
     if (!property) {
       return res.status(404).json({
@@ -452,11 +461,15 @@ router.delete("/:id", async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Property deleted successfully",
+      message:
+        "Property deleted successfully",
     });
 
   } catch (error) {
-    console.error("DELETE PROPERTY ERROR:", error);
+    console.error(
+      "DELETE PROPERTY ERROR:",
+      error
+    );
 
     return res.status(500).json({
       success: false,
@@ -467,25 +480,31 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+
 /* =====================================================
-   GET SINGLE PROPERTY - MUST BE LAST
+   GET SINGLE PROPERTY
+   MUST BE LAST
 ===================================================== */
 
 router.get("/:id", async (req, res) => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    if (
+      !mongoose.Types.ObjectId.isValid(
+        req.params.id
+      )
+    ) {
       return res.status(400).json({
         success: false,
         message: "Invalid property ID",
       });
     }
 
-    const property = await Property.findById(
-      req.params.id
-    )
-      .maxTimeMS(10000)
-      .lean()
-      .exec();
+    const property =
+      await Property.findById(
+        req.params.id
+      )
+        .lean()
+        .exec();
 
     if (!property) {
       return res.status(404).json({
@@ -494,10 +513,15 @@ router.get("/:id", async (req, res) => {
       });
     }
 
-    return res.status(200).json(property);
+    return res.status(200).json(
+      property
+    );
 
   } catch (error) {
-    console.error("GET SINGLE PROPERTY ERROR:", error);
+    console.error(
+      "GET SINGLE PROPERTY ERROR:",
+      error
+    );
 
     return res.status(500).json({
       success: false,
@@ -507,5 +531,6 @@ router.get("/:id", async (req, res) => {
     });
   }
 });
+
 
 export default router;
