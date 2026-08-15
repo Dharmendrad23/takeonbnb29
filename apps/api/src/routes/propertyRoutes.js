@@ -186,72 +186,30 @@ router.get("/", async (req, res) => {
    UPDATE PROPERTY STATUS
 ===================================================== */
 
-router.patch("/:id/status", async (req, res) => {
+router.get("/", async (req, res) => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid property ID",
-      });
-    }
+    console.log("[Properties] Simple GET started");
 
-    const { status, rejectionReason = "" } = req.body;
+    const properties = await Property.find({})
+      .limit(100)
+      .lean();
 
-    const normalizedStatus = String(status || "").toLowerCase();
-
-    const allowedStatuses = [
-      "pending",
-      "approved",
-      "rejected",
-    ];
-
-    if (!allowedStatuses.includes(normalizedStatus)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid property status",
-      });
-    }
-
-    const property = await Property.findByIdAndUpdate(
-      req.params.id,
-      {
-        status: normalizedStatus,
-        rejectionReason:
-          normalizedStatus === "rejected"
-            ? rejectionReason
-            : "",
-      },
-      {
-        new: true,
-        runValidators: true,
-      }
-    )
-      .maxTimeMS(10000)
-      .exec();
-
-    if (!property) {
-      return res.status(404).json({
-        success: false,
-        message: "Property not found",
-      });
-    }
+    console.log("[Properties] Properties found:", properties.length);
 
     return res.status(200).json({
       success: true,
-      message: `Property ${normalizedStatus} successfully`,
-      property,
+      count: properties.length,
+      properties: properties,
     });
-
   } catch (error) {
-    console.error("UPDATE STATUS ERROR:", error);
+    console.error("[Properties] GET ERROR:", error);
 
     return res.status(500).json({
       success: false,
-      message: error.message || "Failed to update property status",
+      message: error.message,
     });
   }
 });
-
 /* =====================================================
    UPDATE PROPERTY
 ===================================================== */
