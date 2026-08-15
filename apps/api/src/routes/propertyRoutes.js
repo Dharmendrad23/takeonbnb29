@@ -1,37 +1,11 @@
 ﻿import express from "express";
+import mongoose from "mongoose";
 import Property from "../models/Property.js";
 
 const router = express.Router();
 
 /* =====================================================
-   DATABASE TEST ROUTE
-   IMPORTANT: This must come BEFORE "/:id"
-===================================================== */
-
-router.get("/test-db", async (req, res) => {
-  try {
-    console.log("TEST DB ROUTE CALLED");
-
-    const count = await Property.countDocuments({});
-
-    return res.status(200).json({
-      success: true,
-      message: "MongoDB Property database working",
-      totalProperties: count,
-    });
-  } catch (error) {
-    console.error("TEST DB ERROR:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-});
-
-
-/* =====================================================
-   CREATE PROPERTY
+   CREATE PROPERTY - HOST SUBMISSION
 ===================================================== */
 
 router.post("/", async (req, res) => {
@@ -90,8 +64,6 @@ router.post("/", async (req, res) => {
       guestCapacity: Number(guestCapacity) || 1,
       amenities: amenitiesArray,
       photos: photosArray,
-
-      // Host property initially pending
       status: "pending",
     });
 
@@ -101,7 +73,6 @@ router.post("/", async (req, res) => {
         "Property submitted successfully and is pending admin approval",
       property,
     });
-
   } catch (error) {
     console.error("CREATE PROPERTY ERROR:", error);
 
@@ -115,18 +86,103 @@ router.post("/", async (req, res) => {
 
 
 /* =====================================================
+   TEST PROPERTY DATABASE
+
+   GET /api/properties/test-db
+===================================================== */
+
+router.get("/test-db", async (req, res) => {
+  try {
+    console.log("=================================");
+    console.log("TEST DB ROUTE CALLED");
+
+    const connectionState =
+      mongoose.connection.readyState;
+
+    console.log(
+      "MongoDB readyState:",
+      connectionState
+    );
+
+    console.log(
+      "MongoDB host:",
+      mongoose.connection.host
+    );
+
+    console.log(
+      "MongoDB database:",
+      mongoose.connection.name
+    );
+
+    if (connectionState !== 1) {
+      return res.status(503).json({
+        success: false,
+        message: "MongoDB is not connected",
+        readyState: connectionState,
+      });
+    }
+
+    const count =
+      await Property.countDocuments({});
+
+    console.log(
+      "TOTAL PROPERTIES:",
+      count
+    );
+
+    console.log("=================================");
+
+    return res.status(200).json({
+      success: true,
+      message:
+        "MongoDB Property database working",
+      mongoReadyState: connectionState,
+      database: mongoose.connection.name,
+      totalProperties: count,
+    });
+  } catch (error) {
+    console.error("=================================");
+    console.error("TEST DB ERROR:");
+    console.error(error);
+    console.error("=================================");
+
+    return res.status(500).json({
+      success: false,
+      name: error.name || null,
+      message:
+        error.message ||
+        "Property database test failed",
+      code: error.code || null,
+      codeName: error.codeName || null,
+      readyState:
+        mongoose.connection.readyState,
+      database: mongoose.connection.name || null,
+    });
+  }
+});
+
+
+/* =====================================================
    GET ALL PROPERTIES
 
    /api/properties
-   /api/properties?status=approved
    /api/properties?status=pending
+   /api/properties?status=approved
    /api/properties?hostId=xxxxx
 ===================================================== */
 
 router.get("/", async (req, res) => {
   try {
-    console.log("GET /api/properties");
-    console.log("Query:", req.query);
+    console.log("=================================");
+    console.log("GET /api/properties called");
+    console.log("Query params:", req.query);
+
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        message: "MongoDB is not connected",
+      });
+    }
 
     const query = {};
 
@@ -140,16 +196,15 @@ router.get("/", async (req, res) => {
       query.hostId = req.query.hostId;
     }
 
-    console.log("MongoDB Query:", query);
-
-    const properties = await Property
-      .find(query)
-      .lean()
-      .exec();
-
     console.log(
-      `Properties found: ${properties.length}`
+      "MongoDB query:",
+      query
     );
+
+    const properties =
+      await Property.find(query)
+        .lean()
+        .exec();
 
     properties.sort((a, b) => {
       return (
@@ -158,19 +213,26 @@ router.get("/", async (req, res) => {
       );
     });
 
-    return res.status(200).json(properties);
-
-  } catch (error) {
-    console.error(
-      "GET PROPERTIES ERROR:",
-      error
+    console.log(
+      "Properties found:",
+      properties.length
     );
+
+    return res.status(200).json(properties);
+  } catch (error) {
+    console.error("=================================");
+    console.error("GET PROPERTIES ERROR:");
+    console.error(error);
+    console.error("=================================");
 
     return res.status(500).json({
       success: false,
+      name: error.name || null,
       message:
         error.message ||
         "Failed to fetch properties",
+      code: error.code || null,
+      codeName: error.codeName || null,
     });
   }
 });
@@ -178,7 +240,8 @@ router.get("/", async (req, res) => {
 
 /* =====================================================
    GET SINGLE PROPERTY
-   IMPORTANT: Keep this AFTER fixed routes
+
+   GET /api/properties/:id
 ===================================================== */
 
 router.get("/:id", async (req, res) => {
@@ -190,10 +253,17 @@ router.get("/:id", async (req, res) => {
       id
     );
 
-    const property = await Property
-      .findById(id)
-      .lean()
-      .exec();
+    if (!mongoose.connection.readyState === 1) {
+      return res.status(503).json({
+        success: false,
+        message: "MongoDB is not connected",
+      });
+    }
+
+    const property =
+      await Property.findById(id)
+        .lean()
+        .exec();
 
     if (!property) {
       return res.status(404).json({
@@ -203,7 +273,6 @@ router.get("/:id", async (req, res) => {
     }
 
     return res.status(200).json(property);
-
   } catch (error) {
     console.error(
       "GET SINGLE PROPERTY ERROR:",
@@ -212,9 +281,11 @@ router.get("/:id", async (req, res) => {
 
     return res.status(500).json({
       success: false,
+      name: error.name || null,
       message:
         error.message ||
         "Failed to fetch property",
+      code: error.code || null,
     });
   }
 });
@@ -260,12 +331,15 @@ router.patch("/:id/status", async (req, res) => {
 
     const updateData = {
       status: normalizedStatus,
-
       rejectionReason:
         normalizedStatus === "rejected"
           ? rejectionReason
           : "",
     };
+
+    console.log(
+      `Updating property ${req.params.id} to ${normalizedStatus}`
+    );
 
     const property =
       await Property.findByIdAndUpdate(
@@ -290,7 +364,6 @@ router.patch("/:id/status", async (req, res) => {
         `Property ${normalizedStatus} successfully`,
       property,
     });
-
   } catch (error) {
     console.error(
       "UPDATE STATUS ERROR:",
@@ -299,16 +372,20 @@ router.patch("/:id/status", async (req, res) => {
 
     return res.status(500).json({
       success: false,
+      name: error.name || null,
       message:
         error.message ||
         "Failed to update property status",
+      code: error.code || null,
     });
   }
 });
 
 
 /* =====================================================
-   UPDATE PROPERTY
+   UPDATE PROPERTY DETAILS
+
+   PUT /api/properties/:id
 ===================================================== */
 
 router.put("/:id", async (req, res) => {
@@ -373,8 +450,8 @@ router.put("/:id", async (req, res) => {
         Array.isArray(amenities)
           ? amenities
           : amenities
-          ? [amenities]
-          : [];
+            ? [amenities]
+            : [];
     }
 
     if (photos !== undefined) {
@@ -382,8 +459,8 @@ router.put("/:id", async (req, res) => {
         Array.isArray(photos)
           ? photos
           : photos
-          ? [photos]
-          : [];
+            ? [photos]
+            : [];
     }
 
     const property =
@@ -409,7 +486,6 @@ router.put("/:id", async (req, res) => {
         "Property updated successfully",
       property,
     });
-
   } catch (error) {
     console.error(
       "UPDATE PROPERTY ERROR:",
@@ -418,9 +494,11 @@ router.put("/:id", async (req, res) => {
 
     return res.status(500).json({
       success: false,
+      name: error.name || null,
       message:
         error.message ||
         "Failed to update property",
+      code: error.code || null,
     });
   }
 });
@@ -428,6 +506,8 @@ router.put("/:id", async (req, res) => {
 
 /* =====================================================
    DELETE PROPERTY
+
+   DELETE /api/properties/:id
 ===================================================== */
 
 router.delete("/:id", async (req, res) => {
@@ -449,7 +529,6 @@ router.delete("/:id", async (req, res) => {
       message:
         "Property deleted successfully",
     });
-
   } catch (error) {
     console.error(
       "DELETE PROPERTY ERROR:",
@@ -458,9 +537,11 @@ router.delete("/:id", async (req, res) => {
 
     return res.status(500).json({
       success: false,
+      name: error.name || null,
       message:
         error.message ||
         "Failed to delete property",
+      code: error.code || null,
     });
   }
 });
