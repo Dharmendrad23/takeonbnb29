@@ -5,7 +5,46 @@ import Property from "../models/Property.js";
 const router = express.Router();
 
 /* =====================================================
-   CREATE PROPERTY - HOST SUBMISSION
+   DATABASE TEST
+   IMPORTANT: Static routes must come BEFORE /:id
+===================================================== */
+
+router.get("/test-db", async (req, res) => {
+  try {
+    const dbState = mongoose.connection.readyState;
+
+    if (dbState !== 1) {
+      return res.status(503).json({
+        success: false,
+        message: "MongoDB is not connected",
+        dbState,
+      });
+    }
+
+    const totalProperties = await Property.countDocuments({})
+      .maxTimeMS(10000)
+      .exec();
+
+    return res.status(200).json({
+      success: true,
+      message: "Database connection working",
+      database: mongoose.connection.name,
+      totalProperties,
+    });
+  } catch (error) {
+    console.error("TEST DB ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Database test failed",
+    });
+  }
+});
+
+
+/* =====================================================
+   CREATE PROPERTY
+   PROPERTY DIRECTLY APPROVED AND LIVE
 ===================================================== */
 
 router.post("/", async (req, res) => {
@@ -52,6 +91,7 @@ router.post("/", async (req, res) => {
         ? [photos]
         : [];
 
+    // DIRECT APPROVAL
     const property = await Property.create({
       hostId,
       title: String(title).trim(),
@@ -64,102 +104,21 @@ router.post("/", async (req, res) => {
       guestCapacity: Number(guestCapacity) || 1,
       amenities: amenitiesArray,
       photos: photosArray,
-      status: "pending",
+      status: "approved",
     });
 
     return res.status(201).json({
       success: true,
-      message:
-        "Property submitted successfully and is pending admin approval",
+      message: "Property created and published successfully",
       property,
     });
+
   } catch (error) {
     console.error("CREATE PROPERTY ERROR:", error);
 
     return res.status(500).json({
       success: false,
-      message:
-        error.message || "Failed to submit property",
-    });
-  }
-});
-
-
-/* =====================================================
-   TEST PROPERTY DATABASE
-
-   GET /api/properties/test-db
-
-   IMPORTANT:
-   Ye route /:id se pehle hona chahiye
-===================================================== */
-
-router.get("/test-db", async (req, res) => {
-  try {
-    console.log("=================================");
-    console.log("TEST DB ROUTE CALLED");
-
-    const connectionState =
-      mongoose.connection.readyState;
-
-    console.log(
-      "MongoDB readyState:",
-      connectionState
-    );
-
-    console.log(
-      "MongoDB host:",
-      mongoose.connection.host
-    );
-
-    console.log(
-      "MongoDB database:",
-      mongoose.connection.name
-    );
-
-    if (connectionState !== 1) {
-      return res.status(503).json({
-        success: false,
-        message: "MongoDB is not connected",
-        readyState: connectionState,
-      });
-    }
-
-    const count =
-      await Property.countDocuments({});
-
-    console.log(
-      "TOTAL PROPERTIES:",
-      count
-    );
-
-    return res.status(200).json({
-      success: true,
-      message:
-        "MongoDB Property database working",
-      mongoReadyState: connectionState,
-      database: mongoose.connection.name,
-      totalProperties: count,
-    });
-
-  } catch (error) {
-    console.error("=================================");
-    console.error("TEST DB ERROR:");
-    console.error(error);
-    console.error("=================================");
-
-    return res.status(500).json({
-      success: false,
-      name: error.name || null,
-      message:
-        error.message ||
-        "Property database test failed",
-      code: error.code || null,
-      codeName: error.codeName || null,
-      readyState:
-        mongoose.connection.readyState,
-      database:
-        mongoose.connection.name || null,
+      message: error.message || "Failed to create property",
     });
   }
 });
@@ -169,182 +128,56 @@ router.get("/test-db", async (req, res) => {
    GET ALL PROPERTIES
 
    /api/properties
-   /api/properties?status=pending
    /api/properties?status=approved
    /api/properties?hostId=xxxxx
 ===================================================== */
 
 router.get("/", async (req, res) => {
   try {
-    console.log("=================================");
-    console.log("GET /api/properties called");
-    console.log("Query params:", req.query);
-
-    if (mongoose.connection.readyState !== 1) {
-      return res.status(503).json({
-        success: false,
-        message: "MongoDB is not connected",
-        readyState: mongoose.connection.readyState,
-      });
-    }
+    console.log("GET /api/properties");
+    console.log("Query:", req.query);
 
     const query = {};
 
     if (req.query.status) {
-      query.status =
-        String(req.query.status).toLowerCase();
+      query.status = String(req.query.status).toLowerCase();
     }
 
     if (req.query.hostId) {
       query.hostId = req.query.hostId;
     }
 
-    console.log(
-      "MongoDB query:",
-      query
-    );
-
-    const properties =
-      await Property.find(query)
-        .lean()
-        .exec();
+    const properties = await Property.find(query)
+      .maxTimeMS(10000)
+      .lean()
+      .exec();
 
     properties.sort((a, b) => {
-      return (
-        new Date(b.createdAt || 0) -
-        new Date(a.createdAt || 0)
-      );
+      return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
     });
-
-    console.log(
-      "Properties found:",
-      properties.length
-    );
 
     return res.status(200).json(properties);
 
   } catch (error) {
-    console.error("=================================");
-    console.error("GET PROPERTIES ERROR:");
-    console.error(error);
-    console.error("=================================");
+    console.error("GET PROPERTIES ERROR:", error);
 
     return res.status(500).json({
       success: false,
-      name: error.name || null,
-      message:
-        error.message ||
-        "Failed to fetch properties",
-      code: error.code || null,
-      codeName: error.codeName || null,
+      message: error.message || "Failed to fetch properties",
     });
   }
 });
 
 
 /* =====================================================
-   GET SINGLE PROPERTY
-
-   GET /api/properties/:id
-===================================================== */
-
-router.get("/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    console.log(
-      "GET SINGLE PROPERTY:",
-      id
-    );
-
-    if (
-      mongoose.connection.readyState !== 1
-    ) {
-      return res.status(503).json({
-        success: false,
-        message: "MongoDB is not connected",
-        readyState:
-          mongoose.connection.readyState,
-      });
-    }
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid property ID",
-      });
-    }
-
-    const property =
-      await Property.findById(id)
-        .lean()
-        .exec();
-
-    if (!property) {
-      return res.status(404).json({
-        success: false,
-        message: "Property not found",
-      });
-    }
-
-    return res.status(200).json(property);
-
-  } catch (error) {
-    console.error(
-      "GET SINGLE PROPERTY ERROR:",
-      error
-    );
-
-    return res.status(500).json({
-      success: false,
-      name: error.name || null,
-      message:
-        error.message ||
-        "Failed to fetch property",
-      code: error.code || null,
-    });
-  }
-});
-
-
-/* =====================================================
-   ADMIN APPROVE / REJECT PROPERTY
-
-   PATCH /api/properties/:id/status
-
-   Body:
-   {
-     "status": "approved"
-   }
+   ADMIN APPROVE / REJECT
 ===================================================== */
 
 router.patch("/:id/status", async (req, res) => {
   try {
-    const {
-      status,
-      rejectionReason = "",
-    } = req.body;
+    const { status, rejectionReason = "" } = req.body;
 
-    const { id } = req.params;
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid property ID",
-      });
-    }
-
-    if (
-      mongoose.connection.readyState !== 1
-    ) {
-      return res.status(503).json({
-        success: false,
-        message: "MongoDB is not connected",
-      });
-    }
-
-    const normalizedStatus =
-      String(status || "").toLowerCase();
+    const normalizedStatus = String(status || "").toLowerCase();
 
     const allowedStatuses = [
       "pending",
@@ -352,38 +185,27 @@ router.patch("/:id/status", async (req, res) => {
       "rejected",
     ];
 
-    if (
-      !allowedStatuses.includes(
-        normalizedStatus
-      )
-    ) {
+    if (!allowedStatuses.includes(normalizedStatus)) {
       return res.status(400).json({
         success: false,
         message: "Invalid property status",
       });
     }
 
-    const updateData = {
-      status: normalizedStatus,
-      rejectionReason:
-        normalizedStatus === "rejected"
-          ? rejectionReason
-          : "",
-    };
-
-    console.log(
-      `Updating property ${id} to ${normalizedStatus}`
-    );
-
-    const property =
-      await Property.findByIdAndUpdate(
-        id,
-        updateData,
-        {
-          new: true,
-          runValidators: true,
-        }
-      );
+    const property = await Property.findByIdAndUpdate(
+      req.params.id,
+      {
+        status: normalizedStatus,
+        rejectionReason:
+          normalizedStatus === "rejected"
+            ? rejectionReason
+            : "",
+      },
+      {
+        new: true,
+        runValidators: true,
+      }
+    ).maxTimeMS(10000);
 
     if (!property) {
       return res.status(404).json({
@@ -394,44 +216,27 @@ router.patch("/:id/status", async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message:
-        `Property ${normalizedStatus} successfully`,
+      message: `Property ${normalizedStatus} successfully`,
       property,
     });
 
   } catch (error) {
-    console.error(
-      "UPDATE STATUS ERROR:",
-      error
-    );
+    console.error("UPDATE STATUS ERROR:", error);
 
     return res.status(500).json({
       success: false,
-      name: error.name || null,
-      message:
-        error.message ||
-        "Failed to update property status",
-      code: error.code || null,
+      message: error.message || "Failed to update property status",
     });
   }
 });
 
 
 /* =====================================================
-   UPDATE PROPERTY DETAILS
+   UPDATE PROPERTY
 ===================================================== */
 
 router.put("/:id", async (req, res) => {
   try {
-    const { id } = req.params;
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid property ID",
-      });
-    }
-
     const {
       title,
       description,
@@ -447,73 +252,56 @@ router.put("/:id", async (req, res) => {
 
     const updateData = {};
 
-    if (title !== undefined) {
-      updateData.title =
-        String(title).trim();
-    }
+    if (title !== undefined)
+      updateData.title = String(title).trim();
 
-    if (description !== undefined) {
-      updateData.description =
-        String(description).trim();
-    }
+    if (description !== undefined)
+      updateData.description = String(description).trim();
 
-    if (location !== undefined) {
-      updateData.location =
-        String(location).trim();
-    }
+    if (location !== undefined)
+      updateData.location = String(location).trim();
 
-    if (propertyType !== undefined) {
+    if (propertyType !== undefined)
       updateData.propertyType =
         String(propertyType).toLowerCase();
-    }
 
-    if (pricePerNight !== undefined) {
-      updateData.pricePerNight =
-        Number(pricePerNight);
-    }
+    if (pricePerNight !== undefined)
+      updateData.pricePerNight = Number(pricePerNight);
 
-    if (bedrooms !== undefined) {
-      updateData.bedrooms =
-        Number(bedrooms);
-    }
+    if (bedrooms !== undefined)
+      updateData.bedrooms = Number(bedrooms);
 
-    if (bathrooms !== undefined) {
-      updateData.bathrooms =
-        Number(bathrooms);
-    }
+    if (bathrooms !== undefined)
+      updateData.bathrooms = Number(bathrooms);
 
-    if (guestCapacity !== undefined) {
+    if (guestCapacity !== undefined)
       updateData.guestCapacity =
         Number(guestCapacity);
-    }
 
     if (amenities !== undefined) {
-      updateData.amenities =
-        Array.isArray(amenities)
-          ? amenities
-          : amenities
-            ? [amenities]
-            : [];
+      updateData.amenities = Array.isArray(amenities)
+        ? amenities
+        : amenities
+          ? [amenities]
+          : [];
     }
 
     if (photos !== undefined) {
-      updateData.photos =
-        Array.isArray(photos)
-          ? photos
-          : photos
-            ? [photos]
-            : [];
+      updateData.photos = Array.isArray(photos)
+        ? photos
+        : photos
+          ? [photos]
+          : [];
     }
 
-    const property =
-      await Property.findByIdAndUpdate(
-        id,
-        updateData,
-        {
-          new: true,
-          runValidators: true,
-        }
-      );
+    const property = await Property.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      {
+        new: true,
+        runValidators: true,
+      }
+    ).maxTimeMS(10000);
 
     if (!property) {
       return res.status(404).json({
@@ -524,24 +312,16 @@ router.put("/:id", async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message:
-        "Property updated successfully",
+      message: "Property updated successfully",
       property,
     });
 
   } catch (error) {
-    console.error(
-      "UPDATE PROPERTY ERROR:",
-      error
-    );
+    console.error("UPDATE PROPERTY ERROR:", error);
 
     return res.status(500).json({
       success: false,
-      name: error.name || null,
-      message:
-        error.message ||
-        "Failed to update property",
-      code: error.code || null,
+      message: error.message || "Failed to update property",
     });
   }
 });
@@ -553,17 +333,9 @@ router.put("/:id", async (req, res) => {
 
 router.delete("/:id", async (req, res) => {
   try {
-    const { id } = req.params;
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid property ID",
-      });
-    }
-
-    const property =
-      await Property.findByIdAndDelete(id);
+    const property = await Property.findByIdAndDelete(
+      req.params.id
+    ).maxTimeMS(10000);
 
     if (!property) {
       return res.status(404).json({
@@ -574,25 +346,57 @@ router.delete("/:id", async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message:
-        "Property deleted successfully",
+      message: "Property deleted successfully",
     });
 
   } catch (error) {
-    console.error(
-      "DELETE PROPERTY ERROR:",
-      error
-    );
+    console.error("DELETE PROPERTY ERROR:", error);
 
     return res.status(500).json({
       success: false,
-      name: error.name || null,
-      message:
-        error.message ||
-        "Failed to delete property",
-      code: error.code || null,
+      message: error.message || "Failed to delete property",
     });
   }
 });
+
+
+/* =====================================================
+   GET SINGLE PROPERTY
+   IMPORTANT: MUST BE LAST
+===================================================== */
+
+router.get("/:id", async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid property ID",
+      });
+    }
+
+    const property = await Property.findById(req.params.id)
+      .maxTimeMS(10000)
+      .lean()
+      .exec();
+
+    if (!property) {
+      return res.status(404).json({
+        success: false,
+        message: "Property not found",
+      });
+    }
+
+    return res.status(200).json(property);
+
+  } catch (error) {
+    console.error("GET SINGLE PROPERTY ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to fetch property",
+    });
+  }
+});
+
 
 export default router;
