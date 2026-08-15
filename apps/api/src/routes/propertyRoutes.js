@@ -117,31 +117,43 @@ router.post("/", async (req, res) => {
     });
   }
 });
-
 /* =====================================================
-   GET ALL PROPERTIES
+   GET ALL PROPERTIES - FAST DATABASE FETCH
 ===================================================== */
 
 router.get("/", async (req, res) => {
   try {
     console.log("[Properties] GET request received");
 
-    // Simple query - pehle saari properties fetch karo
-    const properties = await Property.find({})
-      .lean()
-      .exec();
+    // MongoDB connection check
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        message: "Database is not connected",
+      });
+    }
+
+    // Native MongoDB collection use karo
+    // Mongoose middleware/query issue avoid hoga
+    const collection = mongoose.connection.collection("properties");
+
+    const properties = await collection
+      .find({})
+      .sort({ createdAt: -1 })
+      .maxTimeMS(10000)
+      .toArray();
 
     console.log(
-      `[Properties] Found ${properties.length} properties`
+      `[Properties] Successfully fetched ${properties.length} properties`
     );
 
-    // JavaScript mein filter karo, Mongo query hang avoid karne ke liye
+    // Optional filters
     let filteredProperties = properties;
 
     if (req.query.status) {
       const status = String(req.query.status).toLowerCase();
 
-      filteredProperties = properties.filter(
+      filteredProperties = filteredProperties.filter(
         (property) =>
           String(property.status || "").toLowerCase() === status
       );
@@ -156,15 +168,13 @@ router.get("/", async (req, res) => {
       );
     }
 
-    // Latest properties first
-    filteredProperties.sort((a, b) => {
-      const dateA = new Date(a.createdAt || 0).getTime();
-      const dateB = new Date(b.createdAt || 0).getTime();
+    // Frontend compatibility: _id + id
+    const formattedProperties = filteredProperties.map((property) => ({
+      ...property,
+      id: property._id.toString(),
+    }));
 
-      return dateB - dateA;
-    });
-
-    return res.status(200).json(filteredProperties);
+    return res.status(200).json(formattedProperties);
 
   } catch (error) {
     console.error("GET PROPERTIES ERROR:", error);
