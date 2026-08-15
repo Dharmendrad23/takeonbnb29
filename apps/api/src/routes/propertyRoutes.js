@@ -1,4 +1,4 @@
-﻿import express from "express";
+﻿ import express from "express";
 import mongoose from "mongoose";
 import Property from "../models/Property.js";
 
@@ -40,21 +40,20 @@ router.get("/test-db", async (req, res) => {
 
 /* =====================================================
    GET ALL PROPERTIES
+   - EXCLUDES huge base64 photos
+   - Supports status and hostId filters
 ===================================================== */
 
 router.get("/", async (req, res) => {
   try {
     console.log("[Properties] GET ALL started");
 
-    // IMPORTANT:
-    // No MongoDB sort
-    // No large aggregation
-    // Only required fields
-
     const query = {};
 
     if (req.query.status) {
-      query.status = String(req.query.status).trim().toLowerCase();
+      query.status = String(req.query.status)
+        .trim()
+        .toLowerCase();
     }
 
     if (req.query.hostId) {
@@ -63,9 +62,14 @@ router.get("/", async (req, res) => {
 
     console.log("[Properties] Query:", query);
 
+    /*
+      IMPORTANT:
+      photos field intentionally excluded.
+      Database photos contain huge base64 strings.
+    */
     const properties = await Property.find(query)
       .select(
-        "_id hostId title description location propertyType pricePerNight bedrooms bathrooms guestCapacity status rejectionReason amenities photos createdAt updatedAt"
+        "_id hostId title description location propertyType pricePerNight bedrooms bathrooms guestCapacity status rejectionReason amenities createdAt updatedAt"
       )
       .limit(100)
       .lean()
@@ -75,17 +79,26 @@ router.get("/", async (req, res) => {
       `[Properties] Found ${properties.length} properties`
     );
 
+    // Frontend-friendly id
+    const formattedProperties = properties.map((property) => ({
+      ...property,
+      id: property._id
+        ? String(property._id)
+        : property.id,
+    }));
+
     return res.status(200).json({
       success: true,
-      count: properties.length,
-      properties,
+      count: formattedProperties.length,
+      properties: formattedProperties,
     });
   } catch (error) {
     console.error("[Properties] GET ALL ERROR:", error);
 
     return res.status(500).json({
       success: false,
-      message: error.message || "Failed to fetch properties",
+      message:
+        error.message || "Failed to fetch properties",
     });
   }
 });
@@ -122,7 +135,8 @@ router.post("/", async (req, res) => {
     ) {
       return res.status(400).json({
         success: false,
-        message: "Please provide all required property details",
+        message:
+          "Please provide all required property details",
       });
     }
 
@@ -139,7 +153,7 @@ router.post("/", async (req, res) => {
         : [];
 
     const property = await Property.create({
-      hostId,
+      hostId: String(hostId),
       title: String(title).trim(),
       description: String(description).trim(),
       location: String(location).trim(),
@@ -150,14 +164,13 @@ router.post("/", async (req, res) => {
       guestCapacity: Number(guestCapacity) || 1,
       amenities: amenitiesArray,
       photos: photosArray,
-
-      // DIRECT LIVE
       status: "approved",
     });
 
     return res.status(201).json({
       success: true,
-      message: "Property created and published successfully",
+      message:
+        "Property created and published successfully",
       property,
     });
   } catch (error) {
@@ -165,7 +178,8 @@ router.post("/", async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: error.message || "Failed to create property",
+      message:
+        error.message || "Failed to create property",
     });
   }
 });
@@ -183,7 +197,10 @@ router.patch("/:id/status", async (req, res) => {
       });
     }
 
-    const { status, rejectionReason = "" } = req.body;
+    const {
+      status,
+      rejectionReason = "",
+    } = req.body;
 
     const normalizedStatus = String(status || "")
       .trim()
@@ -193,6 +210,7 @@ router.patch("/:id/status", async (req, res) => {
       "pending",
       "approved",
       "rejected",
+      "live",
     ];
 
     if (!allowedStatuses.includes(normalizedStatus)) {
@@ -202,20 +220,23 @@ router.patch("/:id/status", async (req, res) => {
       });
     }
 
-    const property = await Property.findByIdAndUpdate(
-      req.params.id,
-      {
-        status: normalizedStatus,
-        rejectionReason:
-          normalizedStatus === "rejected"
-            ? rejectionReason
-            : "",
-      },
-      {
-        new: true,
-        runValidators: true,
-      }
-    ).exec();
+    const property =
+      await Property.findByIdAndUpdate(
+        req.params.id,
+        {
+          status: normalizedStatus,
+          rejectionReason:
+            normalizedStatus === "rejected"
+              ? rejectionReason
+              : "",
+        },
+        {
+          new: true,
+          runValidators: true,
+        }
+      )
+        .maxTimeMS(15000)
+        .exec();
 
     if (!property) {
       return res.status(404).json({
@@ -276,27 +297,23 @@ router.put("/:id", async (req, res) => {
     });
 
     if (updateData.title !== undefined) {
-      updateData.title = String(
-        updateData.title
-      ).trim();
+      updateData.title =
+        String(updateData.title).trim();
     }
 
     if (updateData.description !== undefined) {
-      updateData.description = String(
-        updateData.description
-      ).trim();
+      updateData.description =
+        String(updateData.description).trim();
     }
 
     if (updateData.location !== undefined) {
-      updateData.location = String(
-        updateData.location
-      ).trim();
+      updateData.location =
+        String(updateData.location).trim();
     }
 
     if (updateData.propertyType !== undefined) {
-      updateData.propertyType = String(
-        updateData.propertyType
-      ).toLowerCase();
+      updateData.propertyType =
+        String(updateData.propertyType).toLowerCase();
     }
 
     if (updateData.pricePerNight !== undefined) {
@@ -324,29 +341,30 @@ router.put("/:id", async (req, res) => {
     }
 
     if (updateData.amenities !== undefined) {
-      updateData.amenities = Array.isArray(
-        updateData.amenities
-      )
-        ? updateData.amenities
-        : [updateData.amenities];
+      updateData.amenities =
+        Array.isArray(updateData.amenities)
+          ? updateData.amenities
+          : [updateData.amenities];
     }
 
     if (updateData.photos !== undefined) {
-      updateData.photos = Array.isArray(
-        updateData.photos
-      )
-        ? updateData.photos
-        : [updateData.photos];
+      updateData.photos =
+        Array.isArray(updateData.photos)
+          ? updateData.photos
+          : [updateData.photos];
     }
 
-    const property = await Property.findByIdAndUpdate(
-      req.params.id,
-      updateData,
-      {
-        new: true,
-        runValidators: true,
-      }
-    ).exec();
+    const property =
+      await Property.findByIdAndUpdate(
+        req.params.id,
+        updateData,
+        {
+          new: true,
+          runValidators: true,
+        }
+      )
+        .maxTimeMS(15000)
+        .exec();
 
     if (!property) {
       return res.status(404).json({
@@ -388,7 +406,9 @@ router.delete("/:id", async (req, res) => {
     const property =
       await Property.findByIdAndDelete(
         req.params.id
-      ).exec();
+      )
+        .maxTimeMS(15000)
+        .exec();
 
     if (!property) {
       return res.status(404).json({
@@ -414,7 +434,8 @@ router.delete("/:id", async (req, res) => {
 });
 
 /* =====================================================
-   GET SINGLE PROPERTY - MUST BE LAST
+   GET SINGLE PROPERTY
+   Includes photos because only one property is requested
 ===================================================== */
 
 router.get("/:id", async (req, res) => {
@@ -426,11 +447,11 @@ router.get("/:id", async (req, res) => {
       });
     }
 
-    const property = await Property.findById(
-      req.params.id
-    )
-      .lean()
-      .exec();
+    const property =
+      await Property.findById(req.params.id)
+        .lean()
+        .maxTimeMS(15000)
+        .exec();
 
     if (!property) {
       return res.status(404).json({
@@ -439,7 +460,10 @@ router.get("/:id", async (req, res) => {
       });
     }
 
-    return res.status(200).json(property);
+    return res.status(200).json({
+      success: true,
+      property,
+    });
   } catch (error) {
     console.error(
       "GET SINGLE PROPERTY ERROR:",
