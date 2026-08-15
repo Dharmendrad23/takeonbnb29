@@ -120,6 +120,7 @@ router.post("/", async (req, res) => {
 
 /* =====================================================
    GET ALL PROPERTIES
+   FIXED: NO MONGODB SERVER-SIDE SORT
 ===================================================== */
 
 router.get("/", async (req, res) => {
@@ -134,13 +135,22 @@ router.get("/", async (req, res) => {
       query.hostId = req.query.hostId;
     }
 
+    // Fetch properties without MongoDB sorting
     const properties = await Property.find(query)
-      .sort({ createdAt: -1 })
       .maxTimeMS(10000)
       .lean()
       .exec();
 
+    // Sort in JavaScript to avoid MongoDB memory limit error
+    properties.sort((a, b) => {
+      const dateA = new Date(a.createdAt || 0).getTime();
+      const dateB = new Date(b.createdAt || 0).getTime();
+
+      return dateB - dateA;
+    });
+
     return res.status(200).json(properties);
+
   } catch (error) {
     console.error("GET PROPERTIES ERROR:", error);
 
@@ -210,6 +220,7 @@ router.patch("/:id/status", async (req, res) => {
       message: `Property ${normalizedStatus} successfully`,
       property,
     });
+
   } catch (error) {
     console.error("UPDATE STATUS ERROR:", error);
 
@@ -264,7 +275,8 @@ router.put("/:id", async (req, res) => {
     }
 
     if (updateData.location !== undefined) {
-      updateData.location = String(updateData.location).trim();
+      updateData.location =
+        String(updateData.location).trim();
     }
 
     if (updateData.propertyType !== undefined) {
@@ -278,11 +290,13 @@ router.put("/:id", async (req, res) => {
     }
 
     if (updateData.bedrooms !== undefined) {
-      updateData.bedrooms = Number(updateData.bedrooms);
+      updateData.bedrooms =
+        Number(updateData.bedrooms);
     }
 
     if (updateData.bathrooms !== undefined) {
-      updateData.bathrooms = Number(updateData.bathrooms);
+      updateData.bathrooms =
+        Number(updateData.bathrooms);
     }
 
     if (updateData.guestCapacity !== undefined) {
@@ -291,15 +305,17 @@ router.put("/:id", async (req, res) => {
     }
 
     if (updateData.amenities !== undefined) {
-      updateData.amenities = Array.isArray(updateData.amenities)
-        ? updateData.amenities
-        : [updateData.amenities];
+      updateData.amenities =
+        Array.isArray(updateData.amenities)
+          ? updateData.amenities
+          : [updateData.amenities];
     }
 
     if (updateData.photos !== undefined) {
-      updateData.photos = Array.isArray(updateData.photos)
-        ? updateData.photos
-        : [updateData.photos];
+      updateData.photos =
+        Array.isArray(updateData.photos)
+          ? updateData.photos
+          : [updateData.photos];
     }
 
     const property = await Property.findByIdAndUpdate(
@@ -325,6 +341,7 @@ router.put("/:id", async (req, res) => {
       message: "Property updated successfully",
       property,
     });
+
   } catch (error) {
     console.error("UPDATE PROPERTY ERROR:", error);
 
@@ -365,6 +382,7 @@ router.delete("/:id", async (req, res) => {
       success: true,
       message: "Property deleted successfully",
     });
+
   } catch (error) {
     console.error("DELETE PROPERTY ERROR:", error);
 
@@ -401,6 +419,7 @@ router.get("/:id", async (req, res) => {
     }
 
     return res.status(200).json(property);
+
   } catch (error) {
     console.error("GET SINGLE PROPERTY ERROR:", error);
 
