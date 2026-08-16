@@ -1,4 +1,4 @@
-import axios from "axios";
+﻿import axios from "axios";
 
 const PRODUCTION_API_URL = "https://takeonbnb29.onrender.com";
 
@@ -34,14 +34,18 @@ const api = axios.create({
 });
 
 const normalizeRecord = (record) => {
-  if (!record || typeof record !== "object" || Array.isArray(record)) {
+  if (
+    !record ||
+    typeof record !== "object" ||
+    Array.isArray(record)
+  ) {
     return record;
   }
 
   if (record._id && !record.id) {
     return {
       ...record,
-      id: record._id,
+      id: String(record._id),
     };
   }
 
@@ -51,24 +55,68 @@ const normalizeRecord = (record) => {
 api.interceptors.response.use(
   (response) => {
     const data = response.data;
+    const url = String(response.config?.url || "");
+
+    /*
+      IMPORTANT:
+      GET /properties returns:
+      { success, count, properties: [...] }
+
+      Normalize collection responses to an array so every
+      homepage property component receives the same shape.
+    */
+    const isPropertyCollection =
+      /^\/properties(?:\?.*)?$/.test(url);
+
+    if (
+      isPropertyCollection &&
+      data &&
+      typeof data === "object" &&
+      !Array.isArray(data)
+    ) {
+      if (Array.isArray(data.properties)) {
+        response.data = data.properties.map(normalizeRecord);
+        return response;
+      }
+
+      if (Array.isArray(data.items)) {
+        response.data = data.items.map(normalizeRecord);
+        return response;
+      }
+
+      if (Array.isArray(data.data)) {
+        response.data = data.data.map(normalizeRecord);
+        return response;
+      }
+    }
 
     if (Array.isArray(data)) {
       response.data = data.map(normalizeRecord);
-    } else if (data && typeof data === "object") {
+      return response;
+    }
+
+    if (
+      data &&
+      typeof data === "object" &&
+      !Array.isArray(data)
+    ) {
       if (Array.isArray(data.properties)) {
         response.data = {
           ...data,
-          properties: data.properties.map(normalizeRecord),
+          properties:
+            data.properties.map(normalizeRecord),
         };
       } else if (Array.isArray(data.items)) {
         response.data = {
           ...data,
-          items: data.items.map(normalizeRecord),
+          items:
+            data.items.map(normalizeRecord),
         };
       } else if (Array.isArray(data.data)) {
         response.data = {
           ...data,
-          data: data.data.map(normalizeRecord),
+          data:
+            data.data.map(normalizeRecord),
         };
       } else {
         response.data = normalizeRecord(data);

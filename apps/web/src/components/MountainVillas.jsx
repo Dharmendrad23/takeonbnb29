@@ -6,25 +6,27 @@ export default function MountainVillas() {
   const [properties, setProperties] = useState([]);
 
   useEffect(() => {
-    const fetchProperties = async () => {
+    async function fetchProperties() {
       try {
         const response = await api.get("/properties", {
-          params: { status: "approved" }
+          params: { status: "approved" },
         });
 
-        const data = response.data;
+        const result = response.data;
 
-        const safeData = Array.isArray(data)
-          ? data
-          : Array.isArray(data?.properties)
-          ? data.properties
-          : Array.isArray(data?.data)
-          ? data.data
+        const safeData = Array.isArray(result)
+          ? result
+          : Array.isArray(result?.properties)
+          ? result.properties
+          : Array.isArray(result?.items)
+          ? result.items
+          : Array.isArray(result?.data)
+          ? result.data
           : [];
 
         const filtered = safeData.filter((p) => {
-          const location = String(p.location || "").toLowerCase();
-          const title = String(p.title || p.name || "").toLowerCase();
+          const location = String(p?.location || "").toLowerCase();
+          const title = String(p?.title || p?.name || "").toLowerCase();
 
           return (
             location.includes("mountain") ||
@@ -40,22 +42,26 @@ export default function MountainVillas() {
         console.error("Error fetching mountain villas:", error);
         setProperties([]);
       }
-    };
+    }
 
     fetchProperties();
   }, []);
 
-  if (!properties.length) return null;
+  if (!Array.isArray(properties) || properties.length === 0) {
+    return null;
+  }
 
   return (
     <section className="py-10">
       <div className="container mx-auto px-4">
-        <h2 className="text-2xl font-bold mb-6">Mountain Villas</h2>
+        <h2 className="text-2xl font-bold mb-6">
+          Mountain Villas
+        </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {properties.map((property) => (
             <PropertyCard
-              key={property._id || property.id}
+              key={property?._id || property?.id}
               property={property}
             />
           ))}

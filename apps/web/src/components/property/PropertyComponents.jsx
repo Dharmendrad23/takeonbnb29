@@ -1,4 +1,4 @@
-
+﻿
 import React from 'react';
 import { 
   Share, 
@@ -68,9 +68,9 @@ export const PropertyHeader = ({ property }) => {
           <span className="flex items-center gap-1 text-foreground">
             <Star className="w-4 h-4 fill-foreground text-foreground" />
             <span className="font-semibold">{property?.rating || 4.9}</span>
-            <span className="underline cursor-pointer">· {property?.totalBookings || 12} reviews</span>
+            <span className="underline cursor-pointer">Â· {property?.totalBookings || 12} reviews</span>
           </span>
-          <span>·</span>
+          <span>Â·</span>
           <span className="flex items-center gap-1">
             <MapPin className="w-4 h-4" />
             <span className="underline cursor-pointer">{property?.location || 'Location not specified'}</span>
@@ -96,8 +96,8 @@ export const PropertyInfoCards = ({ property }) => {
         <div>
           <h2 className="text-xl font-semibold mb-1">Entire {property?.propertyType?.toLowerCase() || 'place'} hosted by {property?.expand?.hostId?.name || 'Host'}</h2>
           <div className="flex items-center gap-2 text-foreground/80 text-sm mt-2">
-            <span className="flex items-center gap-1"><Users className="w-4 h-4" /> {property?.guestCapacity || 2} guests</span> · 
-            <span className="flex items-center gap-1"><Bed className="w-4 h-4" /> {property?.bedrooms || 1} bedrooms</span> · 
+            <span className="flex items-center gap-1"><Users className="w-4 h-4" /> {property?.guestCapacity || 2} guests</span> Â· 
+            <span className="flex items-center gap-1"><Bed className="w-4 h-4" /> {property?.bedrooms || 1} bedrooms</span> Â· 
             <span className="flex items-center gap-1"><Bath className="w-4 h-4" /> {property?.bathrooms || 1} baths</span>
           </div>
         </div>
@@ -128,39 +128,75 @@ export const PropertyInfoCards = ({ property }) => {
 };
 
 export const AmenitiesGrid = ({ amenities = [] }) => {
-  const defaultAmenities = ['WiFi', 'Kitchen', 'Free parking', 'Pool', 'Air conditioning', 'TV', 'Heating', 'Garden'];
-  const displayAmenities = amenities.length > 0 ? amenities : defaultAmenities;
+  const defaultAmenities = [
+    "WiFi",
+    "Kitchen",
+    "Free parking",
+    "Pool",
+    "Air conditioning",
+    "TV",
+    "Heating",
+    "Garden",
+  ];
 
-  // Simple mapping for demonstration if specific names match
+  const safeAmenities = Array.isArray(amenities)
+    ? amenities
+    : [];
+
+  const displayAmenities =
+    safeAmenities.length > 0
+      ? safeAmenities
+      : defaultAmenities;
+
   const getIconForAmenity = (name) => {
-    const n = name.toLowerCase();
-    if (n.includes('wifi')) return <Wifi className="w-5 h-5 text-muted-foreground" />;
-    if (n.includes('kitchen') || n.includes('utensils')) return <UtensilsCrossed className="w-5 h-5 text-muted-foreground" />;
-    if (n.includes('parking')) return <CarFront className="w-5 h-5 text-muted-foreground" />;
-    if (n.includes('pool') || n.includes('hot tub')) return <Waves className="w-5 h-5 text-muted-foreground" />;
-    if (n.includes('air conditioning') || n.includes('ac') || n.includes('wind')) return <Wind className="w-5 h-5 text-muted-foreground" />;
-    if (n.includes('tv')) return <Tv className="w-5 h-5 text-muted-foreground" />;
-    if (n.includes('heating')) return <Flame className="w-5 h-5 text-muted-foreground" />;
-    if (n.includes('gym') || n.includes('fitness')) return <Dumbbell className="w-5 h-5 text-muted-foreground" />;
-    if (n.includes('garden') || n.includes('trees') || n.includes('balcony')) return <Trees className="w-5 h-5 text-muted-foreground" />;
+    const n = String(name || "").toLowerCase();
+
+    if (n.includes("wifi")) return <Wifi className="w-5 h-5 text-muted-foreground" />;
+    if (n.includes("kitchen") || n.includes("utensils")) return <UtensilsCrossed className="w-5 h-5 text-muted-foreground" />;
+    if (n.includes("parking")) return <CarFront className="w-5 h-5 text-muted-foreground" />;
+    if (n.includes("pool") || n.includes("hot tub")) return <Waves className="w-5 h-5 text-muted-foreground" />;
+    if (n.includes("air conditioning") || n === "ac" || n.includes("wind")) return <Wind className="w-5 h-5 text-muted-foreground" />;
+    if (n.includes("tv")) return <Tv className="w-5 h-5 text-muted-foreground" />;
+    if (n.includes("heating")) return <Flame className="w-5 h-5 text-muted-foreground" />;
+    if (n.includes("gym") || n.includes("fitness")) return <Dumbbell className="w-5 h-5 text-muted-foreground" />;
+    if (n.includes("garden") || n.includes("trees") || n.includes("balcony")) return <Trees className="w-5 h-5 text-muted-foreground" />;
+
     return <CheckCircle2 className="w-5 h-5 text-muted-foreground" />;
   };
 
   return (
     <div className="py-8 border-b border-border">
-      <h2 className="text-2xl font-semibold mb-6">What this place offers</h2>
+      <h2 className="text-2xl font-semibold mb-6">
+        What this place offers
+      </h2>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8">
         {displayAmenities.slice(0, 8).map((amenity, i) => {
-          const amenityName = typeof amenity === 'string' ? amenity : amenity.name;
+          const amenityName =
+            typeof amenity === "string"
+              ? amenity
+              : amenity && typeof amenity === "object"
+                ? amenity.name || ""
+                : "";
+
+          if (!amenityName) return null;
+
           return (
-            <div key={i} className="flex items-center gap-4 text-foreground/90">
+            <div
+              key={i}
+              className="flex items-center gap-4 text-foreground/90"
+            >
               {getIconForAmenity(amenityName)}
               <span>{amenityName}</span>
             </div>
           );
         })}
       </div>
-      <Button variant="outline" className="mt-8 rounded-xl font-semibold px-6 py-6 border-foreground hover:bg-muted">
+
+      <Button
+        variant="outline"
+        className="mt-8 rounded-xl font-semibold px-6 py-6 border-foreground hover:bg-muted"
+      >
         Show all amenities
       </Button>
     </div>
@@ -243,3 +279,4 @@ export const LocationMap = ({ location }) => {
     </div>
   );
 };
+
