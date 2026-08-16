@@ -24,21 +24,45 @@ export default function TrendingProperties() {
       try {
         setLoading(true);
 
-        const response = await api.get("/properties");
+        const response = await api.get("/properties", {
+          params: {
+            status: "approved",
+          },
+        });
 
         const result = response.data;
 
-        const propertyList = Array.isArray(result)
-          ? result
-          : result?.properties ||
-            result?.items ||
-            result?.data ||
-            [];
+        // API response ko safely array mein convert karo
+        let propertyList = [];
 
-        // Sirf approved properties website par
+        if (Array.isArray(result)) {
+          propertyList = result;
+        } else if (Array.isArray(result?.properties)) {
+          propertyList = result.properties;
+        } else if (Array.isArray(result?.items)) {
+          propertyList = result.items;
+        } else if (Array.isArray(result?.data)) {
+          propertyList = result.data;
+        } else {
+          console.warn(
+            "Unexpected property API response:",
+            result
+          );
+
+          propertyList = [];
+        }
+
+        // Approved properties only
         const approvedProperties = propertyList.filter(
           (property) =>
-            String(property.status || "").toLowerCase() === "approved"
+            String(
+              property?.status || "approved"
+            ).toLowerCase() === "approved"
+        );
+
+        console.log(
+          "API Properties:",
+          propertyList
         );
 
         console.log(
@@ -97,7 +121,9 @@ export default function TrendingProperties() {
               <Button
                 variant="outline"
                 size="icon"
-                onClick={() => emblaApi?.scrollPrev()}
+                onClick={() =>
+                  emblaApi?.scrollPrev()
+                }
               >
                 <ChevronLeft />
               </Button>
@@ -105,7 +131,9 @@ export default function TrendingProperties() {
               <Button
                 variant="outline"
                 size="icon"
-                onClick={() => emblaApi?.scrollNext()}
+                onClick={() =>
+                  emblaApi?.scrollNext()
+                }
               >
                 <ChevronRight />
               </Button>
@@ -115,9 +143,11 @@ export default function TrendingProperties() {
 
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <PropertyCardSkeleton key={i} />
-            ))}
+            {Array.from({ length: 4 }).map(
+              (_, i) => (
+                <PropertyCardSkeleton key={i} />
+              )
+            )}
           </div>
         ) : properties.length === 0 ? (
           <div className="text-center py-20">
@@ -140,9 +170,13 @@ export default function TrendingProperties() {
             ref={emblaRef}
           >
             <div className="embla__container flex gap-6">
-              {properties.map((property) => (
+              {properties.map((property, index) => (
                 <motion.div
-                  key={property.id || property._id}
+                  key={
+                    property?._id ||
+                    property?.id ||
+                    index
+                  }
                   className="embla__slide flex-[0_0_85%] sm:flex-[0_0_45%] lg:flex-[0_0_30%]"
                   initial={{
                     opacity: 0,
