@@ -6,6 +6,7 @@ import {
   useSearchParams,
   useLocation,
 } from 'react-router-dom';
+
 import CheckoutButton from '@/components/CheckoutButton.jsx';
 
 import {
@@ -65,7 +66,6 @@ const getImageUrl = (property) => {
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
-
   const location = useLocation();
 
   const { id, propertyId: routePropertyId } = useParams();
@@ -80,16 +80,22 @@ const CheckoutPage = () => {
     bookingData.propertyId ||
     searchParams.get('propertyId');
 
-  const [selectedPaymentMethod, setSelectedPaymentMethod] =
-    useState('stripe');
+  const [
+    selectedPaymentMethod,
+    setSelectedPaymentMethod,
+  ] = useState('stripe');
 
-  const [isCopied, setIsCopied] = useState(false);
+  const [isCopied, setIsCopied] =
+    useState(false);
 
-  const [property, setProperty] = useState(null);
+  const [property, setProperty] =
+    useState(null);
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] =
+    useState(true);
 
-  const [error, setError] = useState('');
+  const [error, setError] =
+    useState('');
 
   /*
     BOOKING DATA
@@ -101,20 +107,26 @@ const CheckoutPage = () => {
 
   const checkIn =
     bookingData.checkInDate ||
+    bookingData.checkIn ||
     searchParams.get('checkIn') ||
     '';
 
   const checkOut =
     bookingData.checkOutDate ||
+    bookingData.checkOut ||
     searchParams.get('checkOut') ||
     '';
 
-  const guests =
-    Number(
-      bookingData.guestCount ||
-      searchParams.get('guests') ||
-      1
-    );
+  const guests = Number(
+    bookingData.guestCount ||
+    bookingData.guests ||
+    searchParams.get('guests') ||
+    1
+  );
+
+  /*
+    LOAD PROPERTY
+  */
 
   useEffect(() => {
     const loadProperty = async () => {
@@ -126,21 +138,44 @@ const CheckoutPage = () => {
 
       try {
         setLoading(true);
-
         setError('');
 
-        const { data } = await api.get(
+        const response = await api.get(
           `/properties/${propertyId}`
         );
 
-        setProperty(data);
+        console.log(
+          '[CHECKOUT] Property response:',
+          response.data
+        );
+
+        /*
+          Supports both:
+
+          {
+            success: true,
+            data: property
+          }
+
+          AND direct property response
+        */
+
+        const propertyData =
+          response?.data?.data ||
+          response?.data?.property ||
+          response?.data;
+
+        setProperty(propertyData);
       } catch (err) {
         console.error(
-          'Failed to load property:',
+          '[CHECKOUT] Failed to load property:',
           err
         );
 
-        setError('Unable to load this property.');
+        setError(
+          err?.response?.data?.message ||
+          'Unable to load this property.'
+        );
       } finally {
         setLoading(false);
       }
@@ -149,12 +184,11 @@ const CheckoutPage = () => {
     loadProperty();
   }, [propertyId]);
 
-  const nights = useMemo(() => {
-    /*
-      If BookingWidget already calculated nights,
-      use that value.
-    */
+  /*
+    CALCULATE NIGHTS
+  */
 
+  const nights = useMemo(() => {
     if (bookingData.nights) {
       return Number(bookingData.nights);
     }
@@ -171,21 +205,28 @@ const CheckoutPage = () => {
       `${checkOut}T00:00:00`
     );
 
-    const difference = end - start;
+    const difference =
+      end.getTime() -
+      start.getTime();
 
-    const calculatedNights = Math.ceil(
-      difference / (1000 * 60 * 60 * 24)
-    );
+    const calculatedNights =
+      Math.ceil(
+        difference /
+        (1000 * 60 * 60 * 24)
+      );
 
     return calculatedNights > 0
       ? calculatedNights
       : 1;
-
   }, [
     checkIn,
     checkOut,
     bookingData.nights,
   ]);
+
+  /*
+    PRICE CALCULATION
+  */
 
   const pricePerNight = Number(
     bookingData.pricePerNight ||
@@ -194,29 +235,22 @@ const CheckoutPage = () => {
     0
   );
 
-  /*
-    Use booking values if they were sent
-    from BookingWidget.
-  */
-
   const cleaningFee =
     bookingData.cleaningFee !== undefined
       ? Number(bookingData.cleaningFee)
       : 1500;
 
-  const serviceFee =
-    bookingData.serviceFee !== undefined
-      ? Number(bookingData.serviceFee)
-      : Math.round(
-          pricePerNight *
-          nights *
-          0.12
-        );
-
   const subtotal =
     bookingData.basePrice !== undefined
       ? Number(bookingData.basePrice)
       : pricePerNight * nights;
+
+  const serviceFee =
+    bookingData.serviceFee !== undefined
+      ? Number(bookingData.serviceFee)
+      : Math.round(
+          subtotal * 0.12
+        );
 
   const totalAmount =
     bookingData.totalPrice !== undefined
@@ -224,6 +258,10 @@ const CheckoutPage = () => {
       : subtotal +
         cleaningFee +
         serviceFee;
+
+  /*
+    BANK DETAILS
+  */
 
   const bankDetails = [
     {
@@ -256,6 +294,10 @@ const CheckoutPage = () => {
       )
       .join('\n');
 
+  /*
+    COPY PAYMENT DETAILS
+  */
+
   const handleCopyPaymentDetails =
     async () => {
       try {
@@ -272,39 +314,40 @@ const CheckoutPage = () => {
         window.setTimeout(() => {
           setIsCopied(false);
         }, 2000);
-
-      } catch (error) {
+      } catch (copyError) {
         console.error(
           'Failed to copy payment details:',
-          error
+          copyError
         );
       }
     };
 
+  /*
+    LOADING
+  */
+
   if (loading) {
     return (
       <div className="min-h-[85vh] flex items-center justify-center">
-
         <div className="flex items-center gap-3 text-muted-foreground">
-
           <Loader2 className="w-6 h-6 animate-spin" />
 
           <span>
             Loading your booking...
           </span>
-
         </div>
-
       </div>
     );
   }
 
+  /*
+    ERROR
+  */
+
   if (error || !property) {
     return (
       <div className="min-h-[85vh] flex items-center justify-center px-4">
-
         <div className="max-w-md w-full bg-card border border-border rounded-3xl p-8 text-center shadow-sm">
-
           <h1 className="text-xl font-bold mb-3">
             Property not found
           </h1>
@@ -315,16 +358,16 @@ const CheckoutPage = () => {
           </p>
 
           <button
-            onClick={() => navigate('/properties')}
+            onClick={() =>
+              navigate('/properties')
+            }
             className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-5 py-3 rounded-xl font-semibold"
           >
             <ArrowLeft className="w-4 h-4" />
 
             Back to properties
           </button>
-
         </div>
-
       </div>
     );
   }
@@ -380,22 +423,18 @@ const CheckoutPage = () => {
                 <div className="space-y-1">
 
                   <span className="text-sm font-semibold text-muted-foreground flex items-center gap-1.5">
-
                     <Calendar className="w-4 h-4" />
-
                     Dates
-
                   </span>
 
                   <p className="text-foreground font-medium">
-
-                    {checkIn || 'Select check-in date'}
+                    {checkIn ||
+                      'Select check-in date'}
 
                     {' - '}
 
                     {checkOut ||
                       'Select check-out date'}
-
                   </p>
 
                   <p className="text-sm text-muted-foreground">
@@ -408,20 +447,15 @@ const CheckoutPage = () => {
                 <div className="space-y-1">
 
                   <span className="text-sm font-semibold text-muted-foreground flex items-center gap-1.5">
-
                     <Users className="w-4 h-4" />
-
                     Guests
-
                   </span>
 
                   <p className="text-foreground font-medium">
-
                     {guests} guest
                     {guests !== 1
                       ? 's'
                       : ''}
-
                   </p>
 
                 </div>
@@ -456,7 +490,6 @@ const CheckoutPage = () => {
                       : 'border-border hover:border-primary/60'
                   }`}
                 >
-
                   <div className="flex items-center gap-2 mb-2">
 
                     <CreditCard className="w-4 h-4 text-primary" />
@@ -471,10 +504,9 @@ const CheckoutPage = () => {
                     Pay securely using available
                     online payment methods.
                   </p>
-
                 </button>
 
-                {/* BANK PAYMENT */}
+                {/* BANK / UPI */}
 
                 <button
                   type="button"
@@ -490,7 +522,6 @@ const CheckoutPage = () => {
                       : 'border-border hover:border-primary/60'
                   }`}
                 >
-
                   <div className="flex items-center gap-2 mb-2">
 
                     <Landmark className="w-4 h-4 text-primary" />
@@ -505,7 +536,6 @@ const CheckoutPage = () => {
                     Transfer payment and share
                     payment proof.
                   </p>
-
                 </button>
 
               </div>
@@ -514,9 +544,7 @@ const CheckoutPage = () => {
 
               {selectedPaymentMethod ===
               'stripe' ? (
-
                 <>
-
                   <p className="text-muted-foreground mb-6 text-sm">
                     Complete your payment securely
                     to confirm this booking.
@@ -537,9 +565,7 @@ const CheckoutPage = () => {
                     SSL Secured Payment
 
                   </div>
-
                 </>
-
               ) : (
 
                 /* BANK / UPI */
@@ -547,43 +573,35 @@ const CheckoutPage = () => {
                 <div className="rounded-2xl border border-border bg-muted/30 p-4 space-y-4">
 
                   <p className="text-sm text-muted-foreground">
-
                     Transfer{' '}
 
-                    {formatINR(
-                      totalAmount
-                    )}
+                    <strong>
+                      {formatINR(
+                        totalAmount
+                      )}
+                    </strong>
 
                     {' '}to the account below and
                     share the payment screenshot
                     for booking confirmation.
-
                   </p>
 
                   <div className="grid gap-3 sm:grid-cols-2">
 
                     {bankDetails.map(
                       (detail) => (
-
                         <div
                           key={detail.label}
                           className="rounded-xl border border-border bg-background/80 p-3"
                         >
-
                           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-
                             {detail.label}
-
                           </p>
 
-                          <p className="mt-1 font-medium text-foreground">
-
+                          <p className="mt-1 font-medium text-foreground break-all">
                             {detail.value}
-
                           </p>
-
                         </div>
-
                       )
                     )}
 
@@ -596,25 +614,18 @@ const CheckoutPage = () => {
                     }
                     className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-sm font-semibold text-foreground transition hover:border-primary hover:text-primary"
                   >
-
                     {isCopied ? (
-
                       <CheckCircle2 className="w-4 h-4" />
-
                     ) : (
-
                       <Copy className="w-4 h-4" />
-
                     )}
 
                     {isCopied
                       ? 'Copied'
                       : 'Copy payment details'}
-
                   </button>
 
                 </div>
-
               )}
 
             </div>
@@ -633,7 +644,8 @@ const CheckoutPage = () => {
                   src={propertyImage}
                   alt={
                     property.title ||
-                    property.name
+                    property.name ||
+                    'Property'
                   }
                   className="w-24 h-24 rounded-xl object-cover"
                   onError={(e) => {
@@ -645,19 +657,16 @@ const CheckoutPage = () => {
                 <div>
 
                   <h3 className="font-bold text-foreground text-lg leading-tight mb-1">
-
                     {property.title ||
                       property.name}
-
                   </h3>
 
                   <span className="text-muted-foreground text-sm flex items-center font-medium">
-
                     <MapPin className="w-3.5 h-3.5 mr-1" />
 
                     {property.location ||
+                      property.city ||
                       'India'}
-
                   </span>
 
                 </div>
@@ -677,7 +686,6 @@ const CheckoutPage = () => {
                   <div className="flex justify-between">
 
                     <span className="text-muted-foreground">
-
                       {formatINR(
                         pricePerNight
                       )}
@@ -686,19 +694,15 @@ const CheckoutPage = () => {
                       {nights !== 1
                         ? 's'
                         : ''}
-
                     </span>
 
                     <span className="font-medium text-foreground">
-
                       {formatINR(subtotal)}
-
                     </span>
 
                   </div>
 
                   {cleaningFee > 0 && (
-
                     <div className="flex justify-between">
 
                       <span className="text-muted-foreground">
@@ -706,19 +710,15 @@ const CheckoutPage = () => {
                       </span>
 
                       <span className="font-medium text-foreground">
-
                         {formatINR(
                           cleaningFee
                         )}
-
                       </span>
 
                     </div>
-
                   )}
 
                   {serviceFee > 0 && (
-
                     <div className="flex justify-between">
 
                       <span className="text-muted-foreground">
@@ -726,15 +726,12 @@ const CheckoutPage = () => {
                       </span>
 
                       <span className="font-medium text-foreground">
-
                         {formatINR(
                           serviceFee
                         )}
-
                       </span>
 
                     </div>
-
                   )}
 
                 </div>
@@ -746,11 +743,9 @@ const CheckoutPage = () => {
                   </span>
 
                   <span className="font-extrabold text-foreground text-xl">
-
                     {formatINR(
                       totalAmount
                     )}
-
                   </span>
 
                 </div>
