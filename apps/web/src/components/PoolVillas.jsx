@@ -1,46 +1,63 @@
-﻿import React, { useState, useEffect } from 'react';
-import PropertyGrid from './PropertyGrid.jsx';
-import api from '@/lib/api.js';
+﻿import { useEffect, useState } from "react";
+import api from "../lib/api";
+import PropertyCard from "./PropertyCard";
 
 export default function PoolVillas() {
   const [properties, setProperties] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchProperties = async () => {
       try {
-        setLoading(true);
-        setError(null);
+        const response = await api.get("/properties", {
+          params: { status: "approved" }
+        });
 
-        const { data } = await api.get('/properties', { params: { status: 'approved' } });
+        const data = response.data;
 
-        const filtered = data.filter((p) =>
-          Array.isArray(p.amenities) &&
-          p.amenities.some((a) =>
-            String(a).toLowerCase().includes('pool')
-          )
-        );
+        const safeData = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.properties)
+          ? data.properties
+          : Array.isArray(data?.data)
+          ? data.data
+          : [];
 
-        setProperties(filtered.slice(0, 8));
-      } catch (err) {
-        console.error('Error fetching pool villas:', err);
-        setError('Failed to load villas with private pools.');
-      } finally {
-        setLoading(false);
+        const filtered = safeData.filter((p) => {
+          const amenities = Array.isArray(p.amenities)
+            ? p.amenities
+            : [];
+
+          return amenities.some((a) =>
+            String(a).toLowerCase().includes("pool")
+          );
+        });
+
+        setProperties(filtered);
+      } catch (error) {
+        console.error("Error fetching pool villas:", error);
+        setProperties([]);
       }
     };
 
     fetchProperties();
   }, []);
 
+  if (!properties.length) return null;
+
   return (
-    <PropertyGrid
-      properties={properties}
-      isLoading={loading}
-      error={error}
-      title="Villas with Private Pools"
-      subtitle="Dive into relaxation with your own exclusive oasis."
-    />
+    <section className="py-10">
+      <div className="container mx-auto px-4">
+        <h2 className="text-2xl font-bold mb-6">Pool Villas</h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {properties.map((property) => (
+            <PropertyCard
+              key={property._id || property.id}
+              property={property}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }
