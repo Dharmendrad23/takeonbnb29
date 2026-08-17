@@ -1,6 +1,10 @@
 import User from "../models/User.js";
 
-// GET /users?ids=id1,id2
+/* =========================================
+   GET USERS BY IDS
+========================================= */
+
+// GET /users?ids=id1,id2,id3
 export const getUsersByIds = async (req, res) => {
   try {
     const idsParam = req.query.ids;
@@ -16,7 +20,7 @@ export const getUsersByIds = async (req, res) => {
 
     const users = await User.find({
       _id: { $in: ids },
-    }).select("name email role phone bio avatar");
+    }).select("name email role phone avatar bio");
 
     res.json(users);
   } catch (err) {
@@ -24,16 +28,21 @@ export const getUsersByIds = async (req, res) => {
 
     res.status(500).json({
       success: false,
-      message: err.message || "Failed to get users",
+      message: err.message,
     });
   }
 };
 
+/* =========================================
+   GET SINGLE USER
+========================================= */
+
 // GET /users/:id
 export const getUserById = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id)
-      .select("-password");
+    const user = await User.findById(
+      req.params.id
+    ).select("name email role phone avatar bio");
 
     if (!user) {
       return res.status(404).json({
@@ -51,51 +60,23 @@ export const getUserById = async (req, res) => {
 
     res.status(500).json({
       success: false,
-      message: err.message || "Failed to get user",
+      message: err.message,
     });
   }
 };
 
+/* =========================================
+   UPDATE USER PROFILE
+========================================= */
+
 // PUT /users/:id
 export const updateUserProfile = async (req, res) => {
   try {
-    const { name, phone, bio, avatar } = req.body;
+    const { name, phone, bio } = req.body;
 
-    const updateData = {};
-
-    if (name !== undefined) {
-      const cleanName = String(name).trim();
-
-      if (!cleanName) {
-        return res.status(400).json({
-          success: false,
-          message: "Name cannot be empty",
-        });
-      }
-
-      updateData.name = cleanName;
-    }
-
-    if (phone !== undefined) {
-      updateData.phone = String(phone).trim();
-    }
-
-    if (bio !== undefined) {
-      updateData.bio = String(bio).trim();
-    }
-
-    if (avatar !== undefined) {
-      updateData.avatar = String(avatar).trim();
-    }
-
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      { $set: updateData },
-      {
-        new: true,
-        runValidators: true,
-      }
-    ).select("-password");
+    const user = await User.findById(
+      req.params.id
+    );
 
     if (!user) {
       return res.status(404).json({
@@ -104,10 +85,34 @@ export const updateUserProfile = async (req, res) => {
       });
     }
 
+    if (name !== undefined) {
+      user.name = String(name).trim();
+    }
+
+    if (phone !== undefined) {
+      user.phone = String(phone).trim();
+    }
+
+    if (bio !== undefined) {
+      user.bio = String(bio).trim();
+    }
+
+    await user.save();
+
     return res.json({
       success: true,
       message: "Profile updated successfully",
-      user,
+      user: {
+        _id: user._id,
+        id: String(user._id),
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        userType: user.role,
+        phone: user.phone || "",
+        bio: user.bio || "",
+        avatar: user.avatar || "",
+      },
     });
 
   } catch (err) {

@@ -1,4 +1,4 @@
-﻿import React, { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import {
   Route,
   Routes,
@@ -21,7 +21,6 @@ import AdminProtectedRoute from '@/components/AdminProtectedRoute.jsx';
 import AdminLayout from '@/components/AdminLayout.jsx';
 import PaymentSuccessModal from '@/components/PaymentSuccessModal.jsx';
 
-// Public Pages
 import HomePage from '@/pages/HomePage.jsx';
 import PropertyList from '@/pages/PropertyList.jsx';
 import PropertyDetailPage from '@/pages/PropertyDetailPage.jsx';
@@ -30,49 +29,33 @@ import SignupPage from '@/pages/SignupPage.jsx';
 import HostRegisterPage from '@/pages/HostRegisterPage.jsx';
 import HostAuthPage from '@/pages/HostAuthPage.jsx';
 import DestinationPage from '@/pages/DestinationPage.jsx';
-
-// Advanced Search
 import SearchPage from '@/pages/SearchPage.jsx';
 
-// Static / Info Pages
 import AboutUsPage from '@/pages/AboutUsPage.jsx';
 import ContactPage from '@/pages/ContactPage.jsx';
 import ExplorePage from '@/pages/ExplorePage.jsx';
 import BlogPage from '@/pages/BlogPage.jsx';
-import BlogDetailPage from '@/pages/BlogDetailPage.jsx';
 import HelpCenterPage from '@/pages/HelpCenterPage.jsx';
 import SafetyPage from '@/pages/SafetyPage.jsx';
 import FAQPage from '@/pages/FAQPage.jsx';
-import PrivacyPolicyPage from '@/pages/PrivacyPolicyPage.jsx';
-import TermsPage from '@/pages/TermsPage.jsx';
-import CancellationPolicyPage from '@/pages/CancellationPolicyPage.jsx';
 import NotFoundPage from '@/pages/NotFoundPage.jsx';
 
-// Checkout / Payment Pages
 import CheckoutPage from '@/pages/CheckoutPage.jsx';
-import SuccessPage from '@/pages/SuccessPage.jsx';
-import CancelPage from '@/pages/CancelPage.jsx';
-import BookingConfirmationPage from '@/pages/BookingConfirmationPage.jsx';
 
-// Guest Dashboards
 import GuestDashboardHome from '@/pages/GuestDashboardHome.jsx';
 import GuestBookingsPage from '@/pages/GuestBookingsPage.jsx';
 import GuestWishlistPage from '@/pages/GuestWishlistPage.jsx';
-import GuestUpcomingTripsPage from '@/pages/GuestUpcomingTripsPage.jsx';
 import GuestPaymentHistoryPage from '@/pages/GuestPaymentHistoryPage.jsx';
 import GuestFavoritesPage from '@/pages/GuestFavoritesPage.jsx';
 import GuestMessagesPage from '@/pages/GuestMessagesPage.jsx';
 import GuestReviewsPage from '@/pages/GuestReviewsPage.jsx';
 import GuestSettingsPage from '@/pages/GuestSettingsPage.jsx';
-import BookingDetailPage from '@/pages/BookingDetailPage.jsx';
 
-// Host Pages
 import HostDashboardPage from '@/pages/HostDashboardPage.jsx';
 import HostPropertyListingForm from '@/pages/HostPropertyListingForm.jsx';
 import HostPropertiesPage from '@/pages/HostPropertiesPage.jsx';
 import EditPropertyPage from '@/pages/EditPropertyPage.jsx';
 
-// Admin Pages
 import AdminLoginPage from '@/pages/admin/AdminLoginPage.jsx';
 import AdminDashboard from '@/pages/admin/AdminDashboard.jsx';
 import AdminPropertyManagement from '@/pages/admin/AdminPropertyManagement.jsx';
@@ -94,30 +77,20 @@ const AppLayout = ({ children }) => {
     const sessionId = params.get('session_id');
     const bookingId = params.get('booking_id');
 
-    if (
-      sessionId &&
-      bookingId &&
-      location.pathname === '/guest/dashboard'
-    ) {
+    if (sessionId && bookingId && location.pathname === '/guest/dashboard') {
       setSuccessBookingId(bookingId);
       setSuccessModalOpen(true);
-
-      navigate('/guest/dashboard', {
-        replace: true
-      });
+      navigate('/guest/dashboard', { replace: true });
     }
   }, [location, navigate]);
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground font-sans">
       <Header />
-
       <main className="flex-1 w-full relative flex flex-col pt-0">
         {children}
       </main>
-
       <Footer />
-
       <PaymentSuccessModal
         isOpen={successModalOpen}
         onClose={() => setSuccessModalOpen(false)}
@@ -126,6 +99,14 @@ const AppLayout = ({ children }) => {
     </div>
   );
 };
+
+const HostFormRoute = () => (
+  <ProtectedRoute requireHost>
+    <AppLayout>
+      <HostPropertyListingForm />
+    </AppLayout>
+  </ProtectedRoute>
+);
 
 function App() {
   return (
@@ -137,264 +118,38 @@ function App() {
               <ScrollToTop />
 
               <Routes>
+                <Route path="/" element={<AppLayout><HomePage /></AppLayout>} />
+                <Route path="/properties" element={<AppLayout><PropertyList /></AppLayout>} />
+                <Route path="/search" element={<AppLayout><SearchPage /></AppLayout>} />
+                <Route path="/property/:id" element={<AppLayout><PropertyDetailPage /></AppLayout>} />
+                <Route path="/destination/:location" element={<AppLayout><DestinationPage /></AppLayout>} />
 
-                {/* HOME */}
-                <Route
-                  path="/"
-                  element={
-                    <AppLayout>
-                      <HomePage />
-                    </AppLayout>
-                  }
-                />
+                <Route path="/login" element={<AppLayout><LoginPage /></AppLayout>} />
+                <Route path="/signup" element={<AppLayout><SignupPage /></AppLayout>} />
+                <Route path="/host/login" element={<AppLayout><HostAuthPage /></AppLayout>} />
+                <Route path="/host/register" element={<AppLayout><HostRegisterPage /></AppLayout>} />
 
-                {/* PROPERTIES */}
-                <Route
-                  path="/properties"
-                  element={
-                    <AppLayout>
-                      <PropertyList />
-                    </AppLayout>
-                  }
-                />
+                <Route path="/about" element={<AppLayout><AboutUsPage /></AppLayout>} />
+                <Route path="/explore" element={<AppLayout><ExplorePage /></AppLayout>} />
+                <Route path="/blog" element={<AppLayout><BlogPage /></AppLayout>} />
+                <Route path="/help-center" element={<AppLayout><HelpCenterPage /></AppLayout>} />
+                <Route path="/faq" element={<AppLayout><FAQPage /></AppLayout>} />
+                <Route path="/safety" element={<AppLayout><SafetyPage /></AppLayout>} />
+                <Route path="/contact" element={<AppLayout><ContactPage /></AppLayout>} />
 
-                <Route
-                  path="/search"
-                  element={
-                    <AppLayout>
-                      <SearchPage />
-                    </AppLayout>
-                  }
-                />
+                <Route path="/checkout" element={<AppLayout><CheckoutPage /></AppLayout>} />
+                <Route path="/checkout/:propertyId" element={<AppLayout><CheckoutPage /></AppLayout>} />
 
-                <Route
-                  path="/property/:id"
-                  element={
-                    <AppLayout>
-                      <PropertyDetailPage />
-                    </AppLayout>
-                  }
-                />
+                <Route path="/guest/dashboard" element={<ProtectedRoute requireGuest><AppLayout><GuestDashboardHome /></AppLayout></ProtectedRoute>} />
+                <Route path="/guest/bookings" element={<ProtectedRoute requireGuest><AppLayout><GuestBookingsPage /></AppLayout></ProtectedRoute>} />
+                <Route path="/guest/wishlist" element={<ProtectedRoute requireGuest><AppLayout><GuestWishlistPage /></AppLayout></ProtectedRoute>} />
+                <Route path="/guest/payments" element={<ProtectedRoute requireGuest><AppLayout><GuestPaymentHistoryPage /></AppLayout></ProtectedRoute>} />
+                <Route path="/guest/favorites" element={<ProtectedRoute requireGuest><AppLayout><GuestFavoritesPage /></AppLayout></ProtectedRoute>} />
+                <Route path="/guest/messages" element={<ProtectedRoute requireGuest><AppLayout><GuestMessagesPage /></AppLayout></ProtectedRoute>} />
+                <Route path="/guest/reviews" element={<ProtectedRoute requireGuest><AppLayout><GuestReviewsPage /></AppLayout></ProtectedRoute>} />
+                <Route path="/guest/settings" element={<ProtectedRoute requireGuest><AppLayout><GuestSettingsPage /></AppLayout></ProtectedRoute>} />
 
-                <Route
-                  path="/destination/:location"
-                  element={
-                    <AppLayout>
-                      <DestinationPage />
-                    </AppLayout>
-                  }
-                />
-
-                {/* AUTH */}
-                <Route
-                  path="/login"
-                  element={
-                    <AppLayout>
-                      <LoginPage />
-                    </AppLayout>
-                  }
-                />
-
-                <Route
-                  path="/signup"
-                  element={
-                    <AppLayout>
-                      <SignupPage />
-                    </AppLayout>
-                  }
-                />
-
-                <Route
-                  path="/host/login"
-                  element={
-                    <AppLayout>
-                      <HostAuthPage />
-                    </AppLayout>
-                  }
-                />
-
-                <Route
-                  path="/host/register"
-                  element={
-                    <AppLayout>
-                      <HostRegisterPage />
-                    </AppLayout>
-                  }
-                />
-
-                {/* STATIC PAGES */}
-                <Route
-                  path="/about"
-                  element={
-                    <AppLayout>
-                      <AboutUsPage />
-                    </AppLayout>
-                  }
-                />
-
-                <Route
-                  path="/explore"
-                  element={
-                    <AppLayout>
-                      <ExplorePage />
-                    </AppLayout>
-                  }
-                />
-
-                <Route
-                  path="/blog"
-                  element={
-                    <AppLayout>
-                      <BlogPage />
-                    </AppLayout>
-                  }
-                />
-
-                <Route
-                  path="/help-center"
-                  element={
-                    <AppLayout>
-                      <HelpCenterPage />
-                    </AppLayout>
-                  }
-                />
-
-                <Route
-                  path="/faq"
-                  element={
-                    <AppLayout>
-                      <FAQPage />
-                    </AppLayout>
-                  }
-                />
-
-                <Route
-                  path="/safety"
-                  element={
-                    <AppLayout>
-                      <SafetyPage />
-                    </AppLayout>
-                  }
-                />
-
-                <Route
-                  path="/contact"
-                  element={
-                    <AppLayout>
-                      <ContactPage />
-                    </AppLayout>
-                  }
-                />
-
-                {/* CHECKOUT - BOTH ROUTES */}
-                <Route
-                  path="/checkout"
-                  element={
-                    <AppLayout>
-                      <CheckoutPage />
-                    </AppLayout>
-                  }
-                />
-
-                <Route
-                  path="/checkout/:propertyId"
-                  element={
-                    <AppLayout>
-                      <CheckoutPage />
-                    </AppLayout>
-                  }
-                />
-
-                {/* GUEST DASHBOARD */}
-                <Route
-                  path="/guest/dashboard"
-                  element={
-                    <ProtectedRoute requireGuest>
-                      <AppLayout>
-                        <GuestDashboardHome />
-                      </AppLayout>
-                    </ProtectedRoute>
-                  }
-                />
-
-                <Route
-                  path="/guest/bookings"
-                  element={
-                    <ProtectedRoute requireGuest>
-                      <AppLayout>
-                        <GuestBookingsPage />
-                      </AppLayout>
-                    </ProtectedRoute>
-                  }
-                />
-
-                <Route
-                  path="/guest/wishlist"
-                  element={
-                    <ProtectedRoute requireGuest>
-                      <AppLayout>
-                        <GuestWishlistPage />
-                      </AppLayout>
-                    </ProtectedRoute>
-                  }
-                />
-
-                <Route
-                  path="/guest/payments"
-                  element={
-                    <ProtectedRoute requireGuest>
-                      <AppLayout>
-                        <GuestPaymentHistoryPage />
-                      </AppLayout>
-                    </ProtectedRoute>
-                  }
-                />
-
-                <Route
-                  path="/guest/favorites"
-                  element={
-                    <ProtectedRoute requireGuest>
-                      <AppLayout>
-                        <GuestFavoritesPage />
-                      </AppLayout>
-                    </ProtectedRoute>
-                  }
-                />
-
-                <Route
-                  path="/guest/messages"
-                  element={
-                    <ProtectedRoute requireGuest>
-                      <AppLayout>
-                        <GuestMessagesPage />
-                      </AppLayout>
-                    </ProtectedRoute>
-                  }
-                />
-
-                <Route
-                  path="/guest/reviews"
-                  element={
-                    <ProtectedRoute requireGuest>
-                      <AppLayout>
-                        <GuestReviewsPage />
-                      </AppLayout>
-                    </ProtectedRoute>
-                  }
-                />
-
-                <Route
-                  path="/guest/settings"
-                  element={
-                    <ProtectedRoute requireGuest>
-                      <AppLayout>
-                        <GuestSettingsPage />
-                      </AppLayout>
-                    </ProtectedRoute>
-                  }
-                />
-
-                {/* HOST */}
+                {/* HOST DASHBOARD */}
                 <Route
                   path="/host/dashboard"
                   element={
@@ -417,22 +172,26 @@ function App() {
                   }
                 />
 
+                {/* ALL ADD PROPERTY ROUTES USE THE SAME FORM */}
+                <Route path="/host/add-property" element={<HostFormRoute />} />
+                <Route path="/host/property/new" element={<HostFormRoute />} />
+                <Route path="/host/create-listing" element={<HostFormRoute />} />
+                <Route path="/host/listing/new" element={<HostFormRoute />} />
+
+                {/* EDIT PROPERTY */}
                 <Route
-                  path="/host/property/new"
+                  path="/host/edit-property/:id"
                   element={
                     <ProtectedRoute requireHost>
                       <AppLayout>
-                        <HostPropertyListingForm />
+                        <EditPropertyPage />
                       </AppLayout>
                     </ProtectedRoute>
                   }
                 />
 
                 {/* ADMIN */}
-                <Route
-                  path="/admin/login"
-                  element={<AdminLoginPage />}
-                />
+                <Route path="/admin/login" element={<AdminLoginPage />} />
 
                 <Route
                   path="/admin"
@@ -442,60 +201,19 @@ function App() {
                     </AdminProtectedRoute>
                   }
                 >
-                  <Route
-                    index
-                    element={<AdminDashboard />}
-                  />
-
-                  <Route
-                    path="properties"
-                    element={<AdminPropertyManagement />}
-                  />
-
-                  <Route
-                    path="properties/pending"
-                    element={<AdminPropertyApprovalPage />}
-                  />
-
-                  <Route
-                    path="bookings"
-                    element={<AdminBookingManagement />}
-                  />
-
-                  <Route
-                    path="users"
-                    element={<AdminGuestManagement />}
-                  />
-
-                  <Route
-                    path="analytics"
-                    element={<AdminRevenueTracking />}
-                  />
-
-                  <Route
-                    path="activity"
-                    element={<AdminActivityLogs />}
-                  />
+                  <Route index element={<AdminDashboard />} />
+                  <Route path="properties" element={<AdminPropertyManagement />} />
+                  <Route path="properties/pending" element={<AdminPropertyApprovalPage />} />
+                  <Route path="bookings" element={<AdminBookingManagement />} />
+                  <Route path="users" element={<AdminGuestManagement />} />
+                  <Route path="analytics" element={<AdminRevenueTracking />} />
+                  <Route path="activity" element={<AdminActivityLogs />} />
                 </Route>
 
-                {/* 404 */}
-                <Route
-                  path="*"
-                  element={
-                    <AppLayout>
-                      <NotFoundPage />
-                    </AppLayout>
-                  }
-                />
-
+                <Route path="*" element={<AppLayout><NotFoundPage /></AppLayout>} />
               </Routes>
 
-              <Toaster
-                position="top-center"
-                richColors
-                theme="light"
-              />
-
+              <Toaster position="top-center" richColors theme="light" />
             </AdminAuthProvider>
           </NotificationProvider>
         </AuthProvider>

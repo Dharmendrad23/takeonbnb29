@@ -67,7 +67,6 @@ const ALLOWED_ORIGINS = Array.from(
 
     "https://takeonbnb.com",
     "https://www.takeonbnb.com",
-
     "https://takeonbnb29.netlify.app",
     "https://takeonbnb29.onrender.com",
 
@@ -170,7 +169,7 @@ app.use(
 app.use(errorMiddleware);
 
 /* =========================================
-   404
+   404 ROUTE
 ========================================= */
 
 app.use((req, res) => {

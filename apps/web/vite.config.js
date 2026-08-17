@@ -331,7 +331,9 @@ export default defineConfig({
 		addTransformIndexHtml
 	],
 	server: {
-		port: 3000,
+                host: '127.0.0.1',
+                port: 3000,
+                strictPort: true,
 		cors: true,
 		proxy: {
 			'/api': {
@@ -394,3 +396,4 @@ export default defineConfig({
 		}
 	}
 });
+

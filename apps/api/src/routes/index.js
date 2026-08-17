@@ -1,4 +1,5 @@
 ﻿import { Router } from "express";
+
 import authRouter from "./authRoutes.js";
 import otpRouter from "./otpRoutes.js";
 import healthCheck from "./health-check.js";
@@ -14,18 +15,69 @@ import userRouter from "./userRoutes.js";
 export default () => {
   const appRouter = Router();
 
+  /* =========================================
+     HEALTH CHECK
+  ========================================= */
+
   appRouter.get("/health", healthCheck);
+
+  /* =========================================
+     AUTH
+  ========================================= */
 
   appRouter.use("/auth", authRouter);
   appRouter.use("/otp", otpRouter);
-  appRouter.use("/bookings", bookingsRouter);
-  appRouter.use("/properties", propertyRouter);
-appRouter.use("/dashboard", dashboardRouter);
-  appRouter.use("/admin", adminRouter);
-  appRouter.use("/whatsapp", whatsappRouter);
-  appRouter.use("/notifications", notificationsRouter);
-  appRouter.use("/stripe", stripeRouter);
+
+  /* =========================================
+     USERS
+     GET    /api/users
+     GET    /api/users/:id
+     PUT    /api/users/:id
+  ========================================= */
+
   appRouter.use("/users", userRouter);
+
+  /* =========================================
+     BOOKINGS
+  ========================================= */
+
+  appRouter.use("/bookings", bookingsRouter);
+
+  /* =========================================
+     PROPERTIES
+  ========================================= */
+
+  appRouter.use("/properties", propertyRouter);
+
+  /* =========================================
+     DASHBOARD
+  ========================================= */
+
+  appRouter.use("/dashboard", dashboardRouter);
+
+  /* =========================================
+     ADMIN
+  ========================================= */
+
+  appRouter.use("/admin", adminRouter);
+
+  /* =========================================
+     WHATSAPP
+  ========================================= */
+
+  appRouter.use("/whatsapp", whatsappRouter);
+
+  /* =========================================
+     NOTIFICATIONS
+  ========================================= */
+
+  appRouter.use("/notifications", notificationsRouter);
+
+  /* =========================================
+     PAYMENTS
+  ========================================= */
+
+  appRouter.use("/stripe", stripeRouter);
 
   return appRouter;
 };

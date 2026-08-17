@@ -1,6 +1,7 @@
 ﻿import axios from "axios";
 
-const PRODUCTION_API_URL = "https://takeonbnb29.onrender.com";
+const PRODUCTION_API_URL =
+  "https://takeonbnb29.onrender.com";
 
 export const getApiBaseUrl = () => {
   const configuredUrl = import.meta.env.VITE_API_URL;

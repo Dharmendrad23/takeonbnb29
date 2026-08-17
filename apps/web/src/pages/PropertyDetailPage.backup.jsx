@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet";
 import api from "@/lib/api.js";
@@ -163,7 +163,7 @@ const PropertyDetailPage = () => {
         property.status === "rejected") && (
         <div className="bg-warning/10 border-b border-warning/30 text-warning-foreground">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 text-sm font-semibold">
-            Preview only â€” this listing is currently{" "}
+            Preview only — this listing is currently{" "}
             <span className="capitalize">
               {property.status}
             </span>
@@ -227,7 +227,7 @@ const PropertyDetailPage = () => {
             />
           </div>
 
-          <div id="booking-widget" className="w-full lg:w-[33%]">
+          <div className="w-full lg:w-[33%] hidden lg:block">
             <BookingWidget property={property} />
           </div>
 
@@ -238,7 +238,7 @@ const PropertyDetailPage = () => {
 
         <div>
           <div className="font-bold text-foreground">
-            â‚¹
+            ₹
             {property.pricePerNight?.toLocaleString(
               "en-IN"
             )}
@@ -250,7 +250,7 @@ const PropertyDetailPage = () => {
           </div>
 
           <div className="text-sm font-semibold underline text-foreground">
-            {property.rating || 0} Â·{" "}
+            {property.rating || 0} ·{" "}
             {property.totalBookings || 0} reviews
           </div>
         </div>
@@ -258,7 +258,7 @@ const PropertyDetailPage = () => {
         <Button
           onClick={() =>
             window.scrollTo({
-              top: document.getElementById("booking-widget")?.getBoundingClientRect().top + window.scrollY - 80,
+              top: 0,
               behavior: "smooth",
             })
           }
@@ -272,4 +272,3 @@ const PropertyDetailPage = () => {
 };
 
 export default PropertyDetailPage;
-
