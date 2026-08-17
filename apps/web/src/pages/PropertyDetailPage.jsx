@@ -54,29 +54,7 @@ import {
    CUSTOM LEAFLET MARKER
 ========================================== */
 
-const propertyMarker = new L.DivIcon({
-  className: "custom-property-marker",
-  html: `
-    <div style="
-      width:48px;
-      height:48px;
-      border-radius:50%;
-      background:#f97316;
-      color:white;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      border:4px solid white;
-      box-shadow:0 6px 20px rgba(0,0,0,.25);
-      font-size:20px;
-    ">
-      ðŸ 
-    </div>
-  `,
-  iconSize: [48, 48],
-  iconAnchor: [24, 24],
-  popupAnchor: [0, -24],
-});
+const propertyMarker = new L.DivIcon({ className: "custom-property-marker", html: `<div style="position:relative;width:64px;height:64px;display:flex;align-items:center;justify-content:center;"><div style="position:absolute;width:64px;height:64px;border-radius:50%;background:rgba(249,115,22,.18);animation:pulse 2s infinite;"></div><div style="width:52px;height:52px;border-radius:50% 50% 50% 0;background:linear-gradient(135deg,#fb923c,#ea580c);transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;border:4px solid white;box-shadow:0 8px 24px rgba(234,88,12,.35);"><span style="transform:rotate(45deg);font-size:23px;color:white;">HOME</span></div></div>`, iconSize: [64, 64], iconAnchor: [32, 56], popupAnchor: [0, -58], });
 
 const PropertyDetailPage = () => {
   const { id } = useParams();
@@ -511,8 +489,7 @@ const PropertyDetailPage = () => {
       <div className="min-h-[70vh] flex flex-col items-center justify-center text-center p-4 bg-white">
         <div className="max-w-md">
           <div className="text-6xl mb-6">
-            ðŸ¡
-          </div>
+            HOME</div>
 
           <h2 className="text-2xl font-bold mb-4">
             {error || "Property not found"}
@@ -1349,10 +1326,15 @@ const PropertyDetailPage = () => {
                       return (
 
                         <article
-                          key={nearbyId}
-                          onClick={() =>
-                            navigate(`/properties/${nearbyId}`)
-                          }
+                          key={nearbyId || nearbyProperty.title}
+                          onClick={() => {
+                            if (!nearbyId) {
+                              console.error("Nearby property ID is missing:", nearbyProperty);
+                              return;
+                            }
+
+                            navigate(`/properties/${nearbyId}`);
+                          }}
                           className="group min-w-[280px] sm:min-w-[320px] max-w-[320px] cursor-pointer snap-start"
                         >
 
@@ -1451,9 +1433,22 @@ const PropertyDetailPage = () => {
 
                               </p>
 
-                              <span className="text-sm font-semibold text-orange-600">
+                              <button
+                                type="button"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+
+                                  if (!nearbyId) {
+                                    console.error("Nearby property ID is missing:", nearbyProperty);
+                                    return;
+                                  }
+
+                                  navigate(`/properties/${nearbyId}`);
+                                }}
+                                className="text-sm font-semibold text-orange-600 hover:text-orange-700 hover:underline transition-colors"
+                              >
                                 View stay →
-                              </span>
+                              </button>
 
                             </div>
 
@@ -1635,6 +1630,10 @@ const PropertyDetailPage = () => {
 };
 
 export default PropertyDetailPage;
+
+
+
+
 
 
 
