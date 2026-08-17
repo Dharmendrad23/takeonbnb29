@@ -1,5 +1,25 @@
-﻿export const AmenitiesGrid = ({ amenities = [] }) => {
-  const [showAllAmenities, setShowAllAmenities] = React.useState(false);
+﻿import React from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Wifi,
+  UtensilsCrossed,
+  CarFront,
+  Waves,
+  Wind,
+  Tv,
+  Flame,
+  Dumbbell,
+  Trees,
+  BedDouble,
+  Bath,
+  CheckCircle2,
+} from "lucide-react";
+export const AmenitiesGrid = ({ amenities = [] }) => {
+  const [showAllAmenities, setShowAllAmenities] =
+    React.useState(false);
+
+  const [isClosing, setIsClosing] =
+    React.useState(false);
 
   const defaultAmenities = [
     "WiFi",
@@ -43,10 +63,56 @@
     })
     .filter(Boolean);
 
-  const getIconForAmenity = (name) => {
-    const n = String(name || "").toLowerCase();
+  const closeAmenities = () => {
+    if (isClosing) return;
 
-    if (n.includes("wifi")) {
+    setIsClosing(true);
+
+    window.setTimeout(() => {
+      setShowAllAmenities(false);
+      setIsClosing(false);
+    }, 250);
+  };
+
+  React.useEffect(() => {
+    if (!showAllAmenities) return;
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        closeAmenities();
+      }
+    };
+
+    const originalOverflow =
+      document.body.style.overflow;
+
+    document.body.style.overflow = "hidden";
+
+    document.addEventListener(
+      "keydown",
+      handleKeyDown
+    );
+
+    return () => {
+      document.body.style.overflow =
+        originalOverflow;
+
+      document.removeEventListener(
+        "keydown",
+        handleKeyDown
+      );
+    };
+  }, [showAllAmenities, isClosing]);
+
+  const getIconForAmenity = (name) => {
+    const n = String(name || "")
+      .toLowerCase()
+      .trim();
+
+    if (
+      n.includes("wifi") ||
+      n.includes("internet")
+    ) {
       return (
         <Wifi className="w-5 h-5 text-primary" />
       );
@@ -54,7 +120,8 @@
 
     if (
       n.includes("kitchen") ||
-      n.includes("utensils")
+      n.includes("utensils") ||
+      n.includes("cook")
     ) {
       return (
         <UtensilsCrossed className="w-5 h-5 text-primary" />
@@ -63,7 +130,8 @@
 
     if (
       n.includes("parking") ||
-      n.includes("car")
+      n.includes("car") ||
+      n.includes("garage")
     ) {
       return (
         <CarFront className="w-5 h-5 text-primary" />
@@ -90,13 +158,19 @@
       );
     }
 
-    if (n.includes("tv")) {
+    if (
+      n.includes("tv") ||
+      n.includes("television")
+    ) {
       return (
         <Tv className="w-5 h-5 text-primary" />
       );
     }
 
-    if (n.includes("heating")) {
+    if (
+      n.includes("heating") ||
+      n.includes("heater")
+    ) {
       return (
         <Flame className="w-5 h-5 text-primary" />
       );
@@ -121,6 +195,24 @@
       );
     }
 
+    if (
+      n.includes("bed") ||
+      n.includes("bedroom")
+    ) {
+      return (
+        <BedDouble className="w-5 h-5 text-primary" />
+      );
+    }
+
+    if (
+      n.includes("bath") ||
+      n.includes("shower")
+    ) {
+      return (
+        <Bath className="w-5 h-5 text-primary" />
+      );
+    }
+
     return (
       <CheckCircle2 className="w-5 h-5 text-primary" />
     );
@@ -128,9 +220,14 @@
 
   return (
     <>
+      {/* AMENITIES SECTION */}
+
       <div className="py-8 md:py-10 border-b border-border">
 
-        <div className="flex items-center justify-between gap-4 mb-6">
+        {/* HEADER */}
+
+        <div className="flex items-start justify-between gap-4 mb-7">
+
           <div>
             <h2 className="text-2xl md:text-3xl font-semibold">
               What this place offers
@@ -141,12 +238,15 @@
             </p>
           </div>
 
-          <div className="hidden sm:flex items-center justify-center min-w-10 h-10 rounded-full bg-primary/10 text-primary font-bold">
+          <div className="hidden sm:flex items-center justify-center min-w-10 h-10 px-3 rounded-full bg-primary/10 text-primary font-bold">
             {normalizedAmenities.length}
           </div>
+
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
+        {/* AMENITIES PREVIEW */}
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3">
 
           {normalizedAmenities
             .slice(0, 8)
@@ -154,6 +254,7 @@
               <div
                 key={`${amenityName}-${i}`}
                 className="
+                  group
                   flex
                   items-center
                   gap-4
@@ -166,16 +267,22 @@
                   hover:translate-x-1
                 "
               >
-                <div className="
-                  w-10
-                  h-10
-                  rounded-xl
-                  bg-primary/10
-                  flex
-                  items-center
-                  justify-center
-                  shrink-0
-                ">
+
+                <div
+                  className="
+                    w-10
+                    h-10
+                    rounded-xl
+                    bg-primary/10
+                    flex
+                    items-center
+                    justify-center
+                    shrink-0
+                    transition-all
+                    duration-300
+                    group-hover:scale-110
+                  "
+                >
                   {getIconForAmenity(
                     amenityName
                   )}
@@ -184,16 +291,20 @@
                 <span className="font-medium text-foreground">
                   {amenityName}
                 </span>
+
               </div>
             ))}
 
         </div>
 
+        {/* SHOW ALL BUTTON */}
+
         <Button
           variant="outline"
-          onClick={() =>
-            setShowAllAmenities(true)
-          }
+          onClick={() => {
+            setIsClosing(false);
+            setShowAllAmenities(true);
+          }}
           className="
             mt-8
             rounded-xl
@@ -205,6 +316,8 @@
             hover:text-primary-foreground
             transition-all
             duration-300
+            hover:scale-[1.02]
+            active:scale-[0.98]
           "
         >
           Show all {normalizedAmenities.length} amenities
@@ -219,36 +332,39 @@
           className="
             fixed
             inset-0
-            z-[100]
+            z-[999]
             flex
             items-end
             md:items-center
             justify-center
           "
+          role="dialog"
+          aria-modal="true"
         >
 
           {/* BACKDROP */}
 
           <div
-            className="
+            className={`
               absolute
               inset-0
               bg-black/50
               backdrop-blur-sm
-              animate-in
-              fade-in
-              duration-300
-            "
-            onClick={() =>
-              setShowAllAmenities(false)
-            }
+              ${
+                isClosing
+                  ? "animate-out fade-out duration-200"
+                  : "animate-in fade-in duration-300"
+              }
+            `}
+            onClick={closeAmenities}
           />
 
           {/* MODAL */}
 
           <div
-            className="
+            className={`
               relative
+              z-10
               w-full
               md:max-w-3xl
               bg-background
@@ -258,11 +374,24 @@
               max-h-[90vh]
               flex
               flex-col
-              animate-in
-              slide-in-from-bottom-10
-              md:zoom-in-95
-              duration-300
-            "
+              overflow-hidden
+              ${
+                isClosing
+                  ? `
+                    animate-out
+                    fade-out
+                    slide-out-to-bottom-8
+                    duration-200
+                  `
+                  : `
+                    animate-in
+                    fade-in
+                    slide-in-from-bottom-10
+                    md:zoom-in-95
+                    duration-300
+                  `
+              }
+            `}
           >
 
             {/* MOBILE HANDLE */}
@@ -275,6 +404,7 @@
               rounded-full
               mx-auto
               mt-3
+              shrink-0
             " />
 
             {/* MODAL HEADER */}
@@ -290,6 +420,7 @@
             ">
 
               <div>
+
                 <h2 className="
                   text-xl
                   md:text-2xl
@@ -305,13 +436,12 @@
                 ">
                   {normalizedAmenities.length} amenities available
                 </p>
+
               </div>
 
               <button
                 type="button"
-                onClick={() =>
-                  setShowAllAmenities(false)
-                }
+                onClick={closeAmenities}
                 className="
                   w-11
                   h-11
@@ -321,9 +451,11 @@
                   flex
                   items-center
                   justify-center
-                  text-xl
+                  text-2xl
                   hover:bg-muted
-                  transition
+                  hover:rotate-90
+                  transition-all
+                  duration-300
                 "
                 aria-label="Close amenities"
               >
@@ -352,6 +484,7 @@
                     <div
                       key={`${amenityName}-${i}`}
                       className="
+                        group
                         flex
                         items-center
                         gap-4
@@ -363,8 +496,8 @@
                         transition-all
                         duration-300
                         hover:border-primary/40
-                        hover:shadow-md
-                        hover:-translate-y-0.5
+                        hover:shadow-lg
+                        hover:-translate-y-1
                       "
                     >
 
@@ -377,6 +510,9 @@
                         items-center
                         justify-center
                         shrink-0
+                        transition-transform
+                        duration-300
+                        group-hover:scale-110
                       ">
 
                         {getIconForAmenity(
@@ -409,17 +545,22 @@
               border-t
               border-border
               bg-background
+              shrink-0
             ">
 
               <Button
-                onClick={() =>
-                  setShowAllAmenities(false)
-                }
+                onClick={closeAmenities}
                 className="
                   w-full
                   h-12
                   rounded-xl
                   font-semibold
+                  bg-orange-500
+                  hover:bg-orange-600
+                  text-white
+                  transition-all
+                  duration-300
+                  active:scale-[0.98]
                 "
               >
                 Done
@@ -434,3 +575,4 @@
     </>
   );
 };
+
