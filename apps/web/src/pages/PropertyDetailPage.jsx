@@ -16,7 +16,7 @@ import {
 } from "@/components/property/PropertyComponents.jsx";
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Share, Heart, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const PropertyDetailPage = () => {
@@ -26,6 +26,7 @@ const PropertyDetailPage = () => {
   const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [isLiked, setIsLiked] = useState(false);
 
   useEffect(() => {
     const fetchProperty = async () => {
@@ -33,13 +34,8 @@ const PropertyDetailPage = () => {
         setLoading(true);
         setError("");
 
-        console.log("Loading property:", id);
-
         const response = await api.get(`/properties/${id}`);
 
-        console.log("Property detail API response:", response.data);
-
-        // Backend returns { success, property }
         const propertyData =
           response.data?.property || response.data;
 
@@ -101,20 +97,64 @@ const PropertyDetailPage = () => {
     }
   }, [id]);
 
+  const handleShare = async () => {
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: property?.title || "Take On BnB",
+          text: "Check out this amazing property!",
+          url: window.location.href,
+        });
+      } else {
+        await navigator.clipboard.writeText(
+          window.location.href
+        );
+
+        alert("Property link copied!");
+      }
+    } catch (error) {
+      console.log("Share cancelled");
+    }
+  };
+
+  const scrollToBooking = () => {
+    const element =
+      document.getElementById("booking-widget");
+
+    if (element) {
+      const position =
+        element.getBoundingClientRect().top +
+        window.scrollY -
+        100;
+
+      window.scrollTo({
+        top: position,
+        behavior: "smooth",
+      });
+    }
+  };
+
   if (loading) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <Skeleton className="h-10 w-1/3 mb-4 rounded-xl" />
-        <Skeleton className="h-[400px] w-full rounded-2xl mb-8" />
+      <div className="min-h-screen bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-        <div className="flex gap-12">
-          <div className="w-2/3">
-            <Skeleton className="h-[500px] rounded-2xl" />
+          <Skeleton className="h-10 w-2/3 md:w-1/3 mb-6 rounded-xl" />
+
+          <Skeleton className="h-[280px] sm:h-[400px] lg:h-[520px] w-full rounded-3xl mb-10" />
+
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-10">
+
+            <div className="space-y-6">
+              <Skeleton className="h-40 w-full rounded-2xl" />
+              <Skeleton className="h-64 w-full rounded-2xl" />
+              <Skeleton className="h-64 w-full rounded-2xl" />
+            </div>
+
+            <Skeleton className="h-[420px] rounded-3xl" />
+
           </div>
 
-          <div className="w-1/3">
-            <Skeleton className="h-[400px] rounded-2xl" />
-          </div>
         </div>
       </div>
     );
@@ -122,17 +162,33 @@ const PropertyDetailPage = () => {
 
   if (error || !property) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center text-center p-4">
-        <h2 className="text-2xl font-bold mb-4">
-          {error || "Property not found"}
-        </h2>
+      <div className="min-h-[70vh] flex flex-col items-center justify-center text-center p-4 bg-white">
 
-        <Button
-          onClick={() => navigate("/properties")}
-          variant="outline"
-        >
-          Back to properties
-        </Button>
+        <div className="max-w-md">
+
+          <div className="text-6xl mb-6">
+            🏠
+          </div>
+
+          <h2 className="text-2xl md:text-3xl font-bold mb-4">
+            {error || "Property not found"}
+          </h2>
+
+          <p className="text-muted-foreground mb-6">
+            This property may no longer be available.
+          </p>
+
+          <Button
+            onClick={() =>
+              navigate("/properties")
+            }
+            className="rounded-xl px-8"
+          >
+            Explore Properties
+          </Button>
+
+        </div>
+
       </div>
     );
   }
@@ -142,134 +198,298 @@ const PropertyDetailPage = () => {
     : [];
 
   return (
-    <div className="bg-background min-h-screen pb-24">
+    <div className="min-h-screen bg-white pb-28 lg:pb-16">
+
       <Helmet>
         <title>
-          {property.title || "Property"} | Take on BnB
+          {property.title || "Property"} | Take On BnB
         </title>
 
         <meta
           name="description"
           content={
-            property.description?.substring(
-              0,
-              150
-            ) || "Take on BnB property"
+            property.description?.substring(0, 150) ||
+            "Discover amazing stays with Take On BnB"
           }
         />
       </Helmet>
 
+      {/* ADMIN PREVIEW */}
       {(property.status === "pending" ||
         property.status === "rejected") && (
-        <div className="bg-warning/10 border-b border-warning/30 text-warning-foreground">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 text-sm font-semibold">
-            Preview only â€” this listing is currently{" "}
+        <div className="bg-orange-50 border-b border-orange-200">
+
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 text-sm font-semibold text-orange-700">
+
+            Preview only — this listing is currently{" "}
+
             <span className="capitalize">
               {property.status}
             </span>
 
             {property.status === "rejected" &&
-              property.rejectionReason
-              ? ` Reason: ${property.rejectionReason}`
+            property.rejectionReason
+              ? ` • Reason: ${property.rejectionReason}`
               : ""}
+
           </div>
+
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* TOP NAVIGATION */}
+      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100">
 
-        <div className="md:hidden py-4 -mb-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+
           <Button
             variant="ghost"
             size="icon"
             onClick={() => navigate(-1)}
-            className="rounded-full bg-muted/50"
+            className="rounded-full hover:bg-gray-100"
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className="w-6 h-6" />
           </Button>
+
+          <div className="flex items-center gap-2">
+
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleShare}
+              className="rounded-full hover:bg-gray-100"
+            >
+              <Share className="w-5 h-5" />
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() =>
+                setIsLiked(!isLiked)
+              }
+              className="rounded-full hover:bg-gray-100"
+            >
+              <Heart
+                className={`w-5 h-5 transition-all ${
+                  isLiked
+                    ? "fill-red-500 text-red-500 scale-110"
+                    : ""
+                }`}
+              />
+            </Button>
+
+          </div>
+
         </div>
 
-        <PropertyHeader property={property} />
+      </div>
 
-        <PropertyImageGallery photos={photos} />
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        <div className="flex flex-col lg:flex-row gap-12 mt-12 relative">
+        {/* TITLE */}
+        <div className="pt-6 md:pt-10 animate-in fade-in slide-in-from-bottom-3 duration-700">
 
-          <div className="flex-1 lg:max-w-[66%]">
+          <PropertyHeader property={property} />
 
-            <PropertyInfoCards
-              property={property}
+        </div>
+
+        {/* IMAGE GALLERY */}
+        <div className="mt-6 md:mt-8 animate-in fade-in zoom-in-95 duration-700">
+
+          <div className="overflow-hidden rounded-2xl lg:rounded-3xl">
+
+            <PropertyImageGallery
+              photos={photos}
             />
 
-            <div className="py-8 border-b border-border">
-              <p className="text-foreground/90 text-base leading-relaxed whitespace-pre-wrap">
+          </div>
+
+        </div>
+
+        {/* MAIN CONTENT */}
+
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_380px] gap-8 xl:gap-16 mt-8 md:mt-12">
+
+          {/* LEFT CONTENT */}
+
+          <div className="min-w-0">
+
+            <section className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+
+              <PropertyInfoCards
+                property={property}
+              />
+
+            </section>
+
+            {/* DESCRIPTION */}
+
+            <section className="py-8 md:py-10 border-b border-gray-200 animate-in fade-in slide-in-from-bottom-4 duration-700">
+
+              <h2 className="text-xl md:text-2xl font-bold mb-4">
+                About this place
+              </h2>
+
+              <p className="text-gray-600 text-base md:text-[17px] leading-7 md:leading-8 whitespace-pre-wrap">
+
                 {property.description ||
-                  "Experience a stay like no other. Beautiful surroundings, comfortable amenities, and a host dedicated to ensuring your perfect vacation."}
+                  "Experience a comfortable and memorable stay with everything you need for your perfect getaway."}
+
               </p>
+
+            </section>
+
+            {/* AMENITIES */}
+
+            <section className="py-8 md:py-10 border-b border-gray-200">
+
+              <AmenitiesGrid
+                amenities={
+                  property.amenities || []
+                }
+              />
+
+            </section>
+
+            {/* HOUSE RULES */}
+
+            <section className="py-8 md:py-10 border-b border-gray-200">
+
+              <HouseRulesSection
+                houseRules={
+                  property.houseRules
+                }
+                checkInTime={
+                  property.checkInTime
+                }
+                checkOutTime={
+                  property.checkOutTime
+                }
+              />
+
+            </section>
+
+            {/* LOCATION */}
+
+            <section className="py-8 md:py-10 border-b border-gray-200">
+
+              <LocationMap
+                location={
+                  property.location
+                }
+              />
+
+            </section>
+
+            {/* HOST */}
+
+            <section className="py-8 md:py-10">
+
+              <HostCard
+                host={property.host}
+              />
+
+            </section>
+
+          </div>
+
+          {/* DESKTOP BOOKING CARD */}
+
+          <aside
+            id="booking-widget"
+            className="hidden lg:block"
+          >
+
+            <div className="sticky top-24">
+
+              <div className="rounded-3xl border border-gray-200 bg-white shadow-[0_10px_40px_rgba(0,0,0,0.10)] p-6 transition-all duration-300 hover:shadow-[0_16px_50px_rgba(0,0,0,0.14)]">
+
+                <BookingWidget
+                  property={property}
+                />
+
+              </div>
+
+              <div className="flex items-center justify-center gap-2 mt-5 text-sm text-gray-500">
+
+                <Star className="w-4 h-4 fill-current" />
+
+                <span>
+                  {property.rating || "New"}{" "}
+
+                  {property.totalBookings
+                    ? `• ${property.totalBookings} reviews`
+                    : ""}
+                </span>
+
+              </div>
+
             </div>
 
-            <AmenitiesGrid
-              amenities={property.amenities || []}
-            />
-
-            <HouseRulesSection
-              houseRules={property.houseRules}
-              checkInTime={property.checkInTime}
-              checkOutTime={property.checkOutTime}
-            />
-
-            <LocationMap
-              location={property.location}
-            />
-
-            <HostCard
-              host={property.host}
-            />
-          </div>
-
-          <div id="booking-widget" className="w-full lg:w-[33%]">
-            <BookingWidget property={property} />
-          </div>
+          </aside>
 
         </div>
-      </div>
 
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-background border-t border-border p-4 z-50 flex items-center justify-between shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
+      </main>
 
-        <div>
-          <div className="font-bold text-foreground">
-            â‚¹
-            {property.pricePerNight?.toLocaleString(
-              "en-IN"
-            )}
+      {/* MOBILE BOOKING BAR */}
 
-            <span className="font-normal text-sm text-muted-foreground">
-              {" "}
-              /night
-            </span>
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-lg border-t border-gray-200">
+
+        <div className="px-4 py-3 flex items-center justify-between gap-4">
+
+          <div className="min-w-0">
+
+            <div className="font-bold text-base">
+
+              ₹
+              {Number(
+                property.pricePerNight || 0
+              ).toLocaleString("en-IN")}
+
+              <span className="font-normal text-sm text-gray-500">
+                {" "}
+                / night
+              </span>
+
+            </div>
+
+            <div className="flex items-center gap-1 text-sm">
+
+              <Star className="w-4 h-4 fill-current" />
+
+              <span className="font-medium">
+
+                {property.rating || "New"}
+
+              </span>
+
+              {property.totalBookings > 0 && (
+                <span className="text-gray-500">
+
+                  · {property.totalBookings} reviews
+
+                </span>
+              )}
+
+            </div>
+
           </div>
 
-          <div className="text-sm font-semibold underline text-foreground">
-            {property.rating || 0} Â·{" "}
-            {property.totalBookings || 0} reviews
-          </div>
+          <Button
+            onClick={scrollToBooking}
+            className="shrink-0 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl px-6 h-12 shadow-lg shadow-orange-200"
+          >
+            Check dates
+          </Button>
+
         </div>
 
-        <Button
-          onClick={() =>
-            window.scrollTo({
-              top: document.getElementById("booking-widget")?.getBoundingClientRect().top + window.scrollY - 80,
-              behavior: "smooth",
-            })
-          }
-          className="bg-primary text-primary-foreground font-bold rounded-xl px-8 h-12"
-        >
-          Check dates
-        </Button>
       </div>
+
     </div>
   );
 };
 
 export default PropertyDetailPage;
-
