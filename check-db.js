@@ -11,9 +11,6 @@ try {
 
   console.log("\nTOTAL PROPERTIES:", properties.length);
 
-  console.log("\nALL PROPERTIES:");
-  console.log(JSON.stringify(properties, null, 2));
-
   console.log("\nSTATUS SUMMARY:");
 
   const pending = await Property.countDocuments({
@@ -34,10 +31,25 @@ try {
     rejected,
   });
 
+  console.log("\nALL PROPERTIES:");
+  console.log(
+    properties.map((p) => ({
+      id: p._id,
+      title: p.title || p.name,
+      status: p.status,
+      propertyType: p.propertyType || p.type,
+      location: p.location,
+      pricePerNight: p.pricePerNight,
+      coverImage: p.coverImage,
+      photos: p.photos,
+    }))
+  );
+
   await mongoose.disconnect();
 
+  console.log("\nDONE");
 } catch (error) {
-  console.error("DATABASE ERROR:");
+  console.error("\nDATABASE ERROR:");
   console.error(error);
   process.exit(1);
 }

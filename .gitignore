@@ -3,3 +3,5 @@ node_modules_bak/
 dist/
 .env
 .env.local
+# Local Netlify folder
+.netlify
