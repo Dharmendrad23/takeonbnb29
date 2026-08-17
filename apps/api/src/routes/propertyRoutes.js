@@ -69,7 +69,7 @@ router.get("/", async (req, res) => {
     */
     const properties = await Property.find(query)
       .select(
-        "_id hostId title description location propertyType pricePerNight bedrooms bathrooms guestCapacity status rejectionReason amenities createdAt updatedAt"
+        "_id hostId title description location propertyType pricePerNight bedrooms bathrooms guestCapacity status rejectionReason amenities photos createdAt updatedAt"
       )
       .limit(100)
       .lean()
@@ -449,7 +449,7 @@ router.get("/:id", async (req, res) => {
 
     const property = await Property.findById(req.params.id)
       .select(
-        "_id hostId title description location propertyType pricePerNight bedrooms bathrooms guestCapacity status rejectionReason amenities createdAt updatedAt"
+        "_id hostId title description location propertyType pricePerNight bedrooms bathrooms guestCapacity status rejectionReason amenities photos createdAt updatedAt"
       )
       .lean()
       .maxTimeMS(10000)
@@ -467,7 +467,7 @@ router.get("/:id", async (req, res) => {
       property: {
         ...property,
         id: String(property._id),
-        photos: [],
+        photos: Array.isArray(property.photos) ? property.photos : [],
       },
     });
   } catch (error) {
@@ -481,3 +481,4 @@ router.get("/:id", async (req, res) => {
 });
 
 export default router;
+
