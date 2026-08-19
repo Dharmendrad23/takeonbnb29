@@ -70,7 +70,7 @@ const SearchPage = () => {
   return (
     <div className="min-h-screen bg-background pt-24 pb-20">
       <Helmet>
-        <title>Search Properties | TakeOn BnB</title>
+        <title>Search Properties | Take On BnB</title>
         <meta name="description" content="Find the perfect stay for your next trip." />
       </Helmet>
 

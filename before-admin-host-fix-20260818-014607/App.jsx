@@ -204,10 +204,6 @@ function App() {
                 >
                   <Route index element={<AdminDashboard />} />
                   <Route path="properties" element={<AdminPropertyManagement />} />
-                  <Route
-                    path="properties/edit/:id"
-                    element={<EditPropertyPage />}
-                  />
                   <Route path="properties/pending" element={<AdminPropertyApprovalPage />} />
                   <Route path="bookings" element={<AdminBookingManagement />} />
                   <Route path="users" element={<AdminGuestManagement />} />
@@ -228,6 +224,5 @@ function App() {
 }
 
 export default App;
-
 
 

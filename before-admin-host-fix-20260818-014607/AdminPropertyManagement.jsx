@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
 import {
   Plus,
@@ -161,14 +161,23 @@ const AdminPropertyManagement = () => {
   ============================================ */
 
   const openEditModal = (property) => {
-    const id = property._id || property.id;
+    setEditingId(property._id || property.id);
 
-    if (!id) {
-      toast.error("Property ID not found");
-      return;
-    }
+    setFormData({
+      title: property.title || "",
+      description: property.description || "",
+      location: property.location || "",
+      propertyType: String(
+        property.propertyType || "villa"
+      ).toLowerCase(),
+      pricePerNight: property.pricePerNight || "",
+      bedrooms: property.bedrooms || 1,
+      bathrooms: property.bathrooms || 1,
+      guestCapacity: property.guestCapacity || 1,
+      status: property.status || "pending",
+    });
 
-    window.location.href = `/admin/properties/edit/${id}`;
+    setIsModalOpen(true);
   };
 
   /* ============================================
@@ -782,8 +791,8 @@ const AdminPropertyManagement = () => {
 
                       <td className="text-muted-foreground whitespace-nowrap">
 
-                        {property.bedrooms} Bed Â·{" "}
-                        {property.bathrooms} Bath Â·{" "}
+                        {property.bedrooms} Bed ·{" "}
+                        {property.bathrooms} Bath ·{" "}
                         {property.guestCapacity} Guests
 
                       </td>
