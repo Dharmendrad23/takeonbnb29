@@ -661,7 +661,7 @@ const HostAddPropertyPage = () => {
 
             <div className="max-w-md">
               <label className="text-sm font-medium">
-                Price per night ({"\u20B9"}) *
+                Price per night (&#8377;) *
               </label>
 
               <Input
