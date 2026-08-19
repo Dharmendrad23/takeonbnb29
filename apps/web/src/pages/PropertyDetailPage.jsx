@@ -964,14 +964,14 @@ const PropertyDetailPage = () => {
                     </h3>
 
                     <p className="text-sm text-gray-600 mt-2">
-                      {property.checkIn
-                        ? `Check-in: ${property.checkIn}`
+                      {property.checkInTimeTime
+                        ? `Check-in: ${property.checkInTimeTime}`
                         : "Check-in details will be shared by the host."}
                     </p>
 
-                    {property.checkOut && (
+                    {property.checkOutTimeTime && (
                       <p className="text-sm text-gray-600 mt-1">
-                        Check-out: {property.checkOut}
+                        Check-out: {property.checkOutTimeTime}
                       </p>
                     )}
 
@@ -1630,6 +1630,8 @@ const PropertyDetailPage = () => {
 };
 
 export default PropertyDetailPage;
+
+
 
 
 

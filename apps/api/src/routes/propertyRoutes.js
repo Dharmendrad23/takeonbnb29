@@ -1,8 +1,101 @@
-﻿ import express from "express";
+﻿import express from "express";
 import mongoose from "mongoose";
+import multer from "multer";
+import { v2 as cloudinary } from "cloudinary";
 import Property from "../models/Property.js";
 
 const router = express.Router();
+
+/* =====================================================
+   MULTER - MEMORY STORAGE
+===================================================== */
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024,
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype?.startsWith("image/")) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only image files are allowed"));
+    }
+  },
+});
+
+/* =====================================================
+   CLOUDINARY CONFIG
+===================================================== */
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+/* =====================================================
+   CLOUDINARY UPLOAD HELPER
+===================================================== */
+
+const uploadToCloudinary = (buffer, folder = "takeonbnb/properties") =>
+  new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder,
+        resource_type: "image",
+      },
+      (error, result) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(result);
+        }
+      }
+    );
+
+    stream.end(buffer);
+  });
+
+/* =====================================================
+   HELPERS
+===================================================== */
+
+const parseArray = (value) => {
+  if (!value) return [];
+
+  if (Array.isArray(value)) return value;
+
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+
+      if (Array.isArray(parsed)) {
+        return parsed;
+      }
+    } catch {
+      return [value];
+    }
+  }
+
+  return [];
+};
+
+const toNumber = (value, fallback = 0) => {
+  if (
+    value === undefined ||
+    value === null ||
+    value === ""
+  ) {
+    return fallback;
+  }
+
+  const number = Number(value);
+
+  return Number.isFinite(number)
+    ? number
+    : fallback;
+};
 
 /* =====================================================
    DATABASE TEST
@@ -20,7 +113,8 @@ router.get("/test-db", async (req, res) => {
       });
     }
 
-    const totalProperties = await Property.countDocuments({}).exec();
+    const totalProperties =
+      await Property.countDocuments({}).exec();
 
     return res.status(200).json({
       success: true,
@@ -33,21 +127,18 @@ router.get("/test-db", async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: error.message || "Database test failed",
+      message:
+        error.message || "Database test failed",
     });
   }
 });
 
 /* =====================================================
    GET ALL PROPERTIES
-   - EXCLUDES huge base64 photos
-   - Supports status and hostId filters
 ===================================================== */
 
 router.get("/", async (req, res) => {
   try {
-    console.log("[Properties] GET ALL started");
-
     const query = {};
 
     if (req.query.status) {
@@ -60,32 +151,29 @@ router.get("/", async (req, res) => {
       query.hostId = String(req.query.hostId).trim();
     }
 
-    console.log("[Properties] Query:", query);
-
-    /*
-      IMPORTANT:
-      photos field intentionally excluded.
-      Database photos contain huge base64 strings.
-    */
     const properties = await Property.find(query)
-      .select(
-        "_id hostId title description location propertyType pricePerNight bedrooms bathrooms guestCapacity status rejectionReason amenities photos createdAt updatedAt"
-      )
+      .sort({ createdAt: -1 })
       .limit(100)
       .lean()
       .exec();
 
-    console.log(
-      `[Properties] Found ${properties.length} properties`
-    );
+    const formattedProperties = properties.map(
+      (property) => ({
+        ...property,
+        id: String(property._id),
 
-    // Frontend-friendly id
-    const formattedProperties = properties.map((property) => ({
-      ...property,
-      id: property._id
-        ? String(property._id)
-        : property.id,
-    }));
+        // Backward compatibility
+        guestCapacity:
+          property.maxGuests ??
+          property.guests ??
+          1,
+
+        photos:
+          property.images ??
+          property.photos ??
+          [],
+      })
+    );
 
     return res.status(200).json({
       success: true,
@@ -93,96 +181,212 @@ router.get("/", async (req, res) => {
       properties: formattedProperties,
     });
   } catch (error) {
-    console.error("[Properties] GET ALL ERROR:", error);
+    console.error(
+      "GET ALL PROPERTIES ERROR:",
+      error
+    );
 
     return res.status(500).json({
       success: false,
       message:
-        error.message || "Failed to fetch properties",
+        error.message ||
+        "Failed to fetch properties",
     });
   }
 });
 
 /* =====================================================
    CREATE PROPERTY
+   Images -> Cloudinary
+   Data -> MongoDB
 ===================================================== */
 
-router.post("/", async (req, res) => {
-  try {
-    const {
-      hostId,
-      title,
-      description,
-      location,
-      propertyType,
-      pricePerNight,
-      bedrooms,
-      bathrooms,
-      guestCapacity,
-      amenities,
-      photos,
-    } = req.body;
+router.post(
+  "/",
+  upload.array("images", 20),
+  async (req, res) => {
+    try {
+      const {
+        hostId,
+        title,
+        description,
+        propertyType,
+        propertyCategory,
 
-    if (
-      !hostId ||
-      !title ||
-      !description ||
-      !location ||
-      !propertyType ||
-      pricePerNight === undefined ||
-      pricePerNight === null ||
-      pricePerNight === ""
-    ) {
-      return res.status(400).json({
+        maxGuests,
+        bedrooms,
+        beds,
+        bathrooms,
+
+        address,
+        city,
+        state,
+        country,
+        pincode,
+        latitude,
+        longitude,
+
+        pricePerNight,
+
+        amenities,
+
+        checkInTime,
+        checkOutTime,
+        houseRules,
+      } = req.body;
+
+      if (
+        !hostId ||
+        !title ||
+        !description ||
+        !propertyType ||
+        !city ||
+        pricePerNight === undefined ||
+        pricePerNight === null ||
+        pricePerNight === ""
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Please fill all required property details",
+        });
+      }
+
+      const uploadedImages = [];
+
+      if (req.files?.length) {
+        for (const file of req.files) {
+          const result =
+            await uploadToCloudinary(file.buffer);
+
+          uploadedImages.push(result.secure_url);
+        }
+      }
+
+      const amenitiesArray = parseArray(amenities);
+
+      const fullLocation = [
+        address,
+        city,
+        state,
+        country,
+      ]
+        .filter(Boolean)
+        .join(", ");
+
+      const property = await Property.create({
+        hostId: String(hostId),
+
+        title: String(title).trim(),
+
+        description:
+          String(description).trim(),
+
+        propertyType:
+          String(propertyType)
+            .trim()
+            .toLowerCase(),
+
+        propertyCategory:
+          String(
+            propertyCategory || "All"
+          ).trim(),
+
+        maxGuests: toNumber(maxGuests, 1),
+
+        bedrooms: toNumber(bedrooms, 0),
+
+        beds: toNumber(beds, 0),
+
+        bathrooms: toNumber(bathrooms, 0),
+
+        address:
+          String(address || "").trim(),
+
+        location: fullLocation,
+
+        city:
+          String(city || "").trim(),
+
+        state:
+          String(state || "").trim(),
+
+        country:
+          String(country || "India").trim(),
+
+        pincode:
+          String(pincode || "").trim(),
+
+        latitude:
+          latitude !== undefined &&
+          latitude !== ""
+            ? Number(latitude)
+            : null,
+
+        longitude:
+          longitude !== undefined &&
+          longitude !== ""
+            ? Number(longitude)
+            : null,
+
+        pricePerNight:
+          toNumber(pricePerNight, 0),
+
+        // Compatibility with old pages
+        price:
+          toNumber(pricePerNight, 0),
+
+        amenities: amenitiesArray,
+
+        images: uploadedImages,
+
+        coverImage:
+          uploadedImages[0] || "",
+
+        checkInTime:
+          String(checkInTime || ""),
+
+        checkOutTime:
+          String(checkOutTime || ""),
+
+        houseRules:
+          String(houseRules || ""),
+
+        // Host submits → Admin approves
+        status: "pending",
+      });
+
+      return res.status(201).json({
+        success: true,
+        message:
+          "Property submitted successfully for admin approval",
+        property: {
+          ...property.toObject(),
+          id: String(property._id),
+
+          // Old frontend compatibility
+          guestCapacity:
+            property.maxGuests,
+
+          photos:
+            property.images,
+        },
+      });
+    } catch (error) {
+      console.error(
+        "CREATE PROPERTY ERROR:",
+        error
+      );
+
+      return res.status(500).json({
         success: false,
         message:
-          "Please provide all required property details",
+          error.message ||
+          "Failed to create property",
       });
     }
-
-    const amenitiesArray = Array.isArray(amenities)
-      ? amenities
-      : amenities
-        ? [amenities]
-        : [];
-
-    const photosArray = Array.isArray(photos)
-      ? photos
-      : photos
-        ? [photos]
-        : [];
-
-    const property = await Property.create({
-      hostId: String(hostId),
-      title: String(title).trim(),
-      description: String(description).trim(),
-      location: String(location).trim(),
-      propertyType: String(propertyType).toLowerCase(),
-      pricePerNight: Number(pricePerNight),
-      bedrooms: Number(bedrooms) || 1,
-      bathrooms: Number(bathrooms) || 1,
-      guestCapacity: Number(guestCapacity) || 1,
-      amenities: amenitiesArray,
-      photos: photosArray,
-      status: "approved",
-    });
-
-    return res.status(201).json({
-      success: true,
-      message:
-        "Property created and published successfully",
-      property,
-    });
-  } catch (error) {
-    console.error("CREATE PROPERTY ERROR:", error);
-
-    return res.status(500).json({
-      success: false,
-      message:
-        error.message || "Failed to create property",
-    });
   }
-});
+);
 
 /* =====================================================
    UPDATE PROPERTY STATUS
@@ -190,7 +394,11 @@ router.post("/", async (req, res) => {
 
 router.patch("/:id/status", async (req, res) => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    if (
+      !mongoose.Types.ObjectId.isValid(
+        req.params.id
+      )
+    ) {
       return res.status(400).json({
         success: false,
         message: "Invalid property ID",
@@ -202,7 +410,9 @@ router.patch("/:id/status", async (req, res) => {
       rejectionReason = "",
     } = req.body;
 
-    const normalizedStatus = String(status || "")
+    const normalizedStatus = String(
+      status || ""
+    )
       .trim()
       .toLowerCase();
 
@@ -210,10 +420,13 @@ router.patch("/:id/status", async (req, res) => {
       "pending",
       "approved",
       "rejected",
-      "live",
     ];
 
-    if (!allowedStatuses.includes(normalizedStatus)) {
+    if (
+      !allowedStatuses.includes(
+        normalizedStatus
+      )
+    ) {
       return res.status(400).json({
         success: false,
         message: "Invalid property status",
@@ -227,16 +440,14 @@ router.patch("/:id/status", async (req, res) => {
           status: normalizedStatus,
           rejectionReason:
             normalizedStatus === "rejected"
-              ? rejectionReason
+              ? String(rejectionReason)
               : "",
         },
         {
           new: true,
           runValidators: true,
         }
-      )
-        .maxTimeMS(15000)
-        .exec();
+      ).exec();
 
     if (!property) {
       return res.status(404).json({
@@ -247,11 +458,15 @@ router.patch("/:id/status", async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: `Property ${normalizedStatus} successfully`,
+      message:
+        `Property ${normalizedStatus} successfully`,
       property,
     });
   } catch (error) {
-    console.error("UPDATE STATUS ERROR:", error);
+    console.error(
+      "UPDATE STATUS ERROR:",
+      error
+    );
 
     return res.status(500).json({
       success: false,
@@ -268,90 +483,101 @@ router.patch("/:id/status", async (req, res) => {
 
 router.put("/:id", async (req, res) => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    if (
+      !mongoose.Types.ObjectId.isValid(
+        req.params.id
+      )
+    ) {
       return res.status(400).json({
         success: false,
         message: "Invalid property ID",
       });
     }
 
-    const fields = [
+    const allowedFields = [
       "title",
       "description",
-      "location",
       "propertyType",
-      "pricePerNight",
+      "propertyCategory",
+      "maxGuests",
       "bedrooms",
+      "beds",
       "bathrooms",
-      "guestCapacity",
+      "address",
+      "location",
+      "city",
+      "state",
+      "country",
+      "pincode",
+      "latitude",
+      "longitude",
+      "pricePerNight",
+      "price",
       "amenities",
-      "photos",
+      "images",
+      "coverImage",
+      "checkInTime",
+      "checkOutTime",
+      "houseRules",
     ];
 
     const updateData = {};
 
-    fields.forEach((field) => {
-      if (req.body[field] !== undefined) {
-        updateData[field] = req.body[field];
+    allowedFields.forEach((field) => {
+      if (
+        req.body[field] !== undefined
+      ) {
+        updateData[field] =
+          req.body[field];
       }
     });
 
-    if (updateData.title !== undefined) {
-      updateData.title =
-        String(updateData.title).trim();
-    }
+    [
+      "maxGuests",
+      "bedrooms",
+      "beds",
+      "bathrooms",
+      "pricePerNight",
+      "price",
+      "latitude",
+      "longitude",
+    ].forEach((field) => {
+      if (
+        updateData[field] !== undefined &&
+        updateData[field] !== ""
+      ) {
+        updateData[field] =
+          Number(updateData[field]);
+      }
+    });
 
-    if (updateData.description !== undefined) {
-      updateData.description =
-        String(updateData.description).trim();
-    }
-
-    if (updateData.location !== undefined) {
-      updateData.location =
-        String(updateData.location).trim();
-    }
-
-    if (updateData.propertyType !== undefined) {
-      updateData.propertyType =
-        String(updateData.propertyType).toLowerCase();
-    }
-
-    if (updateData.pricePerNight !== undefined) {
-      updateData.pricePerNight = Number(
-        updateData.pricePerNight
-      );
-    }
-
-    if (updateData.bedrooms !== undefined) {
-      updateData.bedrooms = Number(
-        updateData.bedrooms
-      );
-    }
-
-    if (updateData.bathrooms !== undefined) {
-      updateData.bathrooms = Number(
-        updateData.bathrooms
-      );
-    }
-
-    if (updateData.guestCapacity !== undefined) {
-      updateData.guestCapacity = Number(
-        updateData.guestCapacity
-      );
-    }
-
-    if (updateData.amenities !== undefined) {
+    if (
+      updateData.amenities !== undefined
+    ) {
       updateData.amenities =
-        Array.isArray(updateData.amenities)
-          ? updateData.amenities
-          : [updateData.amenities];
+        parseArray(
+          updateData.amenities
+        );
     }
 
-    if (updateData.photos !== undefined) {
-      updateData.photos =
-        Array.isArray(updateData.photos)
-          ? updateData.photos
-          : [updateData.photos];
+    if (
+      updateData.images !== undefined
+    ) {
+      updateData.images =
+        parseArray(
+          updateData.images
+        );
+    }
+
+    if (
+      updateData.propertyType !== undefined
+    ) {
+      updateData.propertyType =
+        String(
+          updateData.propertyType
+        )
+          .trim()
+          .toLowerCase();
     }
 
     const property =
@@ -362,9 +588,7 @@ router.put("/:id", async (req, res) => {
           new: true,
           runValidators: true,
         }
-      )
-        .maxTimeMS(15000)
-        .exec();
+      ).exec();
 
     if (!property) {
       return res.status(404).json({
@@ -375,11 +599,15 @@ router.put("/:id", async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Property updated successfully",
+      message:
+        "Property updated successfully",
       property,
     });
   } catch (error) {
-    console.error("UPDATE PROPERTY ERROR:", error);
+    console.error(
+      "UPDATE PROPERTY ERROR:",
+      error
+    );
 
     return res.status(500).json({
       success: false,
@@ -396,7 +624,11 @@ router.put("/:id", async (req, res) => {
 
 router.delete("/:id", async (req, res) => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    if (
+      !mongoose.Types.ObjectId.isValid(
+        req.params.id
+      )
+    ) {
       return res.status(400).json({
         success: false,
         message: "Invalid property ID",
@@ -406,9 +638,7 @@ router.delete("/:id", async (req, res) => {
     const property =
       await Property.findByIdAndDelete(
         req.params.id
-      )
-        .maxTimeMS(15000)
-        .exec();
+      ).exec();
 
     if (!property) {
       return res.status(404).json({
@@ -419,10 +649,14 @@ router.delete("/:id", async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Property deleted successfully",
+      message:
+        "Property deleted successfully",
     });
   } catch (error) {
-    console.error("DELETE PROPERTY ERROR:", error);
+    console.error(
+      "DELETE PROPERTY ERROR:",
+      error
+    );
 
     return res.status(500).json({
       success: false,
@@ -435,24 +669,25 @@ router.delete("/:id", async (req, res) => {
 
 /* =====================================================
    GET SINGLE PROPERTY
-   Includes photos because only one property is requested
 ===================================================== */
 
 router.get("/:id", async (req, res) => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    if (
+      !mongoose.Types.ObjectId.isValid(
+        req.params.id
+      )
+    ) {
       return res.status(400).json({
         success: false,
         message: "Invalid property ID",
       });
     }
 
-    const property = await Property.findById(req.params.id)
-      .select(
-        "_id hostId title description location propertyType pricePerNight bedrooms bathrooms guestCapacity status rejectionReason amenities photos createdAt updatedAt"
-      )
+    const property = await Property.findById(
+      req.params.id
+    )
       .lean()
-      .maxTimeMS(10000)
       .exec();
 
     if (!property) {
@@ -464,21 +699,37 @@ router.get("/:id", async (req, res) => {
 
     return res.status(200).json({
       success: true,
+
       property: {
         ...property,
+
         id: String(property._id),
-        photos: Array.isArray(property.photos) ? property.photos : [],
+
+        // Old pages compatibility
+        guestCapacity:
+          property.maxGuests ??
+          property.guests ??
+          1,
+
+        photos:
+          property.images ??
+          property.photos ??
+          [],
       },
     });
   } catch (error) {
-    console.error("GET SINGLE PROPERTY ERROR:", error);
+    console.error(
+      "GET SINGLE PROPERTY ERROR:",
+      error
+    );
 
     return res.status(500).json({
       success: false,
-      message: error.message || "Failed to fetch property",
+      message:
+        error.message ||
+        "Failed to fetch property",
     });
   }
 });
 
 export default router;
-
