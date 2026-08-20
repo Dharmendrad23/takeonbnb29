@@ -1,0 +1,139 @@
+import React, { useState } from 'react';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { LayoutDashboard, Calendar, Users, Home, LogOut, Activity, Menu, X, CheckSquare, Settings } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useAdminAuth } from '@/contexts/AdminAuthContext.jsx';
+import { NotificationCenter } from '@/components/NotificationCenter.jsx';
+import { NotificationProvider } from '@/contexts/NotificationContext.jsx';
+import { Button } from '@/components/ui/button';
+
+const AdminLayout = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { adminUser, logoutAdmin } = useAdminAuth();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const navItems = [
+    { name: 'Dashboard', path: '/admin', exact: true, icon: LayoutDashboard },
+    { name: 'Properties', path: '/admin/properties', icon: Home },
+    { name: 'Approvals', path: '/admin/properties/pending', icon: CheckSquare },
+    { name: 'Bookings', path: '/admin/bookings', icon: Calendar },
+    { name: 'Users', path: '/admin/users', icon: Users },
+    { name: 'Revenue', path: '/admin/analytics', icon: Activity },
+  ];
+
+  const handleLogout = () => {
+    if (window.confirm('Are you sure you want to log out?')) {
+      logoutAdmin();
+      navigate('/admin/login');
+    }
+  };
+
+  const SidebarContent = () => (
+    <>
+      <div className="p-6 border-b border-border/10 flex items-center justify-between">
+        <Link to="/admin" className="flex items-center gap-3" onClick={() => setIsMobileMenuOpen(false)}>
+          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-sm">
+            <span className="text-primary-foreground font-serif font-extrabold text-xl leading-none">T</span>
+          </div>
+          <span className="font-serif font-bold text-xl tracking-tight text-[hsl(var(--admin-sidebar-foreground))]">TakeOn Admin</span>
+        </Link>
+        <Button variant="ghost" size="icon" className="lg:hidden text-[hsl(var(--admin-sidebar-foreground))]" onClick={() => setIsMobileMenuOpen(false)}>
+          <X className="w-5 h-5" />
+        </Button>
+      </div>
+      
+      <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1.5">
+        <div className="text-xs font-bold text-[hsl(var(--admin-sidebar-foreground))]/40 uppercase tracking-wider px-3 mb-3">Menu</div>
+        {navItems.map((item) => {
+          const isActive = item.exact ? location.pathname === item.path : location.pathname.startsWith(item.path);
+          return (
+            <Link
+              key={item.path}
+              to={item.path}
+              onClick={() => setIsMobileMenuOpen(false)}
+              className={cn(
+                "flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 font-semibold text-sm group",
+                isActive 
+                  ? "bg-primary text-primary-foreground shadow-md" 
+                  : "text-[hsl(var(--admin-sidebar-foreground))]/70 hover:bg-white/10 hover:text-[hsl(var(--admin-sidebar-foreground))]"
+              )}
+            >
+              <item.icon className={cn("w-5 h-5 transition-transform", isActive ? "text-primary-foreground" : "opacity-70 group-hover:scale-110")} />
+              {item.name}
+            </Link>
+          );
+        })}
+      </nav>
+
+      <div className="p-4 border-t border-border/10">
+        <div className="flex items-center gap-3 px-3 py-3 mb-3 bg-white/5 rounded-xl">
+          <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold border border-primary/30">
+            {adminUser?.name?.charAt(0) || 'A'}
+          </div>
+          <div className="flex-1 overflow-hidden">
+            <p className="text-sm font-bold text-[hsl(var(--admin-sidebar-foreground))] truncate">{adminUser?.name || 'Administrator'}</p>
+            <p className="text-xs font-medium text-[hsl(var(--admin-sidebar-foreground))]/60 truncate capitalize">{adminUser?.role || 'Admin'}</p>
+          </div>
+        </div>
+        <button 
+          onClick={handleLogout}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-bold text-destructive hover:bg-destructive hover:text-destructive-foreground transition-all duration-200"
+        >
+          <LogOut className="w-4 h-4" /> Sign Out
+        </button>
+      </div>
+    </>
+  );
+
+  return (
+    <NotificationProvider>
+      <div className="flex h-screen bg-[hsl(var(--admin-surface))] text-foreground overflow-hidden font-sans">
+        
+        {/* Desktop Sidebar */}
+        <aside className="w-72 bg-[hsl(var(--admin-sidebar))] flex-col transition-all duration-300 hidden lg:flex shrink-0 shadow-xl z-20">
+          <SidebarContent />
+        </aside>
+
+        {/* Mobile Sidebar Overlay */}
+        {isMobileMenuOpen && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden" onClick={() => setIsMobileMenuOpen(false)} />
+        )}
+
+        {/* Mobile Sidebar */}
+        <aside className={cn(
+          "fixed inset-y-0 left-0 w-72 bg-[hsl(var(--admin-sidebar))] flex flex-col z-50 transition-transform duration-300 ease-in-out lg:hidden shadow-2xl",
+          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+        )}>
+          <SidebarContent />
+        </aside>
+
+        {/* Main Content */}
+        <main className="flex-1 flex flex-col h-screen overflow-hidden relative">
+          <header className="h-20 bg-[hsl(var(--admin-header))] border-b border-border flex items-center justify-between px-4 sm:px-8 shrink-0 z-10 shadow-sm backdrop-blur-md bg-opacity-90">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="icon" className="lg:hidden hover:bg-muted" onClick={() => setIsMobileMenuOpen(true)}>
+                <Menu className="w-6 h-6" />
+              </Button>
+              <h2 className="font-extrabold text-xl hidden sm:block tracking-tight text-foreground">
+                {location.pathname === '/admin' ? 'Dashboard Overview' : location.pathname.split('/').pop().replace('-', ' ')}
+              </h2>
+            </div>
+            <div className="flex items-center gap-4">
+              <NotificationCenter />
+              <Button variant="ghost" size="icon" className="rounded-full hover:bg-muted">
+                <Settings className="w-5 h-5 text-muted-foreground" />
+              </Button>
+            </div>
+          </header>
+          
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-muted/20">
+            <Outlet />
+          </div>
+        </main>
+      </div>
+    </NotificationProvider>
+  );
+};
+
+export default AdminLayout;

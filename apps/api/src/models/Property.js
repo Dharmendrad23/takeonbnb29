@@ -2,12 +2,14 @@ import mongoose from "mongoose";
 
 const propertySchema = new mongoose.Schema(
   {
+    // HOST
     hostId: {
       type: String,
       required: true,
       index: true,
     },
 
+    // BASIC DETAILS
     title: {
       type: String,
       required: true,
@@ -31,6 +33,7 @@ const propertySchema = new mongoose.Schema(
         "cottage",
         "homestay",
         "resort",
+        "farmstay",
         "other",
       ],
       required: true,
@@ -44,6 +47,7 @@ const propertySchema = new mongoose.Schema(
       trim: true,
     },
 
+    // GUESTS & ROOMS
     maxGuests: {
       type: Number,
       default: 1,
@@ -58,22 +62,23 @@ const propertySchema = new mongoose.Schema(
 
     bedrooms: {
       type: Number,
-      default: 1,
+      default: 0,
       min: 0,
     },
 
     beds: {
       type: Number,
-      default: 1,
+      default: 0,
       min: 0,
     },
 
     bathrooms: {
       type: Number,
-      default: 1,
+      default: 0,
       min: 0,
     },
 
+    // LOCATION
     address: {
       type: String,
       default: "",
@@ -82,7 +87,7 @@ const propertySchema = new mongoose.Schema(
 
     location: {
       type: String,
-      required: true,
+      default: "",
       trim: true,
     },
 
@@ -120,6 +125,7 @@ const propertySchema = new mongoose.Schema(
       default: null,
     },
 
+    // PRICING
     pricePerNight: {
       type: Number,
       required: true,
@@ -131,11 +137,13 @@ const propertySchema = new mongoose.Schema(
       default: 0,
     },
 
+    // AMENITIES
     amenities: {
       type: [String],
       default: [],
     },
 
+    // CLOUDINARY IMAGES
     images: {
       type: [String],
       default: [],
@@ -151,6 +159,7 @@ const propertySchema = new mongoose.Schema(
       default: "",
     },
 
+    // CHECK-IN / CHECK-OUT
     checkInTime: {
       type: String,
       default: "",
@@ -161,14 +170,20 @@ const propertySchema = new mongoose.Schema(
       default: "",
     },
 
+    // HOUSE RULES
     houseRules: {
       type: String,
       default: "",
     },
 
+    // APPROVAL
     status: {
       type: String,
-      enum: ["pending", "approved", "rejected"],
+      enum: [
+        "pending",
+        "approved",
+        "rejected",
+      ],
       default: "pending",
       index: true,
     },
@@ -178,6 +193,7 @@ const propertySchema = new mongoose.Schema(
       default: "",
     },
 
+    // RATING
     rating: {
       type: Number,
       default: 0,
@@ -202,4 +218,7 @@ const propertySchema = new mongoose.Schema(
   }
 );
 
-export default mongoose.model("Property", propertySchema);
+export default mongoose.model(
+  "Property",
+  propertySchema
+);

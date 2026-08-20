@@ -222,35 +222,6 @@ function App() {
                   <Route path="users" element={<AdminGuestManagement />} />
                   <Route path="analytics" element={<AdminRevenueTracking />} />
                   <Route path="activity" element={<AdminActivityLogs />} />
-                  {/* EXTRA ADMIN ROUTES */}
-                  <Route path="dashboard" element={<AdminDashboard />} />
-
-                  <Route path="calendar" element={<AdminBookingCalendar />} />
-
-                  <Route path="hosts" element={<AdminHostManagement />} />
-
-                  <Route path="reviews" element={<AdminReviewManagement />} />
-
-                  <Route path="disputes" element={<AdminDisputes />} />
-
-                  <Route path="messages" element={<AdminMessageCenter />} />
-
-                  <Route path="notifications" element={<AdminNotifications />} />
-
-                  <Route path="reports" element={<AdminReports />} />
-
-                  <Route path="roles" element={<AdminRoles />} />
-
-                  <Route path="settings" element={<AdminSettings />} />
-
-                  <Route path="payouts" element={<AdminRevenueTracking />} />
-                  <Route path="revenue" element={<AdminRevenueTracking />} />
-
-                  <Route path="audit-logs" element={<AdminActivityLogs />} />
-
-                  <Route path="approvals" element={<AdminPropertyApprovalPage />} />
-
-                  <Route path="guests" element={<AdminGuestManagement />} />
                 </Route>
 
                 <Route path="*" element={<AppLayout><NotFoundPage /></AppLayout>} />
@@ -266,7 +237,6 @@ function App() {
 }
 
 export default App;
-
 
 
 

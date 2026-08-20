@@ -1,186 +1,490 @@
 import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom';
-import { Users, Home, Calendar, IndianRupee, Activity, Clock, CheckCircle2, ArrowRight } from 'lucide-react';
+import {
+  Users,
+  Home,
+  Calendar,
+  IndianRupee,
+  ArrowUpRight,
+  ArrowRight,
+  MoreHorizontal,
+  Plus,
+  Search,
+  TrendingUp,
+  Building2,
+} from 'lucide-react';
+
 import { useRealtimeDashboardStats } from '@/hooks/useRealtimeDashboardStats.js';
 import { formatCurrencyINR, formatDate } from '@/lib/bookingUtils.js';
-import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from 'recharts';
-import api from '@/lib/api.js';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
 import pb from '@/lib/pocketbaseClient';
-
-const StatCard = ({ title, value, icon: Icon, colorClass, isLoading, trend }) => (
-  <div className="bg-card border border-border p-6 rounded-3xl shadow-sm transition-all duration-300 hover:shadow-md relative overflow-hidden group">
-    <div className={`absolute -right-6 -top-6 w-24 h-24 rounded-full opacity-10 transition-transform duration-500 group-hover:scale-150 ${colorClass}`}></div>
-    <div className="flex items-center justify-between mb-4 relative z-10">
-      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center bg-background shadow-sm border border-border`}>
-        <Icon className={`w-7 h-7 ${colorClass.replace('bg-', 'text-')}`} />
-      </div>
-      {trend && (
-        <span className="text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 px-2 py-1 rounded-lg">
-          {trend}
-        </span>
-      )}
-    </div>
-    <h3 className="text-muted-foreground text-sm font-bold uppercase tracking-wider mb-2 relative z-10">{title}</h3>
-    {isLoading ? (
-      <Skeleton className="h-10 w-2/3 mt-1 relative z-10" />
-    ) : (
-      <p className="text-4xl font-extrabold text-foreground relative z-10 tracking-tight">
-        {value}
-      </p>
-    )}
-  </div>
-);
 
 const AdminDashboard = () => {
   const { stats, isLoading } = useRealtimeDashboardStats();
   const [recentBookings, setRecentBookings] = useState([]);
-  
-  // Mock chart data for UI
-  const mockChartData = [
-    { name: 'Jan', revenue: 120000 }, { name: 'Feb', revenue: 150000 },
-    { name: 'Mar', revenue: 180000 }, { name: 'Apr', revenue: 160000 },
-    { name: 'May', revenue: 210000 }, { name: 'Jun', revenue: 250000 },
-  ];
 
   useEffect(() => {
-    const fetchRecent = async () => {
+    const fetchRecentBookings = async () => {
       try {
-        const records = await pb.collection('bookings').getList(1, 5, {
+        const records = await pb.collection('bookings').getList(1, 6, {
           sort: '-created',
-          $autoCancel: false
+          $autoCancel: false,
         });
-        setRecentBookings(records.items);
-      } catch (err) {
-        console.error(err);
+
+        setRecentBookings(records.items || []);
+      } catch (error) {
+        console.error('Failed to load recent bookings:', error);
       }
     };
-    fetchRecent();
+
+    fetchRecentBookings();
   }, []);
 
+  const statCards = [
+    {
+      title: 'Total Revenue',
+      value: formatCurrencyINR(stats?.totalRevenue || 0),
+      change: '+12.5%',
+      subtitle: 'vs last month',
+      icon: IndianRupee,
+      iconBg: 'bg-orange-50 text-orange-600',
+    },
+    {
+      title: 'Total Bookings',
+      value: stats?.totalBookings || 0,
+      change: '+8.2%',
+      subtitle: 'vs last month',
+      icon: Calendar,
+      iconBg: 'bg-blue-50 text-blue-600',
+    },
+    {
+      title: 'Active Properties',
+      value: stats?.totalProperties || 0,
+      change: '+5.4%',
+      subtitle: 'vs last month',
+      icon: Home,
+      iconBg: 'bg-emerald-50 text-emerald-600',
+    },
+    {
+      title: 'Total Users',
+      value: stats?.totalUsers || 0,
+      change: '+10.3%',
+      subtitle: 'vs last month',
+      icon: Users,
+      iconBg: 'bg-purple-50 text-purple-600',
+    },
+  ];
+
   return (
-    <div className="space-y-8 max-w-[1600px] mx-auto animate-fade-in-up">
-      <Helmet><title>Dashboard | TakeOn Admin</title></Helmet>
-      
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="mx-auto max-w-[1600px] space-y-6">
+
+      <Helmet>
+        <title>Dashboard | Take On BnB Admin</title>
+      </Helmet>
+
+      {/* PAGE HEADER */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+
         <div>
-          <h1 className="text-3xl font-extrabold text-foreground tracking-tight mb-1">Platform Overview</h1>
-          <p className="text-muted-foreground font-medium">Real-time metrics and operational status.</p>
+          <p className="text-sm font-medium text-muted-foreground">
+            Welcome back, Administrator
+          </p>
+
+          <h1 className="mt-1 text-3xl font-bold tracking-tight text-foreground">
+            Dashboard Overview
+          </h1>
+
+          <p className="mt-2 text-sm text-muted-foreground">
+            Monitor your properties, bookings, revenue and platform activity.
+          </p>
         </div>
-        <div className="flex gap-3">
-          <Link to="/admin/bookings" className="px-4 py-2.5 bg-primary text-primary-foreground font-bold rounded-xl shadow-brand hover:scale-105 transition-transform text-sm">
-            View All Bookings
-          </Link>
-        </div>
+
+        <Link
+          to="/admin/properties"
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-all hover:scale-[1.02] hover:shadow-md"
+        >
+          <Plus className="h-4 w-4" />
+          Add Property
+        </Link>
+
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard 
-          title="Total Revenue" 
-          value={formatCurrencyINR(stats.totalRevenue)} 
-          icon={IndianRupee} 
-          colorClass="bg-primary" 
-          isLoading={isLoading} 
-          trend="+12%"
-        />
-        <StatCard 
-          title="Total Bookings" 
-          value={stats.totalBookings} 
-          icon={Calendar} 
-          colorClass="bg-blue-500" 
-          isLoading={isLoading} 
-          trend="+8%"
-        />
-        <StatCard 
-          title="Active Properties" 
-          value={stats.totalProperties} 
-          icon={Home} 
-          colorClass="bg-emerald-500" 
-          isLoading={isLoading} 
-        />
-        <StatCard 
-          title="Total Users" 
-          value={stats.totalUsers} 
-          icon={Users} 
-          colorClass="bg-purple-500" 
-          isLoading={isLoading} 
-        />
-      </div>
+      {/* STATS */}
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* Revenue Chart */}
-        <div className="lg:col-span-2 bg-card border border-border rounded-3xl p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-xl font-bold text-foreground">Revenue Overview</h2>
-            <Link to="/admin/analytics" className="text-primary font-semibold text-sm hover:underline flex items-center">
-              Full Report <ArrowRight className="w-4 h-4 ml-1" />
-            </Link>
-          </div>
-          <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={mockChartData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-                <defs>
-                  <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: 'hsl(var(--muted-foreground))', fontSize: 12, fontWeight: 600}} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tickFormatter={(val) => `₹${(val/1000).toFixed(0)}k`} tick={{fill: 'hsl(var(--muted-foreground))', fontSize: 12, fontWeight: 600}} dx={-10} />
-                <RechartsTooltip 
-                  formatter={(value) => [formatCurrencyINR(value), 'Revenue']}
-                  contentStyle={{ backgroundColor: 'hsl(var(--card))', borderRadius: '12px', border: '1px solid hsl(var(--border))', fontWeight: 600 }} 
-                />
-                <Area type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={4} fillOpacity={1} fill="url(#colorRev)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+        {statCards.map((card) => {
+          const Icon = card.icon;
 
-        {/* Recent Bookings List */}
-        <div className="bg-card border border-border rounded-3xl p-6 shadow-sm flex flex-col">
-          <div className="flex items-center justify-between mb-6 border-b border-border pb-4">
-            <h2 className="text-xl font-bold text-foreground">Recent Bookings</h2>
-          </div>
-          
-          <div className="space-y-5 flex-1">
-            {recentBookings.length === 0 ? (
-              <div className="text-center py-10 opacity-50">
-                <Calendar className="w-10 h-10 mx-auto mb-3" />
-                <p className="font-semibold">No recent bookings</p>
+          return (
+            <div
+              key={card.title}
+              className="group rounded-2xl border border-border bg-card p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+            >
+
+              <div className="flex items-start justify-between">
+
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    {card.title}
+                  </p>
+
+                  {isLoading ? (
+                    <div className="mt-3 h-9 w-24 animate-pulse rounded bg-muted" />
+                  ) : (
+                    <h2 className="mt-2 text-3xl font-bold tracking-tight text-foreground">
+                      {card.value}
+                    </h2>
+                  )}
+                </div>
+
+                <div
+                  className={`flex h-12 w-12 items-center justify-center rounded-xl ${card.iconBg}`}
+                >
+                  <Icon className="h-6 w-6" />
+                </div>
+
               </div>
-            ) : (
-              recentBookings.map(booking => {
-                const status = booking.bookingStatus || booking.status;
-                const isPending = status === 'pending_verification';
-                return (
-                  <div key={booking.id} className="flex items-start justify-between group">
-                    <div className="min-w-0 flex-1">
-                      <p className="font-bold text-foreground truncate group-hover:text-primary transition-colors">{booking.propertyName}</p>
-                      <p className="text-xs text-muted-foreground font-medium mt-1 truncate">{booking.guestFullName}</p>
-                      <p className="text-[10px] text-muted-foreground mt-1 uppercase tracking-wider">{formatDate(booking.created)}</p>
-                    </div>
-                    <div className="flex flex-col items-end shrink-0 ml-3">
-                      <span className="font-extrabold text-sm text-foreground">{formatCurrencyINR(booking.totalAmount || booking.totalPrice)}</span>
-                      <Badge variant="outline" className={`mt-1 text-[10px] uppercase ${isPending ? 'badge-pending' : 'badge-confirmed'}`}>
-                        {status.replace('_', ' ')}
-                      </Badge>
-                    </div>
+
+              <div className="mt-5 flex items-center gap-2">
+
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-1 text-xs font-semibold text-emerald-600">
+                  <TrendingUp className="h-3 w-3" />
+                  {card.change}
+                </span>
+
+                <span className="text-xs text-muted-foreground">
+                  {card.subtitle}
+                </span>
+
+              </div>
+
+            </div>
+          );
+        })}
+
+      </div>
+
+      {/* MIDDLE SECTION */}
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+
+        {/* REVENUE */}
+        <div className="xl:col-span-2 rounded-2xl border border-border bg-card shadow-sm">
+
+          <div className="flex items-center justify-between border-b border-border p-6">
+
+            <div>
+              <h2 className="text-lg font-bold text-foreground">
+                Revenue Overview
+              </h2>
+
+              <p className="mt-1 text-sm text-muted-foreground">
+                Your platform revenue performance
+              </p>
+            </div>
+
+            <Link
+              to="/admin/analytics"
+              className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
+            >
+              View Report
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+
+          </div>
+
+          <div className="p-6">
+
+            <div className="flex h-[320px] items-end gap-3 sm:gap-5">
+
+              {[35, 48, 42, 65, 58, 72, 84, 70, 90, 78, 96, 88].map(
+                (height, index) => (
+                  <div
+                    key={index}
+                    className="group flex flex-1 flex-col items-center justify-end gap-3"
+                  >
+                    <div
+                      className="w-full rounded-t-xl bg-primary/20 transition-all duration-300 group-hover:bg-primary"
+                      style={{ height: `${height}%` }}
+                    />
+
+                    <span className="text-[10px] font-medium text-muted-foreground sm:text-xs">
+                      {[
+                        'Jan',
+                        'Feb',
+                        'Mar',
+                        'Apr',
+                        'May',
+                        'Jun',
+                        'Jul',
+                        'Aug',
+                        'Sep',
+                        'Oct',
+                        'Nov',
+                        'Dec',
+                      ][index]}
+                    </span>
                   </div>
                 )
-              })
-            )}
+              )}
+
+            </div>
+
           </div>
-          
-          <Link to="/admin/bookings" className="w-full text-center mt-6 pt-4 border-t border-border text-sm font-bold text-muted-foreground hover:text-primary transition-colors">
-            View All History
-          </Link>
+
         </div>
+
+        {/* QUICK ACTIONS */}
+        <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+
+          <div className="mb-6">
+            <h2 className="text-lg font-bold text-foreground">
+              Quick Actions
+            </h2>
+
+            <p className="mt-1 text-sm text-muted-foreground">
+              Manage your platform quickly
+            </p>
+          </div>
+
+          <div className="space-y-3">
+
+            <Link
+              to="/admin/properties"
+              className="flex items-center justify-between rounded-xl border border-border p-4 transition-all hover:border-primary hover:bg-primary/5"
+            >
+              <div className="flex items-center gap-3">
+
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-100 text-primary">
+                  <Building2 className="h-5 w-5" />
+                </div>
+
+                <div>
+                  <p className="font-semibold text-foreground">
+                    Manage Properties
+                  </p>
+
+                  <p className="text-xs text-muted-foreground">
+                    View all listings
+                  </p>
+                </div>
+
+              </div>
+
+              <ArrowRight className="h-4 w-4 text-muted-foreground" />
+            </Link>
+
+            <Link
+              to="/admin/bookings"
+              className="flex items-center justify-between rounded-xl border border-border p-4 transition-all hover:border-primary hover:bg-primary/5"
+            >
+              <div className="flex items-center gap-3">
+
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 text-blue-600">
+                  <Calendar className="h-5 w-5" />
+                </div>
+
+                <div>
+                  <p className="font-semibold text-foreground">
+                    Manage Bookings
+                  </p>
+
+                  <p className="text-xs text-muted-foreground">
+                    View booking activity
+                  </p>
+                </div>
+
+              </div>
+
+              <ArrowRight className="h-4 w-4 text-muted-foreground" />
+            </Link>
+
+            <Link
+              to="/admin/users"
+              className="flex items-center justify-between rounded-xl border border-border p-4 transition-all hover:border-primary hover:bg-primary/5"
+            >
+              <div className="flex items-center gap-3">
+
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100 text-purple-600">
+                  <Users className="h-5 w-5" />
+                </div>
+
+                <div>
+                  <p className="font-semibold text-foreground">
+                    Manage Users
+                  </p>
+
+                  <p className="text-xs text-muted-foreground">
+                    Guests and hosts
+                  </p>
+                </div>
+
+              </div>
+
+              <ArrowRight className="h-4 w-4 text-muted-foreground" />
+            </Link>
+
+          </div>
+
+        </div>
+
       </div>
+
+      {/* RECENT BOOKINGS */}
+      <div className="rounded-2xl border border-border bg-card shadow-sm">
+
+        <div className="flex flex-col gap-4 border-b border-border p-6 sm:flex-row sm:items-center sm:justify-between">
+
+          <div>
+            <h2 className="text-lg font-bold text-foreground">
+              Recent Bookings
+            </h2>
+
+            <p className="mt-1 text-sm text-muted-foreground">
+              Latest booking activity on your platform
+            </p>
+          </div>
+
+          <Link
+            to="/admin/bookings"
+            className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
+          >
+            View All
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+
+        </div>
+
+        <div className="overflow-x-auto">
+
+          <table className="w-full min-w-[700px]">
+
+            <thead className="bg-muted/40">
+
+              <tr>
+                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  Property
+                </th>
+
+                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  Guest
+                </th>
+
+                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  Date
+                </th>
+
+                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  Amount
+                </th>
+
+                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  Status
+                </th>
+
+                <th className="px-6 py-4 text-right text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  Action
+                </th>
+              </tr>
+
+            </thead>
+
+            <tbody className="divide-y divide-border">
+
+              {recentBookings.length === 0 ? (
+
+                <tr>
+                  <td
+                    colSpan="6"
+                    className="px-6 py-14 text-center text-sm text-muted-foreground"
+                  >
+                    No recent bookings found.
+                  </td>
+                </tr>
+
+              ) : (
+
+                recentBookings.map((booking) => {
+
+                  const status =
+                    booking.bookingStatus ||
+                    booking.status ||
+                    'pending';
+
+                  const isConfirmed =
+                    status === 'confirmed';
+
+                  return (
+
+                    <tr
+                      key={booking.id}
+                      className="transition-colors hover:bg-muted/30"
+                    >
+
+                      <td className="px-6 py-4">
+
+                        <div className="font-semibold text-foreground">
+                          {booking.propertyName || 'Property'}
+                        </div>
+
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          #{booking.id?.slice(-6)}
+                        </div>
+
+                      </td>
+
+                      <td className="px-6 py-4 text-sm text-foreground">
+                        {booking.guestFullName || 'Guest'}
+                      </td>
+
+                      <td className="px-6 py-4 text-sm text-muted-foreground">
+                        {booking.created
+                          ? formatDate(booking.created)
+                          : '-'}
+                      </td>
+
+                      <td className="px-6 py-4 font-semibold text-foreground">
+                        {formatCurrencyINR(
+                          booking.totalAmount ||
+                          booking.totalPrice ||
+                          0
+                        )}
+                      </td>
+
+                      <td className="px-6 py-4">
+
+                        <span
+                          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+                            isConfirmed
+                              ? 'bg-emerald-500/10 text-emerald-600'
+                              : 'bg-amber-500/10 text-amber-600'
+                          }`}
+                        >
+                          {status.replace(/_/g, ' ')}
+                        </span>
+
+                      </td>
+
+                      <td className="px-6 py-4 text-right">
+
+                        <button className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground">
+                          <MoreHorizontal className="h-5 w-5" />
+                        </button>
+
+                      </td>
+
+                    </tr>
+                  );
+                })
+              )}
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </div>
+
     </div>
   );
 };

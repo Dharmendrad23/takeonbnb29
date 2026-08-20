@@ -11,7 +11,7 @@ import {
   CheckCircle,
   XCircle,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,7 +45,7 @@ const PROPERTY_TYPE_OPTIONS = [
   { value: "room", label: "Private Room" },
 ];
 
-const AdminPropertyManagement = () => {
+const AdminPropertyManagement = () => {`r`n  const navigate = useNavigate();
   const { adminUser } = useAdminAuth();
 
   const [properties, setProperties] = useState([]);
@@ -917,3 +917,4 @@ const AdminPropertyManagement = () => {
 };
 
 export default AdminPropertyManagement;
+
