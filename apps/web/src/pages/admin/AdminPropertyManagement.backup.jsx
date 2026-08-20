@@ -45,7 +45,8 @@ const PROPERTY_TYPE_OPTIONS = [
   { value: "room", label: "Private Room" },
 ];
 
-const AdminPropertyManagement = () => {`r`n  const navigate = useNavigate();
+const AdminPropertyManagement = () => {
+  const navigate = useNavigate();
   const { adminUser } = useAdminAuth();
 
   const [properties, setProperties] = useState([]);
@@ -69,9 +70,9 @@ const AdminPropertyManagement = () => {`r`n  const navigate = useNavigate();
     status: "pending",
   });
 
-  /* ============================================
-     FETCH ALL PROPERTIES - ADMIN ONLY
-  ============================================ */
+  /* ===============================
+     FETCH ALL PROPERTIES
+  =============================== */
 
   const fetchProperties = async () => {
     try {
@@ -106,9 +107,9 @@ const AdminPropertyManagement = () => {`r`n  const navigate = useNavigate();
     fetchProperties();
   }, []);
 
-  /* ============================================
+  /* ===============================
      SEARCH
-  ============================================ */
+  =============================== */
 
   const filteredProperties = properties.filter((property) => {
     const query = search.toLowerCase().trim();
@@ -124,9 +125,9 @@ const AdminPropertyManagement = () => {`r`n  const navigate = useNavigate();
     );
   });
 
-  /* ============================================
+  /* ===============================
      CREATE SUCCESS
-  ============================================ */
+  =============================== */
 
   const handleCreateSuccess = () => {
     toast.success("Property created successfully");
@@ -136,9 +137,9 @@ const AdminPropertyManagement = () => {`r`n  const navigate = useNavigate();
     fetchProperties();
   };
 
-  /* ============================================
+  /* ===============================
      INPUT CHANGE
-  ============================================ */
+  =============================== */
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -156,9 +157,9 @@ const AdminPropertyManagement = () => {`r`n  const navigate = useNavigate();
     }));
   };
 
-  /* ============================================
-     OPEN EDIT MODAL
-  ============================================ */
+  /* ===============================
+     OPEN EDIT PAGE
+  =============================== */
 
   const openEditModal = (property) => {
     const id = property._id || property.id;
@@ -168,15 +169,20 @@ const AdminPropertyManagement = () => {`r`n  const navigate = useNavigate();
       return;
     }
 
-    window.location.href = `/admin/properties/edit/${id}`;
+    navigate(`/admin/properties/edit/${id}`);
   };
 
-  /* ============================================
-     UPDATE PROPERTY DETAILS
-  ============================================ */
+  /* ===============================
+     UPDATE PROPERTY
+  =============================== */
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!editingId) {
+      toast.error("Property ID not found");
+      return;
+    }
 
     try {
       const data = {
@@ -187,10 +193,7 @@ const AdminPropertyManagement = () => {`r`n  const navigate = useNavigate();
         guestCapacity: Number(formData.guestCapacity),
       };
 
-      await api.put(
-        `/properties/${editingId}`,
-        data
-      );
+      await api.put(`/properties/${editingId}`, data);
 
       toast.success("Property updated successfully");
 
@@ -208,9 +211,9 @@ const AdminPropertyManagement = () => {`r`n  const navigate = useNavigate();
     }
   };
 
-  /* ============================================
-     ADMIN APPROVE PROPERTY
-  ============================================ */
+  /* ===============================
+     APPROVE PROPERTY
+  =============================== */
 
   const handleApprove = async (property) => {
     try {
@@ -221,23 +224,15 @@ const AdminPropertyManagement = () => {`r`n  const navigate = useNavigate();
         return;
       }
 
-      await api.patch(
-        `/properties/${id}/status`,
-        {
-          status: "approved",
-        }
-      );
+      await api.patch(`/properties/${id}/status`, {
+        status: "approved",
+      });
 
-      toast.success(
-        "Property approved successfully"
-      );
+      toast.success("Property approved successfully");
 
       fetchProperties();
     } catch (err) {
-      console.error(
-        "Approve property error:",
-        err
-      );
+      console.error("Approve property error:", err);
 
       toast.error(
         err?.response?.data?.message ||
@@ -246,9 +241,9 @@ const AdminPropertyManagement = () => {`r`n  const navigate = useNavigate();
     }
   };
 
-  /* ============================================
-     ADMIN REJECT PROPERTY
-  ============================================ */
+  /* ===============================
+     REJECT PROPERTY
+  =============================== */
 
   const handleReject = async (property) => {
     try {
@@ -263,27 +258,17 @@ const AdminPropertyManagement = () => {`r`n  const navigate = useNavigate();
         `Are you sure you want to reject "${property.title}"?`
       );
 
-      if (!confirmed) {
-        return;
-      }
+      if (!confirmed) return;
 
-      await api.patch(
-        `/properties/${id}/status`,
-        {
-          status: "rejected",
-        }
-      );
+      await api.patch(`/properties/${id}/status`, {
+        status: "rejected",
+      });
 
-      toast.success(
-        "Property rejected successfully"
-      );
+      toast.success("Property rejected successfully");
 
       fetchProperties();
     } catch (err) {
-      console.error(
-        "Reject property error:",
-        err
-      );
+      console.error("Reject property error:", err);
 
       toast.error(
         err?.response?.data?.message ||
@@ -292,32 +277,30 @@ const AdminPropertyManagement = () => {`r`n  const navigate = useNavigate();
     }
   };
 
-  /* ============================================
+  /* ===============================
      DELETE PROPERTY
-  ============================================ */
+  =============================== */
 
   const handleDelete = async (id) => {
-    if (
-      !window.confirm(
-        "Are you sure you want to delete this property?"
-      )
-    ) {
+    if (!id) {
+      toast.error("Property ID not found");
       return;
     }
+
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this property?"
+    );
+
+    if (!confirmed) return;
 
     try {
       await api.delete(`/properties/${id}`);
 
-      toast.success(
-        "Property deleted successfully"
-      );
+      toast.success("Property deleted successfully");
 
       fetchProperties();
     } catch (err) {
-      console.error(
-        "Delete property error:",
-        err
-      );
+      console.error("Delete property error:", err);
 
       toast.error(
         err?.response?.data?.message ||
@@ -326,21 +309,19 @@ const AdminPropertyManagement = () => {`r`n  const navigate = useNavigate();
     }
   };
 
-  /* ============================================
+  /* ===============================
      STATUS BADGE
-  ============================================ */
+  =============================== */
 
   const getStatusBadge = (status) => {
-    const normalized = String(
-      status || "pending"
-    ).toLowerCase();
+    const normalized = String(status || "pending").toLowerCase();
 
     if (
       normalized === "approved" ||
       normalized === "live"
     ) {
       return (
-        <Badge className="bg-green-100 text-green-700 border border-green-200">
+        <Badge className="border border-green-200 bg-green-100 text-green-700">
           Approved
         </Badge>
       );
@@ -348,84 +329,64 @@ const AdminPropertyManagement = () => {`r`n  const navigate = useNavigate();
 
     if (normalized === "rejected") {
       return (
-        <Badge className="bg-red-100 text-red-700 border border-red-200">
+        <Badge className="border border-red-200 bg-red-100 text-red-700">
           Rejected
         </Badge>
       );
     }
 
     return (
-      <Badge className="bg-yellow-100 text-yellow-700 border border-yellow-200">
+      <Badge className="border border-yellow-200 bg-yellow-100 text-yellow-700">
         Pending
       </Badge>
     );
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-
+    <div className="mx-auto max-w-7xl space-y-6">
       <Helmet>
         <title>Property Management | Admin</title>
       </Helmet>
 
-      {/* =====================================
-          HEADER
-      ====================================== */}
+      {/* HEADER */}
 
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-
+      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <h1 className="text-2xl font-bold text-foreground">
             Property Management
           </h1>
 
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="mt-1 text-sm text-muted-foreground">
             Manage, approve and review property listings
           </p>
         </div>
 
-        <div className="flex gap-3 w-full sm:w-auto">
-
+        <div className="flex w-full gap-3 sm:w-auto">
           <div className="relative flex-1 sm:w-64">
-
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 
             <Input
               placeholder="Search properties..."
               value={search}
-              onChange={(e) =>
-                setSearch(e.target.value)
-              }
-              className="pl-9 bg-card"
+              onChange={(e) => setSearch(e.target.value)}
+              className="bg-card pl-9"
             />
-
           </div>
 
           <Dialog
             open={isCreateModalOpen}
             onOpenChange={setIsCreateModalOpen}
           >
-
             <DialogTrigger asChild>
-
               <Button className="bg-primary text-primary-foreground">
-
-                <Plus className="w-4 h-4 mr-2" />
-
+                <Plus className="mr-2 h-4 w-4" />
                 Add Property
-
               </Button>
-
             </DialogTrigger>
 
-            <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
-
+            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[700px]">
               <DialogHeader>
-
-                <DialogTitle>
-                  Create New Property
-                </DialogTitle>
-
+                <DialogTitle>Create New Property</DialogTitle>
               </DialogHeader>
 
               <PropertyForm
@@ -435,43 +396,28 @@ const AdminPropertyManagement = () => {`r`n  const navigate = useNavigate();
                 submittingLabel="Creating..."
                 onSuccess={handleCreateSuccess}
               />
-
             </DialogContent>
-
           </Dialog>
-
         </div>
-
       </div>
 
-      {/* =====================================
-          EDIT PROPERTY MODAL
-      ====================================== */}
+      {/* EDIT PROPERTY MODAL */}
 
       <Dialog
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
       >
-
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
           <DialogHeader>
-
-            <DialogTitle>
-              Edit Property
-            </DialogTitle>
-
+            <DialogTitle>Edit Property</DialogTitle>
           </DialogHeader>
 
           <form
             onSubmit={handleSubmit}
-            className="space-y-4 mt-4"
+            className="mt-4 space-y-4"
           >
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-
                 <Label>Title</Label>
 
                 <Input
@@ -480,11 +426,9 @@ const AdminPropertyManagement = () => {`r`n  const navigate = useNavigate();
                   onChange={handleInputChange}
                   required
                 />
-
               </div>
 
               <div className="space-y-2">
-
                 <Label>Location</Label>
 
                 <Input
@@ -493,11 +437,9 @@ const AdminPropertyManagement = () => {`r`n  const navigate = useNavigate();
                   onChange={handleInputChange}
                   required
                 />
-
               </div>
 
               <div className="space-y-2">
-
                 <Label>Property Type</Label>
 
                 <Select
@@ -509,34 +451,26 @@ const AdminPropertyManagement = () => {`r`n  const navigate = useNavigate();
                     )
                   }
                 >
-
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
 
                   <SelectContent>
-
                     {PROPERTY_TYPE_OPTIONS.map(
                       (option) => (
-
                         <SelectItem
                           key={option.value}
                           value={option.value}
                         >
                           {option.label}
                         </SelectItem>
-
                       )
                     )}
-
                   </SelectContent>
-
                 </Select>
-
               </div>
 
               <div className="space-y-2">
-
                 <Label>Price per Night</Label>
 
                 <Input
@@ -546,11 +480,9 @@ const AdminPropertyManagement = () => {`r`n  const navigate = useNavigate();
                   onChange={handleInputChange}
                   required
                 />
-
               </div>
 
               <div className="space-y-2">
-
                 <Label>Bedrooms</Label>
 
                 <Input
@@ -560,11 +492,9 @@ const AdminPropertyManagement = () => {`r`n  const navigate = useNavigate();
                   onChange={handleInputChange}
                   required
                 />
-
               </div>
 
               <div className="space-y-2">
-
                 <Label>Bathrooms</Label>
 
                 <Input
@@ -574,11 +504,9 @@ const AdminPropertyManagement = () => {`r`n  const navigate = useNavigate();
                   onChange={handleInputChange}
                   required
                 />
-
               </div>
 
               <div className="space-y-2">
-
                 <Label>Guest Capacity</Label>
 
                 <Input
@@ -588,33 +516,26 @@ const AdminPropertyManagement = () => {`r`n  const navigate = useNavigate();
                   onChange={handleInputChange}
                   required
                 />
-
               </div>
-
             </div>
 
             <div className="space-y-2">
-
               <Label>Description</Label>
 
               <textarea
                 name="description"
                 value={formData.description}
                 onChange={handleInputChange}
-                className="w-full min-h-[100px] p-3 rounded-md border border-input bg-background text-foreground text-sm"
+                className="min-h-[100px] w-full rounded-md border border-input bg-background p-3 text-sm text-foreground"
                 required
               />
-
             </div>
 
             <div className="flex justify-end gap-3 pt-4">
-
               <Button
                 type="button"
                 variant="outline"
-                onClick={() =>
-                  setIsModalOpen(false)
-                }
+                onClick={() => setIsModalOpen(false)}
               >
                 Cancel
               </Button>
@@ -622,27 +543,17 @@ const AdminPropertyManagement = () => {`r`n  const navigate = useNavigate();
               <Button type="submit">
                 Save Changes
               </Button>
-
             </div>
-
           </form>
-
         </DialogContent>
-
       </Dialog>
 
-      {/* =====================================
-          PROPERTY TABLE
-      ====================================== */}
+      {/* PROPERTY TABLE */}
 
       <div className="admin-table-container overflow-x-auto">
-
         <table className="admin-table w-full">
-
           <thead>
-
             <tr>
-
               <th>Property</th>
               <th>Host</th>
               <th>Location</th>
@@ -650,271 +561,169 @@ const AdminPropertyManagement = () => {`r`n  const navigate = useNavigate();
               <th>Price/Night</th>
               <th>Capacity</th>
               <th>Status</th>
-              <th className="text-right">
-                Actions
-              </th>
-
+              <th className="text-right">Actions</th>
             </tr>
-
           </thead>
 
           <tbody>
-
             {isLoading ? (
-
               <tr>
-
                 <td
                   colSpan="8"
-                  className="text-center py-8"
+                  className="py-8 text-center"
                 >
                   Loading properties...
                 </td>
-
               </tr>
-
             ) : filteredProperties.length === 0 ? (
-
               <tr>
-
                 <td
                   colSpan="8"
-                  className="text-center py-8 text-muted-foreground"
+                  className="py-8 text-center text-muted-foreground"
                 >
                   No properties found.
                 </td>
-
               </tr>
-
             ) : (
+              filteredProperties.map((property) => {
+                const id =
+                  property._id ||
+                  property.id;
 
-              filteredProperties.map(
-                (property) => {
+                const status = String(
+                  property.status || "pending"
+                ).toLowerCase();
 
-                  const id =
-                    property._id ||
-                    property.id;
-
-                  const status = String(
-                    property.status ||
-                    "pending"
-                  ).toLowerCase();
-
-                  return (
-
-                    <tr key={id}>
-
-                      {/* PROPERTY */}
-
-                      <td className="font-medium">
-
-                        <div className="flex items-center gap-3">
-
-                          <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center overflow-hidden shrink-0">
-
-                            {property.photos?.length > 0 ? (
-
-                              <img
-                                src={property.photos[0]}
-                                alt={property.title}
-                                className="w-full h-full object-cover"
-                              />
-
-                            ) : (
-
-                              <Home className="w-5 h-5 text-muted-foreground" />
-
-                            )}
-
-                          </div>
-
-                          <span className="truncate max-w-[200px]">
-
-                            {property.title}
-
-                          </span>
-
+                return (
+                  <tr key={id}>
+                    <td className="font-medium">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted">
+                          {property.photos?.length > 0 ? (
+                            <img
+                              src={property.photos[0]}
+                              alt={property.title}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <Home className="h-5 w-5 text-muted-foreground" />
+                          )}
                         </div>
 
-                      </td>
+                        <span className="max-w-[200px] truncate">
+                          {property.title || "Untitled Property"}
+                        </span>
+                      </div>
+                    </td>
 
-                      {/* HOST */}
+                    <td className="text-muted-foreground">
+                      {property.hostId || "Unknown"}
+                    </td>
 
-                      <td className="text-muted-foreground">
+                    <td>
+                      <div className="flex items-center text-muted-foreground">
+                        <MapPin className="mr-1 h-3.5 w-3.5" />
 
-                        {property.hostId || "Unknown"}
+                        {property.location || "N/A"}
+                      </div>
+                    </td>
 
-                      </td>
+                    <td>
+                      {property.propertyType || "N/A"}
+                    </td>
 
-                      {/* LOCATION */}
+                    <td className="font-semibold">
+                      {formatCurrency(
+                        Number(property.pricePerNight || 0)
+                      )}
+                    </td>
 
-                      <td>
+                    <td className="whitespace-nowrap text-muted-foreground">
+                      {property.bedrooms || 0} Bed ·{" "}
+                      {property.bathrooms || 0} Bath ·{" "}
+                      {property.guestCapacity || 0} Guests
+                    </td>
 
-                        <div className="flex items-center text-muted-foreground">
+                    <td>
+                      {getStatusBadge(property.status)}
+                    </td>
 
-                          <MapPin className="w-3.5 h-3.5 mr-1" />
-
-                          {property.location}
-
-                        </div>
-
-                      </td>
-
-                      {/* TYPE */}
-
-                      <td>
-
-                        {property.propertyType}
-
-                      </td>
-
-                      {/* PRICE */}
-
-                      <td className="font-semibold">
-
-                        {formatCurrency(
-                          property.pricePerNight
-                        )}
-
-                      </td>
-
-                      {/* CAPACITY */}
-
-                      <td className="text-muted-foreground whitespace-nowrap">
-
-                        {property.bedrooms} Bed ·{" "}
-                        {property.bathrooms} Bath ·{" "}
-                        {property.guestCapacity} Guests
-
-                      </td>
-
-                      {/* STATUS */}
-
-                      <td>
-
-                        {getStatusBadge(
-                          property.status
-                        )}
-
-                      </td>
-
-                      {/* ACTIONS */}
-
-                      <td className="text-right whitespace-nowrap">
-
-                        {/* APPROVE / REJECT
-                            ONLY FOR PENDING PROPERTIES
-                            ONLY EXISTS IN ADMIN PAGE
-                        */}
-
-                        {status === "pending" && (
-
-                          <>
-
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-green-600 hover:text-green-700"
-                              title="Approve Property"
-                              onClick={() =>
-                                handleApprove(property)
-                              }
-                            >
-
-                              <CheckCircle className="w-5 h-5" />
-
-                            </Button>
-
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-red-600 hover:text-red-700"
-                              title="Reject Property"
-                              onClick={() =>
-                                handleReject(property)
-                              }
-                            >
-
-                              <XCircle className="w-5 h-5" />
-
-                            </Button>
-
-                          </>
-
-                        )}
-
-                        {/* VIEW */}
-
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          asChild
-                        >
-
-                          <Link
-                            to={`/property/${id}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            title="View Property"
+                    <td className="whitespace-nowrap text-right">
+                      {status === "pending" && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-green-600 hover:text-green-700"
+                            title="Approve Property"
+                            onClick={() =>
+                              handleApprove(property)
+                            }
                           >
+                            <CheckCircle className="h-5 w-5" />
+                          </Button>
 
-                            <Eye className="w-4 h-4" />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-red-600 hover:text-red-700"
+                            title="Reject Property"
+                            onClick={() =>
+                              handleReject(property)
+                            }
+                          >
+                            <XCircle className="h-5 w-5" />
+                          </Button>
+                        </>
+                      )}
 
-                          </Link>
-
-                        </Button>
-
-                        {/* EDIT */}
-
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() =>
-                            openEditModal(property)
-                          }
-                          title="Edit Property"
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        asChild
+                      >
+                        <Link
+                          to={`/property/${id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="View Property"
                         >
+                          <Eye className="h-4 w-4" />
+                        </Link>
+                      </Button>
 
-                          <Edit className="w-4 h-4" />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() =>
+                          openEditModal(property)
+                        }
+                        title="Edit Property"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
 
-                        </Button>
-
-                        {/* DELETE */}
-
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-destructive"
-                          onClick={() =>
-                            handleDelete(id)
-                          }
-                          title="Delete Property"
-                        >
-
-                          <Trash2 className="w-4 h-4" />
-
-                        </Button>
-
-                      </td>
-
-                    </tr>
-
-                  );
-
-                }
-              )
-
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive"
+                        onClick={() =>
+                          handleDelete(id)
+                        }
+                        title="Delete Property"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </td>
+                  </tr>
+                );
+              })
             )}
-
           </tbody>
-
         </table>
-
       </div>
-
     </div>
   );
 };
 
 export default AdminPropertyManagement;
-
