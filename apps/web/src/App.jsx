@@ -1,4 +1,4 @@
-﻿import React, { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import {
   Route,
   Routes,
@@ -52,7 +52,7 @@ import GuestReviewsPage from '@/pages/GuestReviewsPage.jsx';
 import GuestSettingsPage from '@/pages/GuestSettingsPage.jsx';
 
 import HostDashboardPage from '@/pages/HostDashboardPage.jsx';
-import HostPropertyListingForm from '@/pages/HostPropertyListingForm.jsx';
+import HostAddPropertyPage from '@/pages/HostAddPropertyPage.jsx';
 import HostPropertiesPage from '@/pages/HostPropertiesPage.jsx';
 import EditPropertyPage from '@/pages/EditPropertyPage.jsx';
 
@@ -103,7 +103,7 @@ const AppLayout = ({ children }) => {
 const HostFormRoute = () => (
   <ProtectedRoute requireHost>
     <AppLayout>
-      <HostPropertyListingForm />
+      <HostAddPropertyPage />
     </AppLayout>
   </ProtectedRoute>
 );
@@ -228,6 +228,7 @@ function App() {
 }
 
 export default App;
+
 
 
 
