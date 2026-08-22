@@ -4,6 +4,7 @@ import authRouter from "./authRoutes.js";
 import otpRouter from "./otpRoutes.js";
 import healthCheck from "./health-check.js";
 import bookingsRouter from "./bookingsMongo.js";
+import calendarRouter from "./calendarRoutes.js";
 import propertyRouter from "./propertyRoutes.js";
 import dashboardRouter from "./dashboard.js";
 import adminRouter from "./admin.js";
@@ -30,9 +31,6 @@ export default () => {
 
   /* =========================================
      USERS
-     GET    /api/users
-     GET    /api/users/:id
-     PUT    /api/users/:id
   ========================================= */
 
   appRouter.use("/users", userRouter);
@@ -42,6 +40,12 @@ export default () => {
   ========================================= */
 
   appRouter.use("/bookings", bookingsRouter);
+
+  /* =========================================
+     CALENDAR
+  ========================================= */
+
+  appRouter.use("/calendar", calendarRouter);
 
   /* =========================================
      PROPERTIES

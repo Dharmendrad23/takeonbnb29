@@ -1,4 +1,4 @@
-﻿import dotenv from "dotenv";
+import dotenv from "dotenv";
 import dns from "node:dns";
 import mongoose from "mongoose";
 import { v2 as cloudinary } from "cloudinary";
@@ -209,8 +209,13 @@ main().catch(async (error) => {
 
   try {
     await mongoose.disconnect();
-  } catch {}
+  } catch (disconnectError) {
+    console.error("MongoDB disconnect error:", disconnectError.message);
+  }
 
   process.exit(1);
 });
+
+
+
 
