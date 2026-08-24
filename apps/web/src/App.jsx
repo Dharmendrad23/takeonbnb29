@@ -1,78 +1,411 @@
-import React, { useEffect } from 'react';
+// import React, { useEffect } from 'react';
+// import {
+//   Route,
+//   Routes,
+//   BrowserRouter as Router,
+//   useLocation,
+//   useNavigate
+// } from 'react-router-dom';
+
+// import { AuthProvider } from '@/contexts/AuthContext.jsx';
+// import { AdminAuthProvider } from '@/contexts/AdminAuthContext.jsx';
+// import { NotificationProvider } from '@/contexts/NotificationContext.jsx';
+// import { Toaster } from '@/components/ui/sonner';
+// import ScrollToTop from '@/components/ScrollToTop.jsx';
+// import ErrorBoundary from '@/components/ErrorBoundary.jsx';
+// import GuestDashboard from "@/pages/GuestDashboard.jsx";
+
+// import Header from '@/components/Header.jsx';
+// import Footer from '@/components/Footer.jsx';
+// import ProtectedRoute from '@/components/ProtectedRoute.jsx';
+// import AdminProtectedRoute from '@/components/AdminProtectedRoute.jsx';
+// import AdminLayout from '@/components/AdminLayout.jsx';
+// import PaymentSuccessModal from '@/components/PaymentSuccessModal.jsx';
+
+// import HomePage from '@/pages/HomePage.jsx';
+// import PropertyList from '@/pages/PropertyList.jsx';
+// import PropertyDetailPage from '@/pages/PropertyDetailPage.jsx';
+// import LoginPage from '@/pages/LoginPage.jsx';
+// import SignupPage from '@/pages/SignupPage.jsx';
+// import HostRegisterPage from '@/pages/HostRegisterPage.jsx';
+// import HostAuthPage from '@/pages/HostAuthPage.jsx';
+// import DestinationPage from '@/pages/DestinationPage.jsx';
+// import SearchPage from '@/pages/SearchPage.jsx';
+
+// import AboutUsPage from '@/pages/AboutUsPage.jsx';
+// import ContactPage from '@/pages/ContactPage.jsx';
+// import ExplorePage from '@/pages/ExplorePage.jsx';
+// import BlogPage from '@/pages/BlogPage.jsx';
+// import HelpCenterPage from '@/pages/HelpCenterPage.jsx';
+// import SafetyPage from '@/pages/SafetyPage.jsx';
+// import FAQPage from '@/pages/FAQPage.jsx';
+// import NotFoundPage from '@/pages/NotFoundPage.jsx';
+
+// import CheckoutPage from '@/pages/CheckoutPage.jsx';
+
+// import GuestDashboardHome from '@/pages/GuestDashboardHome.jsx';
+// import GuestBookingsPage from '@/pages/GuestBookingsPage.jsx';
+// import GuestWishlistPage from '@/pages/GuestWishlistPage.jsx';
+// import GuestPaymentHistoryPage from '@/pages/GuestPaymentHistoryPage.jsx';
+// import GuestFavoritesPage from '@/pages/GuestFavoritesPage.jsx';
+// import GuestMessagesPage from '@/pages/GuestMessagesPage.jsx';
+// import GuestReviewsPage from '@/pages/GuestReviewsPage.jsx';
+// import GuestSettingsPage from '@/pages/GuestSettingsPage.jsx';
+
+// import HostDashboardPage from '@/pages/HostDashboardPage.jsx';
+// import HostAddPropertyPage from '@/pages/HostAddPropertyPage.jsx';
+// import HostPropertiesPage from '@/pages/HostPropertiesPage.jsx';
+// import EditPropertyPage from '@/pages/EditPropertyPage.jsx';
+
+// import AdminLoginPage from '@/pages/admin/AdminLoginPage.jsx';
+// import AdminDashboard from '@/pages/admin/AdminDashboard.jsx';
+// import AdminPropertyManagement from '@/pages/admin/AdminPropertyManagement.jsx';
+// import AdminPropertyApprovalPage from '@/pages/admin/AdminPropertyApprovalPage.jsx';
+// import AdminBookingManagement from '@/pages/admin/AdminBookingManagement.jsx';
+// import AdminGuestManagement from '@/pages/admin/AdminGuestManagement.jsx';
+// import AdminRevenueTracking from '@/pages/admin/AdminRevenueTracking.jsx';
+// import AdminActivityLogs from '@/pages/admin/AdminActivityLogs.jsx';
+// import AdminBookingCalendar from '@/pages/admin/AdminBookingCalendar.jsx';
+// import AdminHostManagement from '@/pages/admin/AdminHostManagement.jsx';
+// import AdminReviewManagement from '@/pages/admin/AdminReviewManagement.jsx';
+// import AdminDisputes from '@/pages/admin/AdminDisputes.jsx';
+// import AdminMessageCenter from '@/pages/admin/AdminMessageCenter.jsx';
+// import AdminNotifications from '@/pages/admin/AdminNotifications.jsx';
+// import AdminReports from '@/pages/admin/AdminReports.jsx';
+// import AdminRoles from '@/pages/admin/AdminRoles.jsx';
+// import AdminSettings from '@/pages/admin/AdminSettings.jsx';
+// //import GuestDashboard from "@/pages/GuestDashboard";
+
+
+// //import LoginPage from "@/pages/LoginPage";
+
+// const AppLayout = ({ children }) => {
+//   const location = useLocation();
+//   const navigate = useNavigate();
+
+//   const [successModalOpen, setSuccessModalOpen] = React.useState(false);
+//   const [successBookingId, setSuccessBookingId] = React.useState(null);
+
+//   useEffect(() => {
+//     const params = new URLSearchParams(location.search);
+//     const sessionId = params.get('session_id');
+//     const bookingId = params.get('booking_id');
+
+//     if (sessionId && bookingId && location.pathname === '/guest/dashboard') {
+//       setSuccessBookingId(bookingId);
+//       setSuccessModalOpen(true);
+//       navigate('/guest/dashboard', { replace: true });
+//     }
+//   }, [location, navigate]);
+
+//   return (
+//     <div className="flex flex-col min-h-screen bg-background text-foreground font-sans">
+//       <Header />
+//       <main className="flex-1 w-full relative flex flex-col pt-0">
+//         {children}
+//       </main>
+//       <Footer />
+//       <PaymentSuccessModal
+//         isOpen={successModalOpen}
+//         onClose={() => setSuccessModalOpen(false)}
+//         bookingId={successBookingId}
+//       />
+//     </div>
+//   );
+// };
+
+// const HostFormRoute = () => (
+//   <ProtectedRoute requireHost>
+//     <AppLayout>
+//       <HostAddPropertyPage />
+//     </AppLayout>
+//   </ProtectedRoute>
+// );
+
+// function App() {
+//   return (
+//     <ErrorBoundary>
+//       <Router>
+//         <AuthProvider>
+//           <NotificationProvider>
+//             <AdminAuthProvider>
+//               <ScrollToTop />
+
+//               <Routes>
+//                 <Route path="/" element={<AppLayout><HomePage /></AppLayout>} />
+//                 <Route path="/properties" element={<AppLayout><PropertyList /></AppLayout>} />
+//                 <Route path="/search" element={<AppLayout><SearchPage /></AppLayout>} />
+//                 <Route path="/property/:id" element={<AppLayout><PropertyDetailPage /></AppLayout>} />
+//                 <Route path="/properties/:id" element={<AppLayout><PropertyDetailPage /></AppLayout>} />
+//                 <Route path="/destination/:location" element={<AppLayout><DestinationPage /></AppLayout>} />
+
+//                 <Route path="/login" element={<AppLayout><LoginPage /></AppLayout>} />
+//                 {/* <Route path="/login" element={<LoginPage />} /> */}
+
+//                 <Route path="/signup" element={<AppLayout><SignupPage /></AppLayout>} />
+//                 <Route path="/host/login" element={<AppLayout><HostAuthPage /></AppLayout>} />
+//                 <Route path="/host/register" element={<AppLayout><HostRegisterPage /></AppLayout>} />
+
+//                 <Route path="/about" element={<AppLayout><AboutUsPage /></AppLayout>} />
+//                 <Route path="/explore" element={<AppLayout><ExplorePage /></AppLayout>} />
+//                 <Route path="/blog" element={<AppLayout><BlogPage /></AppLayout>} />
+//                 <Route path="/help-center" element={<AppLayout><HelpCenterPage /></AppLayout>} />
+//                 <Route path="/faq" element={<AppLayout><FAQPage /></AppLayout>} />
+//                 <Route path="/safety" element={<AppLayout><SafetyPage /></AppLayout>} />
+//                 <Route path="/contact" element={<AppLayout><ContactPage /></AppLayout>} />
+
+//                 <Route path="/checkout" element={<AppLayout><CheckoutPage /></AppLayout>} />
+//                 <Route path="/checkout/:propertyId" element={<AppLayout><CheckoutPage /></AppLayout>} />
+
+//                 <Route path="/guest/dashboard" element={<ProtectedRoute requireGuest><AppLayout><GuestDashboardHome /></AppLayout></ProtectedRoute>} />
+//                 <Route path="/guest/bookings" element={<ProtectedRoute requireGuest><AppLayout><GuestBookingsPage /></AppLayout></ProtectedRoute>} />
+//                 <Route path="/guest/wishlist" element={<ProtectedRoute requireGuest><AppLayout><GuestWishlistPage /></AppLayout></ProtectedRoute>} />
+//                 <Route path="/guest/payments" element={<ProtectedRoute requireGuest><AppLayout><GuestPaymentHistoryPage /></AppLayout></ProtectedRoute>} />
+//                 <Route path="/guest/favorites" element={<ProtectedRoute requireGuest><AppLayout><GuestFavoritesPage /></AppLayout></ProtectedRoute>} />
+//                 <Route path="/guest/messages" element={<ProtectedRoute requireGuest><AppLayout><GuestMessagesPage /></AppLayout></ProtectedRoute>} />
+//                 <Route path="/guest/reviews" element={<ProtectedRoute requireGuest><AppLayout><GuestReviewsPage /></AppLayout></ProtectedRoute>} />
+//                 <Route path="/guest/settings" element={<ProtectedRoute requireGuest><AppLayout><GuestSettingsPage /></AppLayout></ProtectedRoute>} />
+
+//                 {/* HOST DASHBOARD */}
+//                 <Route
+//                   path="/host/dashboard"
+//                   element={
+//                     <ProtectedRoute requireHost>
+//                       <AppLayout>
+//                         <HostDashboardPage />
+//                       </AppLayout>
+//                     </ProtectedRoute>
+//                   }
+//                 />
+
+//                 <Route
+//                   path="/host/properties"
+//                   element={
+//                     <ProtectedRoute requireHost>
+//                       <AppLayout>
+//                         <HostPropertiesPage />
+//                       </AppLayout>
+//                     </ProtectedRoute>
+//                   }
+//                 />
+
+//                 {/* ALL ADD PROPERTY ROUTES USE THE SAME FORM */}
+//                 <Route path="/host/add-property" element={<HostFormRoute />} />
+//                 <Route path="/host/property/new" element={<HostFormRoute />} />
+//                 <Route path="/host/create-listing" element={<HostFormRoute />} />
+//                 <Route path="/host/listing/new" element={<HostFormRoute />} />
+
+//                 {/* EDIT PROPERTY */}
+//                 <Route
+//                   path="/host/edit-property/:id"
+//                   element={
+//                     <ProtectedRoute requireHost>
+//                       <AppLayout>
+//                         <EditPropertyPage />
+//                       </AppLayout>
+//                     </ProtectedRoute>
+//                   }
+//                 />
+
+//                 {/* ADMIN */}
+//                 <Route path="/admin/login" element={<AdminLoginPage />} />
+
+//                 <Route
+//                   path="/admin"
+//                   element={
+//                     <AdminProtectedRoute>
+//                       <AdminLayout />
+//                     </AdminProtectedRoute>
+//                   }
+//                 >
+//                   <Route index element={<AdminDashboard />} />
+//                   <Route path="properties" element={<AdminPropertyManagement />} />
+//                   <Route
+//                     path="properties/edit/:id"
+//                     element={<EditPropertyPage />}
+//                   />
+//                   <Route path="properties/pending" element={<AdminPropertyApprovalPage />} />
+//                   <Route path="bookings" element={<AdminBookingManagement />} />
+//                   <Route path="users" element={<AdminGuestManagement />} />
+//                   <Route path="analytics" element={<AdminRevenueTracking />} />
+//                   <Route path="activity" element={<AdminActivityLogs />} />
+//                   {/* EXTRA ADMIN ROUTES */}
+//                   <Route path="dashboard" element={<AdminDashboard />} />
+
+//                   <Route path="calendar" element={<AdminBookingCalendar />} />
+
+//                   <Route path="hosts" element={<AdminHostManagement />} />
+
+//                   <Route path="reviews" element={<AdminReviewManagement />} />
+
+//                   <Route path="disputes" element={<AdminDisputes />} />
+
+//                   <Route path="messages" element={<AdminMessageCenter />} />
+
+//                   <Route path="notifications" element={<AdminNotifications />} />
+
+//                   <Route path="reports" element={<AdminReports />} />
+
+//                   <Route path="roles" element={<AdminRoles />} />
+
+//                   <Route path="settings" element={<AdminSettings />} />
+
+//                   <Route path="payouts" element={<AdminRevenueTracking />} />
+//                   <Route path="revenue" element={<AdminRevenueTracking />} />
+
+//                   <Route path="audit-logs" element={<AdminActivityLogs />} />
+
+//                   <Route path="approvals" element={<AdminPropertyApprovalPage />} />
+
+//                   <Route path="guests" element={<AdminGuestManagement />} />
+//                 </Route>
+
+//                 <Route path="*" element={<AppLayout><NotFoundPage /></AppLayout>} />
+
+               
+
+
+
+//                <Route path="/login" element={<LoginPage />} />
+
+// <Route
+//   path="/guest-dashboard"
+//   element={<GuestDashboard />}
+// />
+
+
+
+
+//                 <Route
+//   path="/guest-dashboard"
+//   element={<GuestDashboard />}
+// />
+//               </Routes>
+
+//               <Toaster position="top-center" richColors theme="light" />
+//             </AdminAuthProvider>
+//           </NotificationProvider>
+//         </AuthProvider>
+//       </Router>
+//     </ErrorBoundary>
+//   );
+// }
+
+// export default App;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import React, { useEffect } from "react";
 import {
   Route,
   Routes,
   BrowserRouter as Router,
   useLocation,
-  useNavigate
-} from 'react-router-dom';
+  useNavigate,
+  Navigate,
+} from "react-router-dom";
 
-import { AuthProvider } from '@/contexts/AuthContext.jsx';
-import { AdminAuthProvider } from '@/contexts/AdminAuthContext.jsx';
-import { NotificationProvider } from '@/contexts/NotificationContext.jsx';
-import { Toaster } from '@/components/ui/sonner';
-import ScrollToTop from '@/components/ScrollToTop.jsx';
-import ErrorBoundary from '@/components/ErrorBoundary.jsx';
+import { AuthProvider } from "@/contexts/AuthContext.jsx";
+import { AdminAuthProvider } from "@/contexts/AdminAuthContext.jsx";
+import { NotificationProvider } from "@/contexts/NotificationContext.jsx";
+import { Toaster } from "@/components/ui/sonner";
+import ScrollToTop from "@/components/ScrollToTop.jsx";
+import ErrorBoundary from "@/components/ErrorBoundary.jsx";
 
-import Header from '@/components/Header.jsx';
-import Footer from '@/components/Footer.jsx';
-import ProtectedRoute from '@/components/ProtectedRoute.jsx';
-import AdminProtectedRoute from '@/components/AdminProtectedRoute.jsx';
-import AdminLayout from '@/components/AdminLayout.jsx';
-import PaymentSuccessModal from '@/components/PaymentSuccessModal.jsx';
+import Header from "@/components/Header.jsx";
+import Footer from "@/components/Footer.jsx";
+import ProtectedRoute from "@/components/ProtectedRoute.jsx";
+import AdminProtectedRoute from "@/components/AdminProtectedRoute.jsx";
+import AdminLayout from "@/components/AdminLayout.jsx";
+import PaymentSuccessModal from "@/components/PaymentSuccessModal.jsx";
 
-import HomePage from '@/pages/HomePage.jsx';
-import PropertyList from '@/pages/PropertyList.jsx';
-import PropertyDetailPage from '@/pages/PropertyDetailPage.jsx';
-import LoginPage from '@/pages/LoginPage.jsx';
-import SignupPage from '@/pages/SignupPage.jsx';
-import HostRegisterPage from '@/pages/HostRegisterPage.jsx';
-import HostAuthPage from '@/pages/HostAuthPage.jsx';
-import DestinationPage from '@/pages/DestinationPage.jsx';
-import SearchPage from '@/pages/SearchPage.jsx';
+import HomePage from "@/pages/HomePage.jsx";
+import PropertyList from "@/pages/PropertyList.jsx";
+import PropertyDetailPage from "@/pages/PropertyDetailPage.jsx";
+import LoginPage from "@/pages/LoginPage.jsx";
+import SignupPage from "@/pages/SignupPage.jsx";
+import HostRegisterPage from "@/pages/HostRegisterPage.jsx";
+import HostAuthPage from "@/pages/HostAuthPage.jsx";
+import DestinationPage from "@/pages/DestinationPage.jsx";
+import SearchPage from "@/pages/SearchPage.jsx";
 
-import AboutUsPage from '@/pages/AboutUsPage.jsx';
-import ContactPage from '@/pages/ContactPage.jsx';
-import ExplorePage from '@/pages/ExplorePage.jsx';
-import BlogPage from '@/pages/BlogPage.jsx';
-import HelpCenterPage from '@/pages/HelpCenterPage.jsx';
-import SafetyPage from '@/pages/SafetyPage.jsx';
-import FAQPage from '@/pages/FAQPage.jsx';
-import NotFoundPage from '@/pages/NotFoundPage.jsx';
+import AboutUsPage from "@/pages/AboutUsPage.jsx";
+import ContactPage from "@/pages/ContactPage.jsx";
+import ExplorePage from "@/pages/ExplorePage.jsx";
+import BlogPage from "@/pages/BlogPage.jsx";
+import HelpCenterPage from "@/pages/HelpCenterPage.jsx";
+import SafetyPage from "@/pages/SafetyPage.jsx";
+import FAQPage from "@/pages/FAQPage.jsx";
+import NotFoundPage from "@/pages/NotFoundPage.jsx";
 
-import CheckoutPage from '@/pages/CheckoutPage.jsx';
+import CheckoutPage from "@/pages/CheckoutPage.jsx";
 
-import GuestDashboardHome from '@/pages/GuestDashboardHome.jsx';
-import GuestBookingsPage from '@/pages/GuestBookingsPage.jsx';
-import GuestWishlistPage from '@/pages/GuestWishlistPage.jsx';
-import GuestPaymentHistoryPage from '@/pages/GuestPaymentHistoryPage.jsx';
-import GuestFavoritesPage from '@/pages/GuestFavoritesPage.jsx';
-import GuestMessagesPage from '@/pages/GuestMessagesPage.jsx';
-import GuestReviewsPage from '@/pages/GuestReviewsPage.jsx';
-import GuestSettingsPage from '@/pages/GuestSettingsPage.jsx';
+import GuestDashboard from "@/pages/GuestDashboard.jsx";
+import GuestDashboardHome from "@/pages/GuestDashboardHome.jsx";
+import GuestBookingsPage from "@/pages/GuestBookingsPage.jsx";
+import GuestWishlistPage from "@/pages/GuestWishlistPage.jsx";
+import GuestPaymentHistoryPage from "@/pages/GuestPaymentHistoryPage.jsx";
+import GuestFavoritesPage from "@/pages/GuestFavoritesPage.jsx";
+import GuestMessagesPage from "@/pages/GuestMessagesPage.jsx";
+import GuestReviewsPage from "@/pages/GuestReviewsPage.jsx";
+import GuestSettingsPage from "@/pages/GuestSettingsPage.jsx";
 
-import HostDashboardPage from '@/pages/HostDashboardPage.jsx';
-import HostAddPropertyPage from '@/pages/HostAddPropertyPage.jsx';
-import HostPropertiesPage from '@/pages/HostPropertiesPage.jsx';
-import EditPropertyPage from '@/pages/EditPropertyPage.jsx';
+import HostDashboardPage from "@/pages/HostDashboardPage.jsx";
+import HostAddPropertyPage from "@/pages/HostAddPropertyPage.jsx";
+import HostPropertiesPage from "@/pages/HostPropertiesPage.jsx";
+import EditPropertyPage from "@/pages/EditPropertyPage.jsx";
 
-import AdminLoginPage from '@/pages/admin/AdminLoginPage.jsx';
-import AdminDashboard from '@/pages/admin/AdminDashboard.jsx';
-import AdminPropertyManagement from '@/pages/admin/AdminPropertyManagement.jsx';
-import AdminPropertyApprovalPage from '@/pages/admin/AdminPropertyApprovalPage.jsx';
-import AdminBookingManagement from '@/pages/admin/AdminBookingManagement.jsx';
-import AdminGuestManagement from '@/pages/admin/AdminGuestManagement.jsx';
-import AdminRevenueTracking from '@/pages/admin/AdminRevenueTracking.jsx';
-import AdminActivityLogs from '@/pages/admin/AdminActivityLogs.jsx';
-import AdminBookingCalendar from '@/pages/admin/AdminBookingCalendar.jsx';
-import AdminHostManagement from '@/pages/admin/AdminHostManagement.jsx';
-import AdminReviewManagement from '@/pages/admin/AdminReviewManagement.jsx';
-import AdminDisputes from '@/pages/admin/AdminDisputes.jsx';
-import AdminMessageCenter from '@/pages/admin/AdminMessageCenter.jsx';
-import AdminNotifications from '@/pages/admin/AdminNotifications.jsx';
-import AdminReports from '@/pages/admin/AdminReports.jsx';
-import AdminRoles from '@/pages/admin/AdminRoles.jsx';
-import AdminSettings from '@/pages/admin/AdminSettings.jsx';
+import AdminLoginPage from "@/pages/admin/AdminLoginPage.jsx";
+import AdminDashboard from "@/pages/admin/AdminDashboard.jsx";
+import AdminPropertyManagement from "@/pages/admin/AdminPropertyManagement.jsx";
+import AdminPropertyApprovalPage from "@/pages/admin/AdminPropertyApprovalPage.jsx";
+import AdminBookingManagement from "@/pages/admin/AdminBookingManagement.jsx";
+import AdminGuestManagement from "@/pages/admin/AdminGuestManagement.jsx";
+import AdminRevenueTracking from "@/pages/admin/AdminRevenueTracking.jsx";
+import AdminActivityLogs from "@/pages/admin/AdminActivityLogs.jsx";
+import AdminBookingCalendar from "@/pages/admin/AdminBookingCalendar.jsx";
+import AdminHostManagement from "@/pages/admin/AdminHostManagement.jsx";
+import AdminReviewManagement from "@/pages/admin/AdminReviewManagement.jsx";
+import AdminDisputes from "@/pages/admin/AdminDisputes.jsx";
+import AdminMessageCenter from "@/pages/admin/AdminMessageCenter.jsx";
+import AdminNotifications from "@/pages/admin/AdminNotifications.jsx";
+import AdminReports from "@/pages/admin/AdminReports.jsx";
+import AdminRoles from "@/pages/admin/AdminRoles.jsx";
+import AdminSettings from "@/pages/admin/AdminSettings.jsx";
 
 const AppLayout = ({ children }) => {
   const location = useLocation();
@@ -83,23 +416,34 @@ const AppLayout = ({ children }) => {
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const sessionId = params.get('session_id');
-    const bookingId = params.get('booking_id');
 
-    if (sessionId && bookingId && location.pathname === '/guest/dashboard') {
+    const sessionId = params.get("session_id");
+    const bookingId = params.get("booking_id");
+
+    if (
+      sessionId &&
+      bookingId &&
+      location.pathname === "/guest/dashboard"
+    ) {
       setSuccessBookingId(bookingId);
       setSuccessModalOpen(true);
-      navigate('/guest/dashboard', { replace: true });
+
+      navigate("/guest/dashboard", {
+        replace: true,
+      });
     }
   }, [location, navigate]);
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground font-sans">
       <Header />
+
       <main className="flex-1 w-full relative flex flex-col pt-0">
         {children}
       </main>
+
       <Footer />
+
       <PaymentSuccessModal
         isOpen={successModalOpen}
         onClose={() => setSuccessModalOpen(false)}
@@ -127,37 +471,300 @@ function App() {
               <ScrollToTop />
 
               <Routes>
-                <Route path="/" element={<AppLayout><HomePage /></AppLayout>} />
-                <Route path="/properties" element={<AppLayout><PropertyList /></AppLayout>} />
-                <Route path="/search" element={<AppLayout><SearchPage /></AppLayout>} />
-                <Route path="/property/:id" element={<AppLayout><PropertyDetailPage /></AppLayout>} />
-<Route path="/properties/:id" element={<AppLayout><PropertyDetailPage /></AppLayout>} />
-                <Route path="/destination/:location" element={<AppLayout><DestinationPage /></AppLayout>} />
+                {/* HOME */}
+                <Route
+                  path="/"
+                  element={
+                    <AppLayout>
+                      <HomePage />
+                    </AppLayout>
+                  }
+                />
 
-                <Route path="/login" element={<AppLayout><LoginPage /></AppLayout>} />
-                <Route path="/signup" element={<AppLayout><SignupPage /></AppLayout>} />
-                <Route path="/host/login" element={<AppLayout><HostAuthPage /></AppLayout>} />
-                <Route path="/host/register" element={<AppLayout><HostRegisterPage /></AppLayout>} />
+                {/* PROPERTIES */}
+                <Route
+                  path="/properties"
+                  element={
+                    <AppLayout>
+                      <PropertyList />
+                    </AppLayout>
+                  }
+                />
 
-                <Route path="/about" element={<AppLayout><AboutUsPage /></AppLayout>} />
-                <Route path="/explore" element={<AppLayout><ExplorePage /></AppLayout>} />
-                <Route path="/blog" element={<AppLayout><BlogPage /></AppLayout>} />
-                <Route path="/help-center" element={<AppLayout><HelpCenterPage /></AppLayout>} />
-                <Route path="/faq" element={<AppLayout><FAQPage /></AppLayout>} />
-                <Route path="/safety" element={<AppLayout><SafetyPage /></AppLayout>} />
-                <Route path="/contact" element={<AppLayout><ContactPage /></AppLayout>} />
+                <Route
+                  path="/search"
+                  element={
+                    <AppLayout>
+                      <SearchPage />
+                    </AppLayout>
+                  }
+                />
 
-                <Route path="/checkout" element={<AppLayout><CheckoutPage /></AppLayout>} />
-                <Route path="/checkout/:propertyId" element={<AppLayout><CheckoutPage /></AppLayout>} />
+                <Route
+                  path="/property/:id"
+                  element={
+                    <AppLayout>
+                      <PropertyDetailPage />
+                    </AppLayout>
+                  }
+                />
 
-                <Route path="/guest/dashboard" element={<ProtectedRoute requireGuest><AppLayout><GuestDashboardHome /></AppLayout></ProtectedRoute>} />
-                <Route path="/guest/bookings" element={<ProtectedRoute requireGuest><AppLayout><GuestBookingsPage /></AppLayout></ProtectedRoute>} />
-                <Route path="/guest/wishlist" element={<ProtectedRoute requireGuest><AppLayout><GuestWishlistPage /></AppLayout></ProtectedRoute>} />
-                <Route path="/guest/payments" element={<ProtectedRoute requireGuest><AppLayout><GuestPaymentHistoryPage /></AppLayout></ProtectedRoute>} />
-                <Route path="/guest/favorites" element={<ProtectedRoute requireGuest><AppLayout><GuestFavoritesPage /></AppLayout></ProtectedRoute>} />
-                <Route path="/guest/messages" element={<ProtectedRoute requireGuest><AppLayout><GuestMessagesPage /></AppLayout></ProtectedRoute>} />
-                <Route path="/guest/reviews" element={<ProtectedRoute requireGuest><AppLayout><GuestReviewsPage /></AppLayout></ProtectedRoute>} />
-                <Route path="/guest/settings" element={<ProtectedRoute requireGuest><AppLayout><GuestSettingsPage /></AppLayout></ProtectedRoute>} />
+                <Route
+                  path="/properties/:id"
+                  element={
+                    <AppLayout>
+                      <PropertyDetailPage />
+                    </AppLayout>
+                  }
+                />
+
+                <Route
+                  path="/destination/:location"
+                  element={
+                    <AppLayout>
+                      <DestinationPage />
+                    </AppLayout>
+                  }
+                />
+
+                {/* LOGIN - ONLY ONE ROUTE */}
+                <Route
+                  path="/login"
+                  element={
+                    <AppLayout>
+                      <LoginPage />
+                    </AppLayout>
+                  }
+                />
+
+                {/* SIGNUP */}
+                <Route
+                  path="/signup"
+                  element={
+                    <AppLayout>
+                      <SignupPage />
+                    </AppLayout>
+                  }
+                />
+
+                {/* HOST AUTH */}
+                <Route
+                  path="/host/login"
+                  element={
+                    <AppLayout>
+                      <HostAuthPage />
+                    </AppLayout>
+                  }
+                />
+
+                <Route
+                  path="/host/register"
+                  element={
+                    <AppLayout>
+                      <HostRegisterPage />
+                    </AppLayout>
+                  }
+                />
+
+                {/* STATIC PAGES */}
+                <Route
+                  path="/about"
+                  element={
+                    <AppLayout>
+                      <AboutUsPage />
+                    </AppLayout>
+                  }
+                />
+
+                <Route
+                  path="/explore"
+                  element={
+                    <AppLayout>
+                      <ExplorePage />
+                    </AppLayout>
+                  }
+                />
+
+                <Route
+                  path="/blog"
+                  element={
+                    <AppLayout>
+                      <BlogPage />
+                    </AppLayout>
+                  }
+                />
+
+                <Route
+                  path="/help-center"
+                  element={
+                    <AppLayout>
+                      <HelpCenterPage />
+                    </AppLayout>
+                  }
+                />
+
+                <Route
+                  path="/faq"
+                  element={
+                    <AppLayout>
+                      <FAQPage />
+                    </AppLayout>
+                  }
+                />
+
+                <Route
+                  path="/safety"
+                  element={
+                    <AppLayout>
+                      <SafetyPage />
+                    </AppLayout>
+                  }
+                />
+
+                <Route
+                  path="/contact"
+                  element={
+                    <AppLayout>
+                      <ContactPage />
+                    </AppLayout>
+                  }
+                />
+
+                {/* CHECKOUT */}
+                <Route
+                  path="/checkout"
+                  element={
+                    <AppLayout>
+                      <CheckoutPage />
+                    </AppLayout>
+                  }
+                />
+
+                <Route
+                  path="/checkout/:propertyId"
+                  element={
+                    <AppLayout>
+                      <CheckoutPage />
+                    </AppLayout>
+                  }
+                />
+
+                {/* =========================
+                    GUEST PREVIEW DASHBOARD
+                    LOGIN KE BAAD YAHI OPEN HOGA
+                ========================= */}
+                {/* <Route
+                  path="/guest-dashboard"
+                  element={
+                    <AppLayout>
+                      <GuestDashboard />
+                    </AppLayout>
+                  }
+                /> */}
+
+                <Route
+  path="/guest/dashboard"
+  element={
+    <AppLayout>
+      <GuestDashboardHome />
+    </AppLayout>
+  }
+/>
+
+
+
+
+                {/* =========================
+                    PROTECTED GUEST DASHBOARD
+                ========================= */}
+
+                <Route
+                  path="/guest/dashboard"
+                  element={
+                    <ProtectedRoute requireGuest>
+                      <AppLayout>
+                        <GuestDashboardHome />
+                      </AppLayout>
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/guest/bookings"
+                  element={
+                    <ProtectedRoute requireGuest>
+                      <AppLayout>
+                        <GuestBookingsPage />
+                      </AppLayout>
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/guest/wishlist"
+                  element={
+                    <ProtectedRoute requireGuest>
+                      <AppLayout>
+                        <GuestWishlistPage />
+                      </AppLayout>
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/guest/payments"
+                  element={
+                    <ProtectedRoute requireGuest>
+                      <AppLayout>
+                        <GuestPaymentHistoryPage />
+                      </AppLayout>
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/guest/favorites"
+                  element={
+                    <ProtectedRoute requireGuest>
+                      <AppLayout>
+                        <GuestFavoritesPage />
+                      </AppLayout>
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/guest/messages"
+                  element={
+                    <ProtectedRoute requireGuest>
+                      <AppLayout>
+                        <GuestMessagesPage />
+                      </AppLayout>
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/guest/reviews"
+                  element={
+                    <ProtectedRoute requireGuest>
+                      <AppLayout>
+                        <GuestReviewsPage />
+                      </AppLayout>
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/guest/settings"
+                  element={
+                    <ProtectedRoute requireGuest>
+                      <AppLayout>
+                        <GuestSettingsPage />
+                      </AppLayout>
+                    </ProtectedRoute>
+                  }
+                />
 
                 {/* HOST DASHBOARD */}
                 <Route
@@ -182,11 +789,26 @@ function App() {
                   }
                 />
 
-                {/* ALL ADD PROPERTY ROUTES USE THE SAME FORM */}
-                <Route path="/host/add-property" element={<HostFormRoute />} />
-                <Route path="/host/property/new" element={<HostFormRoute />} />
-                <Route path="/host/create-listing" element={<HostFormRoute />} />
-                <Route path="/host/listing/new" element={<HostFormRoute />} />
+                {/* HOST ADD PROPERTY */}
+                <Route
+                  path="/host/add-property"
+                  element={<HostFormRoute />}
+                />
+
+                <Route
+                  path="/host/property/new"
+                  element={<HostFormRoute />}
+                />
+
+                <Route
+                  path="/host/create-listing"
+                  element={<HostFormRoute />}
+                />
+
+                <Route
+                  path="/host/listing/new"
+                  element={<HostFormRoute />}
+                />
 
                 {/* EDIT PROPERTY */}
                 <Route
@@ -200,9 +822,13 @@ function App() {
                   }
                 />
 
-                {/* ADMIN */}
-                <Route path="/admin/login" element={<AdminLoginPage />} />
+                {/* ADMIN LOGIN */}
+                <Route
+                  path="/admin/login"
+                  element={<AdminLoginPage />}
+                />
 
+                {/* ADMIN ROUTES */}
                 <Route
                   path="/admin"
                   element={
@@ -212,51 +838,134 @@ function App() {
                   }
                 >
                   <Route index element={<AdminDashboard />} />
-                  <Route path="properties" element={<AdminPropertyManagement />} />
+
+                  <Route
+                    path="dashboard"
+                    element={<AdminDashboard />}
+                  />
+
+                  <Route
+                    path="properties"
+                    element={<AdminPropertyManagement />}
+                  />
+
                   <Route
                     path="properties/edit/:id"
                     element={<EditPropertyPage />}
                   />
-                  <Route path="properties/pending" element={<AdminPropertyApprovalPage />} />
-                  <Route path="bookings" element={<AdminBookingManagement />} />
-                  <Route path="users" element={<AdminGuestManagement />} />
-                  <Route path="analytics" element={<AdminRevenueTracking />} />
-                  <Route path="activity" element={<AdminActivityLogs />} />
-                  {/* EXTRA ADMIN ROUTES */}
-                  <Route path="dashboard" element={<AdminDashboard />} />
 
-                  <Route path="calendar" element={<AdminBookingCalendar />} />
+                  <Route
+                    path="properties/pending"
+                    element={<AdminPropertyApprovalPage />}
+                  />
 
-                  <Route path="hosts" element={<AdminHostManagement />} />
+                  <Route
+                    path="bookings"
+                    element={<AdminBookingManagement />}
+                  />
 
-                  <Route path="reviews" element={<AdminReviewManagement />} />
+                  <Route
+                    path="users"
+                    element={<AdminGuestManagement />}
+                  />
 
-                  <Route path="disputes" element={<AdminDisputes />} />
+                  <Route
+                    path="analytics"
+                    element={<AdminRevenueTracking />}
+                  />
 
-                  <Route path="messages" element={<AdminMessageCenter />} />
+                  <Route
+                    path="activity"
+                    element={<AdminActivityLogs />}
+                  />
 
-                  <Route path="notifications" element={<AdminNotifications />} />
+                  <Route
+                    path="calendar"
+                    element={<AdminBookingCalendar />}
+                  />
 
-                  <Route path="reports" element={<AdminReports />} />
+                  <Route
+                    path="hosts"
+                    element={<AdminHostManagement />}
+                  />
 
-                  <Route path="roles" element={<AdminRoles />} />
+                  <Route
+                    path="reviews"
+                    element={<AdminReviewManagement />}
+                  />
 
-                  <Route path="settings" element={<AdminSettings />} />
+                  <Route
+                    path="disputes"
+                    element={<AdminDisputes />}
+                  />
 
-                  <Route path="payouts" element={<AdminRevenueTracking />} />
-                  <Route path="revenue" element={<AdminRevenueTracking />} />
+                  <Route
+                    path="messages"
+                    element={<AdminMessageCenter />}
+                  />
 
-                  <Route path="audit-logs" element={<AdminActivityLogs />} />
+                  <Route
+                    path="notifications"
+                    element={<AdminNotifications />}
+                  />
 
-                  <Route path="approvals" element={<AdminPropertyApprovalPage />} />
+                  <Route
+                    path="reports"
+                    element={<AdminReports />}
+                  />
 
-                  <Route path="guests" element={<AdminGuestManagement />} />
+                  <Route
+                    path="roles"
+                    element={<AdminRoles />}
+                  />
+
+                  <Route
+                    path="settings"
+                    element={<AdminSettings />}
+                  />
+
+                  <Route
+                    path="payouts"
+                    element={<AdminRevenueTracking />}
+                  />
+
+                  <Route
+                    path="revenue"
+                    element={<AdminRevenueTracking />}
+                  />
+
+                  <Route
+                    path="audit-logs"
+                    element={<AdminActivityLogs />}
+                  />
+
+                  <Route
+                    path="approvals"
+                    element={<AdminPropertyApprovalPage />}
+                  />
+
+                  <Route
+                    path="guests"
+                    element={<AdminGuestManagement />}
+                  />
                 </Route>
 
-                <Route path="*" element={<AppLayout><NotFoundPage /></AppLayout>} />
+                {/* 404 */}
+                <Route
+                  path="*"
+                  element={
+                    <AppLayout>
+                      <NotFoundPage />
+                    </AppLayout>
+                  }
+                />
               </Routes>
 
-              <Toaster position="top-center" richColors theme="light" />
+              <Toaster
+                position="top-center"
+                richColors
+                theme="light"
+              />
             </AdminAuthProvider>
           </NotificationProvider>
         </AuthProvider>
@@ -266,9 +975,3 @@ function App() {
 }
 
 export default App;
-
-
-
-
-
-
