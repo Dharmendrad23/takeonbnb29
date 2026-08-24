@@ -1,4 +1,4 @@
-import React, {
+﻿import React, {
   useCallback,
   useEffect,
   useState,
@@ -416,7 +416,7 @@ const HostDashboardHome = () => {
           value={
             stats.rating > 0
               ? stats.rating.toFixed(1)
-              : '—'
+              : 'â€”'
           }
           description="Based on guest reviews"
           iconClass="bg-amber-100 text-amber-600"
@@ -443,7 +443,7 @@ const HostDashboardHome = () => {
               </div>
 
               <Link
-                to="/host/bookings"
+                to="/host/dashboard"
                 className="text-primary text-sm font-semibold flex items-center gap-1 hover:underline"
               >
                 Manage Bookings
@@ -515,7 +515,7 @@ const HostDashboardHome = () => {
                                 {formatDate(
                                   booking.checkInDate
                                 )}
-                                {' → '}
+                                {' â†’ '}
                                 {formatDate(
                                   booking.checkOutDate
                                 )}
@@ -591,7 +591,7 @@ const HostDashboardHome = () => {
               </Link>
 
               <Link
-                to="/host/bookings"
+                to="/host/dashboard"
                 className="flex items-center justify-between p-4 rounded-xl border border-border hover:border-primary hover:bg-primary/5 transition-all group"
               >
                 <div className="flex items-center gap-3">
@@ -606,7 +606,7 @@ const HostDashboardHome = () => {
               </Link>
 
               <Link
-                to="/host/earnings"
+                to="/host/dashboard"
                 className="flex items-center justify-between p-4 rounded-xl border border-border hover:border-primary hover:bg-primary/5 transition-all group"
               >
                 <div className="flex items-center gap-3">
@@ -749,3 +749,5 @@ const HostDashboardHome = () => {
 };
 
 export default HostDashboardHome;
+
+

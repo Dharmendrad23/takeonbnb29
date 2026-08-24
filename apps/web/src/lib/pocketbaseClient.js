@@ -114,6 +114,11 @@ const createCollection = (collectionName) => {
         return [];
       }
 
+      if (collectionName === 'unavailable_dates') {
+        const stored = JSON.parse(localStorage.getItem('takeonbnb-unavailable-dates') || '[]');
+        return sortItems(stored.filter((item) => matchesFilter(item, options.filter)), options.sort);
+      }
+
       const response = await api.get(buildPath());
       return Array.isArray(response.data) ? response.data : response.data?.items || [];
     },
@@ -148,6 +153,7 @@ const createCollection = (collectionName) => {
     },
 
     async create(data) {
+      if (collectionName === 'unavailable_dates') { const stored = JSON.parse(localStorage.getItem('takeonbnb-unavailable-dates') || '[]'); const record = { id: `blocked-` + Date.now(), ...data, created: new Date().toISOString() }; stored.push(record); localStorage.setItem('takeonbnb-unavailable-dates', JSON.stringify(stored)); return record; }
       if (collectionName === 'favorites') {
         const favorites = getStoredFavorites();
         const record = {
@@ -179,6 +185,7 @@ const createCollection = (collectionName) => {
     },
 
     async delete(id) {
+      if (collectionName === 'unavailable_dates') { const stored = JSON.parse(localStorage.getItem('takeonbnb-unavailable-dates') || '[]').filter(item => item.id !== id); localStorage.setItem('takeonbnb-unavailable-dates', JSON.stringify(stored)); return {}; }
       if (collectionName === 'favorites') {
         const favorites = getStoredFavorites().filter((item) => item.id !== id);
         persistFavorites(favorites);
@@ -238,3 +245,4 @@ const pocketbaseClient = {
 export default pocketbaseClient;
 
 export { pocketbaseClient };
+
