@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
@@ -194,63 +194,101 @@ const CreatePropertyPage = () => {
 
     try {
       const data = new FormData();
+
       data.append('hostId', currentUser.id);
       data.append('title', formData.title.trim());
       data.append('description', formData.description.trim());
       data.append('location', formData.location.trim());
+
+      data.append('city', formData.location.trim());
+      data.append('country', 'India');
+
       data.append('propertyType', formData.propertyType);
-      data.append('pricePerNight', parseFloat(formData.pricePerNight));
-      data.append('status', 'Draft');
-      data.append('bedrooms', parseInt(formData.bedrooms));
-      data.append('bathrooms', parseInt(formData.bathrooms));
-      data.append('guestCapacity', parseInt(formData.guestCapacity));
-      
-      formData.selectedAmenities.forEach(id => {
-        data.append('amenities', id);
-      });
+      data.append('propertyCategory', 'All');
+
+      data.append(
+        'pricePerNight',
+        String(parseFloat(formData.pricePerNight))
+      );
+
+      data.append(
+        'bedrooms',
+        String(parseInt(formData.bedrooms))
+      );
+
+      data.append(
+        'bathrooms',
+        String(parseInt(formData.bathrooms))
+      );
+
+      data.append(
+        'maxGuests',
+        String(parseInt(formData.guestCapacity))
+      );
+
+      data.append(
+        'guestCapacity',
+        String(parseInt(formData.guestCapacity))
+      );
+
+      data.append('status', 'pending');
+
+      data.append(
+        'amenities',
+        JSON.stringify(formData.selectedAmenities || [])
+      );
 
       formData.photos.forEach((photo) => {
-        data.append('photos', photo);
+        data.append('images', photo);
       });
 
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('TIMEOUT')), 30000)
+      const response = await api.post(
+        '/properties',
+        data,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          },
+          timeout: 60000
+        }
       );
-      
-      const createPromise = pb.collection('properties').create(data, { $autoCancel: false });
-      
-      const record = await Promise.race([createPromise, timeoutPromise]);
-      
-      toast.success('Property created successfully!');
-      
+
+      if (!response?.data?.success) {
+        throw new Error(
+          response?.data?.message ||
+          'Property submission failed'
+        );
+      }
+
+      toast.success(
+        'Property submitted successfully for admin approval!'
+      );
+
       setTimeout(() => {
         navigate('/host/dashboard');
       }, 1500);
-      
+
     } catch (error) {
-      console.error('Submission Error full stack:', error);
+      console.error(
+        'Property Submission Error:',
+        error
+      );
+
       setShowRetry(true);
-      
-      if (error.message === 'TIMEOUT') {
-        toast.error('Failed to create property: Request timed out after 30 seconds');
-      } else if (error.response) {
-        const pbErrors = error.response.data;
-        if (pbErrors && Object.keys(pbErrors).length > 0) {
-          const errorMessages = Object.entries(pbErrors)
-            .map(([field, details]) => `${field}: ${details.message}`)
-            .join(', ');
-          toast.error(`Failed to create property: ${errorMessages}`);
-        } else {
-          toast.error(`Failed to create property: ${error.response.message || 'Validation failed'}`);
-        }
-      } else {
-        toast.error(`Failed to create property: ${error.message || 'Network error'}`);
-      }
+
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Network error';
+
+      toast.error(
+        `Failed to submit property: ${message}`
+      );
+
     } finally {
       setIsSubmitting(false);
     }
   };
-
   return (
     <>
       <Helmet>
@@ -352,7 +390,7 @@ const CreatePropertyPage = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium mb-2">Price per Night in INR (₹) *</label>
+                      <label className="block text-sm font-medium mb-2">Price per Night in INR (â‚¹) *</label>
                       <Input
                         type="number"
                         value={formData.pricePerNight}
@@ -525,7 +563,7 @@ const CreatePropertyPage = () => {
             <AlertDialogHeader>
               <AlertDialogTitle>Review Property Details</AlertDialogTitle>
               <AlertDialogDescription>
-                You are about to list "{formData.title}" for ₹{formData.pricePerNight}/night.
+                You are about to list "{formData.title}" for â‚¹{formData.pricePerNight}/night.
                 Make sure all details and uploaded photos are correct before submitting.
               </AlertDialogDescription>
             </AlertDialogHeader>
