@@ -456,9 +456,9 @@ const HostAddPropertyPage = () => {
       e.target.files || []
     );
 
-    if (files.length > 100) {
+    if (files.length > 20) {
       toast.error(
-        "Maximum 100 images are allowed"
+        "Maximum 20 images are allowed"
       );
 
       return;
@@ -476,72 +476,57 @@ const HostAddPropertyPage = () => {
     e.preventDefault();
 
     if (!currentUser?.id) {
-      toast.error(
-        "Please login again before submitting"
-      );
-
+      toast.error("Please login again before submitting");
       return;
     }
 
     if (!selectedImages.length) {
-      toast.error(
-        "Please upload at least one property image"
-      );
+      toast.error("Please upload at least one property image");
+      return;
+    }
 
+    if (!formData.title?.trim()) {
+      toast.error("Property title is required");
+      return;
+    }
+
+    if (!formData.description?.trim()) {
+      toast.error("Property description is required");
+      return;
+    }
+
+    if (!formData.city?.trim()) {
+      toast.error("City is required");
+      return;
+    }
+
+    if (!formData.pricePerNight || Number(formData.pricePerNight) <= 0) {
+      toast.error("Valid price per night is required");
       return;
     }
 
     setLoading(true);
 
     try {
-      const imageData = await Promise.all(
-        selectedImages.map(
-          (image) =>
-            new Promise((resolve, reject) => {
-              const reader = new FileReader();
+      const payload = new FormData();
 
-              reader.onload = () => resolve(reader.result);
-
-              reader.onerror = () =>
-                reject(
-                  new Error("Failed to read property image")
-                );
-
-              reader.readAsDataURL(image);
-            })
-        )
-      );
-
-      const payload = new URLSearchParams();
-
-      payload.append("title", formData.title || "");
-
-      payload.append(
-        "description",
-        formData.description || ""
-      );
-
-      payload.append(
-        "location",
-        [
-          formData.address,
-          formData.city,
-          formData.state,
-          formData.country,
-          formData.pincode
-        ]
-          .filter(Boolean)
-          .join(", ")
-      );
+      payload.append("hostId", currentUser.id);
+      payload.append("title", formData.title.trim());
+      payload.append("description", formData.description.trim());
 
       payload.append(
         "propertyType",
-        formData.propertyType || "Other"
+        formData.propertyType || "villa"
       );
 
       payload.append(
-        "pricePerNight",
-        String(Number(formData.pricePerNight) || 0)
+        "propertyCategory",
+        formData.propertyCategory || "All"
+      );
+
+      payload.append(
+        "maxGuests",
+        String(Number(formData.maxGuests) || 1)
       );
 
       payload.append(
@@ -550,62 +535,65 @@ const HostAddPropertyPage = () => {
       );
 
       payload.append(
+        "beds",
+        String(Number(formData.beds) || 0)
+      );
+
+      payload.append(
         "bathrooms",
         String(Number(formData.bathrooms) || 0)
       );
 
-      payload.append(
-        "guestCapacity",
-        String(Number(formData.maxGuests) || 1)
-      );
+      payload.append("address", formData.address || "");
+      payload.append("city", formData.city.trim());
+      payload.append("state", formData.state || "");
+      payload.append("country", formData.country || "India");
+      payload.append("pincode", formData.pincode || "");
+
+      payload.append("latitude", formData.latitude || "");
+      payload.append("longitude", formData.longitude || "");
 
       payload.append(
-        "hostId",
-        currentUser.id
+        "pricePerNight",
+        String(Number(formData.pricePerNight) || 0)
       );
 
       payload.append(
-        "status",
-        "pending"
+        "checkInTime",
+        formData.checkInTime || ""
       );
 
-      formData.amenities.forEach(
-        (amenity) =>
-          payload.append(
-            "amenities",
-            amenity
-          )
+      payload.append(
+        "checkOutTime",
+        formData.checkOutTime || ""
       );
 
-      imageData.forEach(
-        (image) =>
-          payload.append(
-            "photos",
-            image
-          )
+      payload.append(
+        "houseRules",
+        formData.houseRules || ""
       );
+
+      formData.amenities.forEach((amenity) => {
+        payload.append("amenities", amenity);
+      });
+
+      selectedImages.forEach((image) => {
+        payload.append("images", image);
+      });
 
       const response = await axios.post(
         buildApiUrl("/api/properties"),
         payload,
         {
-          headers: {
-            "Content-Type":
-              "application/x-www-form-urlencoded"
-          },
-          timeout: 60000
+          timeout: 60000,
         }
       );
 
       const result = response.data;
 
-      if (
-        result &&
-        result.success === false
-      ) {
+      if (result?.success === false) {
         throw new Error(
-          result.message ||
-          "Failed to submit property"
+          result.message || "Failed to submit property"
         );
       }
 
@@ -616,7 +604,6 @@ const HostAddPropertyPage = () => {
       navigate("/host/properties");
 
     } catch (error) {
-
       console.error(
         "PROPERTY SUBMIT ERROR:",
         error.response?.data || error.message
@@ -632,6 +619,7 @@ const HostAddPropertyPage = () => {
       setLoading(false);
     }
   };
+
   return (
     <HostDashboardLayout>
 
