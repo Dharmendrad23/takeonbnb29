@@ -1,58 +1,121 @@
-import { useState, useEffect } from 'react';
-import api from '@/lib/api.js';
-import pb from '@/lib/pocketbaseClient';
+import { useState, useEffect, useCallback } from "react";
+import api from "@/lib/api.js";
 
 export const useRealtimeDashboardStats = () => {
   const [stats, setStats] = useState({
     totalProperties: 0,
     totalBookings: 0,
     totalUsers: 0,
+    totalHosts: 0,
+    totalGuests: 0,
+    totalAdmins: 0,
+    pendingProperties: 0,
+    approvedProperties: 0,
+    rejectedProperties: 0,
     totalRevenue: 0,
     activeBookings: 0,
     pendingBookings: 0,
+    confirmedBookings: 0,
+    occupancyRate: 0,
   });
+
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const [props, bookings, users] = await Promise.all([
-          pb.collection('properties').getList(1, 1, { $autoCancel: false }),
-          pb.collection('bookings').getFullList({ $autoCancel: false }),
-          pb.collection('users').getList(1, 1, { $autoCancel: false })
-        ]);
+  const fetchStats = useCallback(async () => {
+    try {
+      const response = await api.get("/admin/dashboard/stats");
 
-        const revenue = bookings.reduce((sum, b) => sum + (b.totalPrice || 0), 0);
-        const active = bookings.filter(b => b.status === 'confirmed' || b.status === 'checked-in').length;
-        const pending = bookings.filter(b => b.status === 'pending').length;
+      const data = response.data || {};
 
-        setStats({
-          totalProperties: props.totalItems,
-          totalBookings: bookings.length,
-          totalUsers: users.totalItems,
-          totalRevenue: revenue,
-          activeBookings: active,
-          pendingBookings: pending
-        });
-      } catch (error) {
-        console.error("Error fetching dashboard stats:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+      setStats({
+        totalProperties:
+          data.properties?.total ??
+          data.totalProperties ??
+          0,
 
-    fetchStats();
+        totalBookings:
+          data.bookings?.total ??
+          data.totalBookings ??
+          0,
 
-    pb.collection('properties').subscribe('*', fetchStats);
-    pb.collection('bookings').subscribe('*', fetchStats);
-    pb.collection('users').subscribe('*', fetchStats);
+        totalUsers:
+          data.users?.total ??
+          data.totalUsers ??
+          0,
 
-    return () => {
-      pb.collection('properties').unsubscribe('*');
-      pb.collection('bookings').unsubscribe('*');
-      pb.collection('users').unsubscribe('*');
-    };
+        totalHosts:
+          data.users?.hosts ??
+          0,
+
+        totalGuests:
+          data.users?.guests ??
+          0,
+
+        totalAdmins:
+          data.users?.admins ??
+          0,
+
+        pendingProperties:
+          data.properties?.pending ??
+          0,
+
+        approvedProperties:
+          data.properties?.approved ??
+          0,
+
+        rejectedProperties:
+          data.properties?.rejected ??
+          0,
+
+        totalRevenue:
+          data.revenue?.total ??
+          data.totalRevenue ??
+          0,
+
+        activeBookings:
+          data.confirmedBookings ??
+          data.bookings?.confirmed ??
+          0,
+
+        pendingBookings:
+          data.pendingBookings ??
+          data.bookings?.pending ??
+          0,
+
+        confirmedBookings:
+          data.confirmedBookings ??
+          data.bookings?.confirmed ??
+          0,
+
+        occupancyRate:
+          data.occupancyRate ??
+          0,
+      });
+
+    } catch (error) {
+      console.error(
+        "[Admin Dashboard] Failed to load stats:",
+        error?.response?.data || error.message
+      );
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  return { stats, isLoading };
+  useEffect(() => {
+    fetchStats();
+
+    // Refresh every 10 seconds so admin data stays current.
+    const interval = setInterval(fetchStats, 3000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [fetchStats]);
+
+  return {
+    stats,
+    isLoading,
+    refreshStats: fetchStats,
+  };
 };

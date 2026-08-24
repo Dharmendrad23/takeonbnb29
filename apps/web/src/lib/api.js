@@ -1,7 +1,6 @@
-﻿import axios from "axios";
+import axios from "axios";
 
-const PRODUCTION_API_URL =
-  "https://takeonbnb29.onrender.com";
+const PRODUCTION_API_URL = "https://takeonbnb29.onrender.com";
 
 export const getApiBaseUrl = () => {
   const configuredUrl = import.meta.env.VITE_API_URL;
@@ -53,19 +52,29 @@ const normalizeRecord = (record) => {
   return record;
 };
 
+
+/* =========================================
+   ADMIN AUTH TOKEN
+========================================= */
+
+api.interceptors.request.use(
+  (config) => {
+    const adminToken = localStorage.getItem("adminToken")
+
+    if (adminToken) {
+      config.headers = config.headers || {}
+      config.headers.Authorization = `Bearer ${adminToken}`
+    }
+
+    return config
+  },
+  (error) => Promise.reject(error)
+)
 api.interceptors.response.use(
   (response) => {
     const data = response.data;
     const url = String(response.config?.url || "");
 
-    /*
-      IMPORTANT:
-      GET /properties returns:
-      { success, count, properties: [...] }
-
-      Normalize collection responses to an array so every
-      homepage property component receives the same shape.
-    */
     const isPropertyCollection =
       /^\/properties(?:\?.*)?$/.test(url);
 
@@ -76,17 +85,23 @@ api.interceptors.response.use(
       !Array.isArray(data)
     ) {
       if (Array.isArray(data.properties)) {
-        response.data = data.properties.map(normalizeRecord);
+        response.data =
+          data.properties.map(normalizeRecord);
+
         return response;
       }
 
       if (Array.isArray(data.items)) {
-        response.data = data.items.map(normalizeRecord);
+        response.data =
+          data.items.map(normalizeRecord);
+
         return response;
       }
 
       if (Array.isArray(data.data)) {
-        response.data = data.data.map(normalizeRecord);
+        response.data =
+          data.data.map(normalizeRecord);
+
         return response;
       }
     }
