@@ -726,6 +726,100 @@ function App() {
 />
 
                 {/* ===============================
+                    ADMIN LOGIN
+                =============================== */}
+
+                <Route
+                  path="/admin/login"
+                  element={<AdminLoginPage />}
+                />
+
+                {/* ===============================
+                    ADMIN PANEL
+                =============================== */}
+
+                <Route
+                  path="/admin"
+                  element={
+                    <AdminProtectedRoute>
+                      <AdminLayout />
+                    </AdminProtectedRoute>
+                  }
+                >
+                  <Route index element={<AdminDashboard />} />
+
+                  <Route
+                    path="properties"
+                    element={<AdminPropertyManagement />}
+                  />
+
+                  <Route
+                    path="properties/pending"
+                    element={<AdminPropertyApprovalPage />}
+                  />
+
+                  <Route
+                    path="bookings"
+                    element={<AdminBookingManagement />}
+                  />
+
+                  <Route
+                    path="users"
+                    element={<AdminHostManagement />}
+                  />
+
+                  <Route
+                    path="guests"
+                    element={<AdminGuestManagement />}
+                  />
+
+                  <Route
+                    path="reviews"
+                    element={<AdminReviewManagement />}
+                  />
+
+                  <Route
+                    path="payouts"
+                    element={<AdminRevenueTracking />}
+                  />
+
+                  <Route
+                    path="disputes"
+                    element={<AdminDisputes />}
+                  />
+
+                  <Route
+                    path="messages"
+                    element={<AdminMessageCenter />}
+                  />
+
+                  <Route
+                    path="notifications"
+                    element={<AdminNotifications />}
+                  />
+
+                  <Route
+                    path="analytics"
+                    element={<AdminReports />}
+                  />
+
+                  <Route
+                    path="roles"
+                    element={<AdminRoles />}
+                  />
+
+                  <Route
+                    path="audit-logs"
+                    element={<AdminActivityLogs />}
+                  />
+
+                  <Route
+                    path="settings"
+                    element={<AdminSettings />}
+                  />
+                </Route>
+
+                {/* ===============================
                     404
                 =============================== */}
 
@@ -737,7 +831,6 @@ function App() {
                     </AppLayout>
                   }
                 />
-
               </Routes>
 
               <Toaster
