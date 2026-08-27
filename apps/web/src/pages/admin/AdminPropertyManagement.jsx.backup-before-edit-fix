@@ -56,7 +56,6 @@ const AdminPropertyManagement = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const [editingId, setEditingId] = useState(null);
-  const [editingProperty, setEditingProperty] = useState(null);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -162,7 +161,7 @@ const AdminPropertyManagement = () => {
   ============================================ */
 
   const openEditModal = (property) => {
-    const id = property?._id || property?.id;
+    const id = property._id || property.id;
 
     if (!id) {
       toast.error("Property ID not found");
@@ -170,7 +169,33 @@ const AdminPropertyManagement = () => {
     }
 
     setEditingId(id);
-    setEditingProperty(property);
+
+    setFormData({
+      title: property.title || "",
+      description: property.description || "",
+      location:
+        typeof property.location === "string"
+          ? property.location
+          : property.location?.address ||
+            property.location?.city ||
+            "",
+      propertyType:
+        property.propertyType ||
+        property.type ||
+        "villa",
+      pricePerNight:
+        property.pricePerNight ??
+        property.price ??
+        "",
+      bedrooms: property.bedrooms ?? "",
+      bathrooms: property.bathrooms ?? "",
+      guestCapacity:
+        property.guestCapacity ??
+        property.guests ??
+        "",
+      status: property.status || "pending",
+    });
+
     setIsModalOpen(true);
   };
 
@@ -421,7 +446,7 @@ const AdminPropertyManagement = () => {
 
             </DialogTrigger>
 
-            <DialogContent className="w-[96vw] max-w-[1100px] max-h-[92vh] overflow-y-auto p-0">
+            <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
 
               <DialogHeader>
 
@@ -446,49 +471,192 @@ const AdminPropertyManagement = () => {
         </div>
 
       </div>
+
       {/* =====================================
           EDIT PROPERTY MODAL
       ====================================== */}
 
       <Dialog
         open={isModalOpen}
-        onOpenChange={(open) => {
-          setIsModalOpen(open);
-
-          if (!open) {
-            setEditingProperty(null);
-            setEditingId(null);
-          }
-        }}
+        onOpenChange={setIsModalOpen}
       >
-        <DialogContent className="w-[98vw] max-w-[1200px] max-h-[95vh] overflow-y-auto">
+
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold">
+
+            <DialogTitle>
               Edit Property
             </DialogTitle>
+
           </DialogHeader>
 
-          {editingProperty && (
-            <PropertyForm
-              property={editingProperty}
-              hostId={
-                editingProperty.hostId ||
-                adminUser?.id
-              }
-              defaultStatus={
-                editingProperty.status || "pending"
-              }
-              submitLabel="Save Changes"
-              submittingLabel="Saving..."
-              onSuccess={() => {
-                setIsModalOpen(false);
-                setEditingProperty(null);
-                setEditingId(null);
-                fetchProperties();
-              }}
-            />
-          )}
+          <form
+            onSubmit={handleSubmit}
+            className="space-y-4 mt-4"
+          >
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+              <div className="space-y-2">
+
+                <Label>Title</Label>
+
+                <Input
+                  name="title"
+                  value={formData.title}
+                  onChange={handleInputChange}
+                  required
+                />
+
+              </div>
+
+              <div className="space-y-2">
+
+                <Label>Location</Label>
+
+                <Input
+                  name="location"
+                  value={formData.location}
+                  onChange={handleInputChange}
+                  required
+                />
+
+              </div>
+
+              <div className="space-y-2">
+
+                <Label>Property Type</Label>
+
+                <Select
+                  value={formData.propertyType}
+                  onValueChange={(value) =>
+                    handleSelectChange(
+                      "propertyType",
+                      value
+                    )
+                  }
+                >
+
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+
+                  <SelectContent>
+
+                    {PROPERTY_TYPE_OPTIONS.map(
+                      (option) => (
+
+                        <SelectItem
+                          key={option.value}
+                          value={option.value}
+                        >
+                          {option.label}
+                        </SelectItem>
+
+                      )
+                    )}
+
+                  </SelectContent>
+
+                </Select>
+
+              </div>
+
+              <div className="space-y-2">
+
+                <Label>Price per Night</Label>
+
+                <Input
+                  type="number"
+                  name="pricePerNight"
+                  value={formData.pricePerNight}
+                  onChange={handleInputChange}
+                  required
+                />
+
+              </div>
+
+              <div className="space-y-2">
+
+                <Label>Bedrooms</Label>
+
+                <Input
+                  type="number"
+                  name="bedrooms"
+                  value={formData.bedrooms}
+                  onChange={handleInputChange}
+                  required
+                />
+
+              </div>
+
+              <div className="space-y-2">
+
+                <Label>Bathrooms</Label>
+
+                <Input
+                  type="number"
+                  name="bathrooms"
+                  value={formData.bathrooms}
+                  onChange={handleInputChange}
+                  required
+                />
+
+              </div>
+
+              <div className="space-y-2">
+
+                <Label>Guest Capacity</Label>
+
+                <Input
+                  type="number"
+                  name="guestCapacity"
+                  value={formData.guestCapacity}
+                  onChange={handleInputChange}
+                  required
+                />
+
+              </div>
+
+            </div>
+
+            <div className="space-y-2">
+
+              <Label>Description</Label>
+
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleInputChange}
+                className="w-full min-h-[100px] p-3 rounded-md border border-input bg-background text-foreground text-sm"
+                required
+              />
+
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4">
+
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() =>
+                  setIsModalOpen(false)
+                }
+              >
+                Cancel
+              </Button>
+
+              <Button type="submit">
+                Save Changes
+              </Button>
+
+            </div>
+
+          </form>
+
         </DialogContent>
+
       </Dialog>
 
       {/* =====================================
@@ -777,7 +945,3 @@ const AdminPropertyManagement = () => {
 };
 
 export default AdminPropertyManagement;
-
-
-
-

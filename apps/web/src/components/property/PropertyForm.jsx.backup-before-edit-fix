@@ -31,7 +31,7 @@ const DEFAULT_AMENITIES = [
 // Same multi-step wizard used for both host submissions and admin-created
 // listings. `hostId`/`defaultStatus` decide who the property belongs to and
 // whether it needs approval, `onSuccess` runs after the property is created.
-const PropertyForm = ({ property = null, hostId, defaultStatus = 'pending', onSuccess, submitLabel = 'Submit Property', submittingLabel = 'Submitting...' }) => {
+const PropertyForm = ({ hostId, defaultStatus = 'pending', onSuccess, submitLabel = 'Submit Property', submittingLabel = 'Submitting...' }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [cities, setCities] = useState([]);
@@ -52,84 +52,7 @@ const PropertyForm = ({ property = null, hostId, defaultStatus = 'pending', onSu
     reader.onload = () => resolve(reader.result);
     reader.onerror = () => reject(new Error(`Failed to read ${file.name}`));
     reader.readAsDataURL(file);
-  });  /* ============================================
-     EDIT MODE - LOAD EXISTING PROPERTY
-  ============================================ */
-
-  useEffect(() => {
-    if (!property) return;
-
-    const existingImages =
-      property.images ||
-      property.photos ||
-      [];
-
-    const existingAmenities =
-      Array.isArray(property.amenities)
-        ? property.amenities
-            .map((item) =>
-              typeof item === 'string'
-                ? item
-                : item?.id ||
-                  item?._id ||
-                  item?.name
-            )
-            .filter(Boolean)
-        : [];
-
-    setFormData((prev) => ({
-      ...prev,
-      title: property.title || '',
-      description: property.description || '',
-      location:
-        property.location ||
-        property.city ||
-        property.address ||
-        '',
-      propertyType:
-        property.propertyType ||
-        'villa',
-      pricePerNight:
-        property.pricePerNight ??
-        property.price ??
-        '',
-      bedrooms:
-        property.bedrooms ??
-        '',
-      bathrooms:
-        property.bathrooms ??
-        '',
-      guestCapacity:
-        property.guestCapacity ??
-        property.maxGuests ??
-        property.guests ??
-        ''
-    }));
-
-    setSelectedAmenities(existingAmenities);
-
-    setPhotos(
-      (Array.isArray(existingImages)
-        ? existingImages
-        : []
-      )
-        .map((image) => ({
-          file: null,
-          preview:
-            typeof image === 'string'
-              ? image
-              : image?.url ||
-                image?.secure_url ||
-                image?.path ||
-                '',
-          existing: true
-        }))
-        .filter((image) => image.preview)
-    );
-
-    setCurrentStep(1);
-  }, [property]);
-
+  });
 
   useEffect(() => {
     const fetchCities = async () => {
@@ -196,9 +119,7 @@ const PropertyForm = ({ property = null, hostId, defaultStatus = 'pending', onSu
   const removePhoto = (index) => {
     setPhotos(prev => {
       const updated = [...prev];
-      if (updated[index]?.file instanceof File) {
-        URL.revokeObjectURL(updated[index].preview);
-      }
+      URL.revokeObjectURL(updated[index].preview);
       updated.splice(index, 1);
       return updated;
     });
@@ -224,245 +145,41 @@ const PropertyForm = ({ property = null, hostId, defaultStatus = 'pending', onSu
   const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1));
 
   const handleSubmit = async () => {
-    if (isSubmitting) return;
-
-    const propertyId =
-      property?._id ||
-      property?.id;
-
-    if (!hostId && !propertyId) {
+    if (!hostId) {
       toast.error('Missing host information, please try again.');
       return;
     }
 
-    if (
-      !formData.title ||
-      !formData.description ||
-      !formData.location ||
-      !formData.pricePerNight ||
-      !formData.bedrooms ||
-      !formData.bathrooms ||
-      !formData.guestCapacity
-    ) {
-      toast.error('Please fill in all required fields');
-      setCurrentStep(1);
-      return;
-    }
-
     if (photos.length === 0) {
-      toast.error('Please keep at least one property photo');
-      setCurrentStep(3);
+      toast.error('Please upload at least one photo');
       return;
     }
 
     setIsSubmitting(true);
-
     try {
-      /*
-       * Existing remote images are kept.
-       * Only newly selected files are converted/uploaded.
-       */
-      const existingImageUrls = photos
-        .filter(
-          (photo) =>
-            photo.existing &&
-            photo.preview
-        )
-        .map(
-          (photo) =>
-            photo.preview
-        );
+      const imageData = await Promise.all(photos.map((photo) => toDataUrl(photo.file)));
+      const payload = new URLSearchParams();
+      payload.append('title', formData.title);
+      payload.append('description', formData.description);
+      payload.append('location', formData.location);
+      payload.append('propertyType', formData.propertyType);
+      payload.append('pricePerNight', String(Number(formData.pricePerNight)));
+      payload.append('bedrooms', String(Number(formData.bedrooms)));
+      payload.append('bathrooms', String(Number(formData.bathrooms)));
+      payload.append('guestCapacity', String(Number(formData.guestCapacity)));
+      payload.append('hostId', hostId);
+      payload.append('status', defaultStatus);
+      selectedAmenities.forEach((id) => payload.append('amenities', id));
+      imageData.forEach((photo) => payload.append('photos', photo));
 
-      const newPhotos = photos.filter(
-        (photo) =>
-          photo.file instanceof File
-      );
-
-      const newImageData =
-        await Promise.all(
-          newPhotos.map(
-            (photo) =>
-              toDataUrl(photo.file)
-          )
-        );
-
-      /*
-       * ============================================
-       * EDIT PROPERTY
-       * ============================================
-       */
-      if (propertyId) {
-        const updateData = {
-          title: formData.title.trim(),
-          description: formData.description.trim(),
-          location: formData.location.trim(),
-          city: formData.location.trim(),
-          address: formData.location.trim(),
-          propertyType: formData.propertyType,
-          pricePerNight:
-            Number(formData.pricePerNight),
-          bedrooms:
-            Number(formData.bedrooms),
-          bathrooms:
-            Number(formData.bathrooms),
-          guestCapacity:
-            Number(formData.guestCapacity),
-          maxGuests:
-            Number(formData.guestCapacity),
-          amenities: selectedAmenities,
-          images: [
-            ...existingImageUrls,
-            ...newImageData
-          ]
-        };
-
-        const { data } =
-          await axios.put(
-            buildApiUrl(
-              `/api/properties/${propertyId}`
-            ),
-            updateData,
-            {
-              headers: {
-                'Content-Type':
-                  'application/json'
-              }
-            }
-          );
-
-        toast.success(
-          'Property updated successfully'
-        );
-
-        onSuccess?.(
-          data?.property ||
-          data
-        );
-
-        return;
-      }
-
-      /*
-       * ============================================
-       * CREATE PROPERTY
-       * ============================================
-       */
-      const payload =
-        new URLSearchParams();
-
-      payload.append(
-        'title',
-        formData.title.trim()
-      );
-
-      payload.append(
-        'description',
-        formData.description.trim()
-      );
-
-      payload.append(
-        'location',
-        formData.location.trim()
-      );
-
-      payload.append(
-        'propertyType',
-        formData.propertyType
-      );
-
-      payload.append(
-        'pricePerNight',
-        String(
-          Number(
-            formData.pricePerNight
-          )
-        )
-      );
-
-      payload.append(
-        'bedrooms',
-        String(
-          Number(
-            formData.bedrooms
-          )
-        )
-      );
-
-      payload.append(
-        'bathrooms',
-        String(
-          Number(
-            formData.bathrooms
-          )
-        )
-      );
-
-      payload.append(
-        'guestCapacity',
-        String(
-          Number(
-            formData.guestCapacity
-          )
-        )
-      );
-
-      payload.append(
-        'hostId',
-        hostId
-      );
-
-      payload.append(
-        'status',
-        defaultStatus
-      );
-
-      selectedAmenities.forEach(
-        (id) =>
-          payload.append(
-            'amenities',
-            id
-          )
-      );
-
-      newImageData.forEach(
-        (photo) =>
-          payload.append(
-            'photos',
-            photo
-          )
-      );
-
-      const { data } =
-        await axios.post(
-          buildApiUrl(
-            '/api/properties'
-          ),
-          payload,
-          {
-            headers: {
-              'Content-Type':
-                'application/x-www-form-urlencoded'
-            }
-          }
-        );
-
-      toast.success(
-        'Property submitted successfully'
-      );
+      const { data } = await axios.post(buildApiUrl('/api/properties'), payload, {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      });
 
       onSuccess?.(data);
-
     } catch (error) {
-      console.error(
-        'PROPERTY SAVE ERROR:',
-        error
-      );
-
-      toast.error(
-        error?.response?.data?.message ||
-        error?.message ||
-        'Failed to save property'
-      );
+      console.error('Submit error:', error);
+      toast.error('Failed to submit property. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -689,7 +406,4 @@ const PropertyForm = ({ property = null, hostId, defaultStatus = 'pending', onSu
 };
 
 export default PropertyForm;
-
-
-
 

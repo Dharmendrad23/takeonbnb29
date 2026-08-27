@@ -251,8 +251,6 @@ export const BookingWidget = ({ property }) => {
                 type="date"
                 inputMode="none"
 
-                inputMode="none"
-
                 className="
                   w-full
                   text-sm
@@ -289,8 +287,6 @@ export const BookingWidget = ({ property }) => {
 
               <input
                 type="date"
-                inputMode="none"
-
                 inputMode="none"
 
                 className="
@@ -479,5 +475,4 @@ export const BookingWidget = ({ property }) => {
     </Card>
   );
 };
-
 

@@ -1,39 +1,50 @@
-﻿import TrustedPartners from "../components/TrustedPartners";
 import React, { lazy, Suspense } from "react";
 import { Helmet } from "react-helmet";
 
 import HeroBanner from "@/components/HeroBanner.jsx";
 
 // Lazy loaded sections
-const FeaturedDestinations = lazy(
-  () => import("@/components/FeaturedDestinations.jsx"),
+const FeaturedDestinations = lazy(() =>
+  import("@/components/FeaturedDestinations.jsx")
 );
 
-const TrendingProperties = lazy(
-  () => import("@/components/TrendingProperties.jsx"),
+const TrendingProperties = lazy(() =>
+  import("@/components/TrendingProperties.jsx")
 );
 
-const LuxuryVillas = lazy(() => import("@/components/LuxuryVillas.jsx"));
-
-const PoolVillas = lazy(() => import("@/components/PoolVillas.jsx"));
-
-const MountainVillas = lazy(() => import("@/components/MountainVillas.jsx"));
-
-const PropertyCategories = lazy(
-  () => import("@/components/PropertyCategories.jsx"),
+const LuxuryVillas = lazy(() =>
+  import("@/components/LuxuryVillas.jsx")
 );
 
-const WhyChooseTakeOnBnB = lazy(
-  () => import("@/components/WhyChooseTakeOnBnB.jsx"),
+const PoolVillas = lazy(() =>
+  import("@/components/PoolVillas.jsx")
 );
 
-const Testimonials = lazy(() => import("@/components/Testimonials.jsx"));
+const MountainVillas = lazy(() =>
+  import("@/components/MountainVillas.jsx")
+);
 
-const FAQ = lazy(() => import("@/components/FAQ.jsx"));
+const PropertyCategories = lazy(() =>
+  import("@/components/PropertyCategories.jsx")
+);
+
+const WhyChooseTakeOnBnB = lazy(() =>
+  import("@/components/WhyChooseTakeOnBnB.jsx")
+);
+
+const Testimonials = lazy(() =>
+  import("@/components/Testimonials.jsx")
+);
+
+const FAQ = lazy(() =>
+  import("@/components/FAQ.jsx")
+);
 
 const SectionLoader = () => (
   <div className="w-full min-h-[150px] flex items-center justify-center">
-    <div className="text-gray-400 text-sm">Loading...</div>
+    <div className="text-gray-400 text-sm">
+      Loading...
+    </div>
   </div>
 );
 
@@ -48,7 +59,10 @@ const HomePage = () => {
           content="Discover and book luxury vacation rentals, villas, cottages and unique stays with Take on BnB."
         />
 
-        <link rel="preconnect" href="https://images.unsplash.com" />
+        <link
+          rel="preconnect"
+          href="https://images.unsplash.com"
+        />
       </Helmet>
 
       {/* Hero Section */}
@@ -74,8 +88,6 @@ const HomePage = () => {
         <PoolVillas />
       </Suspense>
 
-      {/* Our Partners */}
-      <TrustedPartners />
       {/* Browse by Category */}
       <Suspense fallback={<SectionLoader />}>
         <PropertyCategories />
