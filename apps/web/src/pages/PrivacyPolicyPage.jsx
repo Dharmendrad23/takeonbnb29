@@ -1,54 +1,147 @@
-import React from 'react';
-import { Helmet } from 'react-helmet';
-import { ShieldCheck } from 'lucide-react';
-
-const Section = ({ title, children }) => (
-  <div className="mb-10">
-    <h2 className="text-2xl font-bold text-foreground mb-4">{title}</h2>
-    <div className="text-muted-foreground leading-relaxed space-y-4">{children}</div>
-  </div>
-);
+﻿import React from "react";
+import { Helmet } from "react-helmet";
 
 const PrivacyPolicyPage = () => {
   return (
-    <div className="min-h-screen bg-background">
+    <>
       <Helmet>
-        <title>Privacy Policy | Take On BnB</title>
-        <meta name="description" content="Read Take On BnB's privacy policy to learn how we collect, use, and protect your personal information." />
+        <title>Privacy Policy | Take on BnB</title>
+        <meta name="description" content="Privacy Policy for Take on BnB" />
       </Helmet>
 
-      <section className="bg-primary/10 py-20 px-4 border-b border-primary/20">
-        <div className="max-w-4xl mx-auto text-center">
-          <ShieldCheck className="w-16 h-16 text-primary mx-auto mb-6" />
-          <h1 className="text-4xl md:text-5xl font-extrabold text-foreground mb-4">Privacy Policy</h1>
-          <p className="text-muted-foreground">Last updated: {new Date().getFullYear()}</p>
-        </div>
-      </section>
+      <main className="min-h-screen bg-white">
+        <section className="bg-[#111111] px-6 py-20 text-white">
+          <div className="mx-auto max-w-5xl">
+            <p className="mb-4 font-bold uppercase tracking-[0.2em] text-[#E8750A]">
+              Take on BnB
+            </p>
 
-      <section className="py-16 lg:py-20 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <Section title="1. Information We Collect">
-          <p>We collect information you provide directly to us, such as your name, email address, phone number, and payment details when you create an account, book a property, or list a property as a host.</p>
-        </Section>
-        <Section title="2. How We Use Your Information">
-          <p>We use the information we collect to process bookings, communicate with you about your account or reservations, verify host and property listings, prevent fraud, and improve our services.</p>
-        </Section>
-        <Section title="3. Sharing of Information">
-          <p>We share the minimum necessary information between guests and hosts to facilitate a booking (such as name and contact details). We do not sell your personal information to third parties.</p>
-        </Section>
-        <Section title="4. Payment Information">
-          <p>Payments are processed through secure, PCI-compliant payment providers. We do not store your full card details on our servers.</p>
-        </Section>
-        <Section title="5. Data Security">
-          <p>We take reasonable technical and organizational measures to protect your personal information from unauthorized access, alteration, or disclosure.</p>
-        </Section>
-        <Section title="6. Your Rights">
-          <p>You may request access to, correction of, or deletion of your personal data at any time by contacting our support team.</p>
-        </Section>
-        <Section title="7. Contact Us">
-          <p>If you have any questions about this Privacy Policy, please reach out to us via our Contact page.</p>
-        </Section>
-      </section>
-    </div>
+            <h1 className="text-4xl font-extrabold md:text-6xl">
+              Privacy Policy
+            </h1>
+
+            <p className="mt-5 max-w-3xl text-lg leading-8 text-gray-300">
+              Your privacy matters to us. This Privacy Policy explains how Take
+              on BnB collects, uses, stores, and protects your information when
+              you use our website and services.
+            </p>
+          </div>
+        </section>
+
+        <section className="px-6 py-12">
+          <div className="mx-auto max-w-5xl space-y-10">
+            <article>
+              <h2 className="mb-3 text-2xl font-extrabold">
+                1. Information We Collect
+              </h2>
+              <p className="leading-8 text-gray-600">
+                We may collect information that you provide when you create an
+                account, make a booking, contact us, register a property, or
+                otherwise use Take on BnB services. This may include your name,
+                email address, phone number, booking details, property
+                information, and payment-related information.
+              </p>
+            </article>
+
+            <article>
+              <h2 className="mb-3 text-2xl font-extrabold">
+                2. How We Use Your Information
+              </h2>
+              <p className="leading-8 text-gray-600">
+                We use information to provide and improve our services, process
+                bookings and payments, communicate with guests and hosts,
+                provide customer support, maintain security, and comply with
+                applicable legal requirements.
+              </p>
+            </article>
+
+            <article>
+              <h2 className="mb-3 text-2xl font-extrabold">
+                3. Booking and Payment Information
+              </h2>
+              <p className="leading-8 text-gray-600">
+                Payment transactions may be processed through third-party
+                payment providers. Take on BnB does not need to store complete
+                card information when payment processing is handled by an
+                authorized payment provider.
+              </p>
+            </article>
+
+            <article>
+              <h2 className="mb-3 text-2xl font-extrabold">
+                4. Cookies and Similar Technologies
+              </h2>
+              <p className="leading-8 text-gray-600">
+                We may use cookies and similar technologies to keep the website
+                functioning, understand usage, improve performance, and provide
+                a better experience.
+              </p>
+            </article>
+
+            <article>
+              <h2 className="mb-3 text-2xl font-extrabold">
+                5. Sharing of Information
+              </h2>
+              <p className="leading-8 text-gray-600">
+                We may share relevant information with hosts, guests, service
+                providers, payment processors, technology providers, or
+                authorities where necessary to provide our services, protect
+                users, or comply with the law.
+              </p>
+            </article>
+
+            <article>
+              <h2 className="mb-3 text-2xl font-extrabold">6. Data Security</h2>
+              <p className="leading-8 text-gray-600">
+                We use reasonable technical and organizational measures to
+                protect information against unauthorized access, loss, misuse,
+                or disclosure. However, no internet-based service can guarantee
+                absolute security.
+              </p>
+            </article>
+
+            <article>
+              <h2 className="mb-3 text-2xl font-extrabold">7. Your Choices</h2>
+              <p className="leading-8 text-gray-600">
+                Depending on applicable law, you may have rights relating to
+                your personal information, including requesting access,
+                correction, or deletion of certain information.
+              </p>
+            </article>
+
+            <article>
+              <h2 className="mb-3 text-2xl font-extrabold">
+                8. Third-Party Services
+              </h2>
+              <p className="leading-8 text-gray-600">
+                Our website may contain links or integrations with third-party
+                services. Their privacy practices are governed by their own
+                policies, and we encourage you to review those policies.
+              </p>
+            </article>
+
+            <article>
+              <h2 className="mb-3 text-2xl font-extrabold">
+                9. Changes to This Policy
+              </h2>
+              <p className="leading-8 text-gray-600">
+                We may update this Privacy Policy from time to time. Any updated
+                version will be made available on this page.
+              </p>
+            </article>
+
+            <article className="rounded-3xl bg-orange-50 p-6">
+              <h2 className="mb-3 text-2xl font-extrabold">10. Contact Us</h2>
+              <p className="leading-8 text-gray-700">
+                If you have questions about this Privacy Policy or how your
+                information is handled, please contact Take on BnB through the
+                Contact Us section of our website.
+              </p>
+            </article>
+          </div>
+        </section>
+      </main>
+    </>
   );
 };
 
