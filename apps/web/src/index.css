@@ -1,4 +1,4 @@
-﻿@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Poppins:wght@300;400;500;600;700&display=swap');
+﻿@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,163 +6,273 @@
 
 @layer base {
   :root {
-    /* Brand Colors - Airbnb Style */
     --background: 0 0% 100%;
     --foreground: 0 0% 13%;
-    
-    /* Primary Accent: Bright Orange */
     --primary: 24 100% 58%;
     --primary-foreground: 0 0% 100%;
-    
     --secondary: 0 0% 96%;
     --secondary-foreground: 0 0% 13%;
-    
     --accent: 0 0% 96%;
     --accent-foreground: 0 0% 13%;
-    
     --muted: 0 0% 93%;
     --muted-foreground: 0 0% 45%;
-    
     --card: 0 0% 100%;
     --card-foreground: 0 0% 13%;
-    
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 13%;
-    
     --border: 0 0% 86%;
     --input: 0 0% 86%;
     --ring: 24 100% 58%;
-    
     --destructive: 348 100% 61%;
     --destructive-foreground: 0 0% 100%;
-
     --radius: 0.75rem;
 
-    /* Premium Gradients */
-    --gradient-primary-start: 222 47% 11%; /* Dark Blue */
-    --gradient-primary-end: 171 100% 41%;  /* Teal */
-    
-    --gradient-secondary-start: 270 50% 20%; /* Dark Purple */
-    --gradient-secondary-end: 24 100% 50%;   /* Orange */
+    --gradient-primary-start: 222 47% 11%;
+    --gradient-primary-end: 171 100% 41%;
+    --gradient-secondary-start: 270 50% 20%;
+    --gradient-secondary-end: 24 100% 50%;
   }
-  
+
   .dark {
     --background: 0 0% 10%;
     --foreground: 0 0% 96%;
-    
     --primary: 24 100% 58%;
     --primary-foreground: 0 0% 100%;
-    
     --secondary: 0 0% 15%;
     --secondary-foreground: 0 0% 96%;
-    
     --accent: 0 0% 15%;
     --accent-foreground: 0 0% 96%;
-    
     --muted: 0 0% 18%;
     --muted-foreground: 0 0% 65%;
-    
     --card: 0 0% 13%;
     --card-foreground: 0 0% 96%;
-    
     --popover: 0 0% 13%;
     --popover-foreground: 0 0% 96%;
-    
     --border: 0 0% 25%;
     --input: 0 0% 25%;
     --ring: 24 100% 58%;
-    
     --destructive: 348 100% 61%;
     --destructive-foreground: 0 0% 100%;
-
-    --gradient-primary-start: 222 47% 8%; 
-    --gradient-primary-end: 171 100% 30%; 
-    
+    --gradient-primary-start: 222 47% 8%;
+    --gradient-primary-end: 171 100% 30%;
     --gradient-secondary-start: 270 50% 15%;
     --gradient-secondary-end: 24 100% 40%;
   }
 }
 
 @layer base {
-  * {
+  *,
+  *::before,
+  *::after {
     @apply border-border;
   }
+
   html {
     scroll-behavior: smooth;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+
   body {
-    font-family: 'Poppins', sans-serif;
+    margin: 0;
+    font-family: 'DM Sans', sans-serif;
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
   }
-  
-  h1, h2, h3, h4, h5, h6 {
-    font-family: 'Playfair Display', serif;
-    letter-spacing: -0.02em;
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: 'DM Sans', sans-serif;
+    letter-spacing: -0.025em;
     @apply text-balance;
   }
-  
-  h1 { @apply text-4xl md:text-5xl lg:text-6xl font-bold leading-tight; }
-  h2 { @apply text-2xl md:text-3xl lg:text-4xl font-semibold leading-snug; }
-  h3 { @apply text-xl md:text-2xl font-semibold leading-snug; }
-  p { @apply leading-relaxed; }
+
+  h1 {
+    @apply text-4xl md:text-5xl lg:text-6xl font-bold leading-tight;
+  }
+
+  h2 {
+    @apply text-2xl md:text-3xl lg:text-4xl font-bold leading-snug;
+  }
+
+  h3 {
+    @apply text-xl md:text-2xl font-bold leading-snug;
+  }
+
+  p {
+    @apply leading-relaxed;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font-family: 'DM Sans', sans-serif;
+  }
 }
 
 @layer components {
   .glass-card {
     @apply bg-white/80 dark:bg-black/80 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.08)] rounded-2xl;
   }
-  
+
   .embla {
     overflow: hidden;
   }
-  .embla__container {
-    display: flex;
-    margin-left: -1rem;
+}
+
+/* =========================================================
+   TAKEONBNB - RESPONSIVE FOUNDATION
+   Desktop layout preserved.
+   Mobile/tablet adapt automatically.
+========================================================= */
+
+html,
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+}
+
+html {
+  overflow-x: hidden;
+}
+
+body {
+  overflow-x: hidden;
+  min-width: 0;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Images never overflow their containers */
+img,
+video,
+svg,
+canvas {
+  max-width: 100%;
+}
+
+/* Prevent long text from forcing horizontal scrolling */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+span,
+a,
+button {
+  overflow-wrap: break-word;
+}
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (max-width: 1024px) {
+  .container,
+  main,
+  section {
+    max-width: 100%;
   }
-  .embla__slide {
-    flex: 0 0 100%;
+}
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 767px) {
+
+  body {
+    width: 100%;
     min-width: 0;
-    padding-left: 1rem;
   }
-  @media (min-width: 768px) {
-    .embla__slide { flex: 0 0 50%; }
+
+  #root {
+    width: 100%;
+    min-width: 0;
   }
-  @media (min-width: 1024px) {
-    .embla__slide { flex: 0 0 33.333333%; }
+
+  /* Prevent fixed desktop widths from breaking mobile */
+  .w-screen {
+    max-width: 100vw;
+  }
+
+  /* Better mobile text rendering */
+  h1,
+  h2,
+  h3 {
+    max-width: 100%;
+  }
+
+  /* Touch-friendly controls */
+  button,
+  [role="button"] {
+    max-width: 100%;
+  }
+
+  /* Tables can scroll instead of breaking the page */
+  table {
+    max-width: 100%;
+  }
+
+  /* Form controls fit screen */
+  input,
+  textarea,
+  select {
+    max-width: 100%;
   }
 }
 
-@layer utilities {
-  .bg-primary-gradient {
-    background: linear-gradient(135deg, hsl(var(--gradient-primary-start)), hsl(var(--gradient-primary-end)));
-  }
-  
-  .bg-secondary-gradient {
-    background: linear-gradient(135deg, hsl(var(--gradient-secondary-start)), hsl(var(--gradient-secondary-end)));
+/* =========================================================
+   SMALL PHONES
+========================================================= */
+
+@media (max-width: 380px) {
+
+  body {
+    font-size: 14px;
   }
 
-  .transition-smooth {
-    @apply transition-all duration-300 ease-out;
-  }
-  .shadow-soft {
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
-  }
-  .shadow-brand {
-    box-shadow: 0 8px 24px -6px hsla(358, 100%, 68%, 0.35);
-  }
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+  button,
+  input,
+  textarea,
+  select {
+    max-width: 100%;
   }
 }
-@media (max-width: 1023px) {
+
+/* =========================================================
+   VERY SMALL PHONES
+========================================================= */
+
+@media (max-width: 340px) {
+
+  body {
+    font-size: 13px;
+  }
+}
+
+ 
+/* =========================================================
+   TAKEONBNB MOBILE RESPONSIVE SYSTEM
+   Desktop / tablet styles remain unchanged.
+   ========================================================= */
+
+@media (max-width: 767px) {
+
   html,
   body,
   #root {
@@ -171,175 +281,879 @@
     overflow-x: hidden;
   }
 
-  * {
-    min-width: 0;
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
   }
 
   img,
   video,
   iframe,
-  canvas,
   svg {
     max-width: 100%;
-    height: auto;
-  }
-
-  .container {
-    width: 100%;
-    max-width: 100%;
-    padding-left: 16px;
-    padding-right: 16px;
   }
 
   input,
-  select,
   textarea,
+  select,
   button {
     max-width: 100%;
   }
-}
 
-@media (max-width: 640px) {
-  body {
-    padding-bottom: 80px;
+  /* Prevent long text from pushing the page */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  p,
+  span,
+  a {
+    overflow-wrap: anywhere;
   }
 
-  .container {
+  /* Main page containers */
+  main,
+  section {
+    max-width: 100%;
+  }
+
+  /* Common horizontal layouts */
+  .flex {
+    min-width: 0;
+  }
+
+  /* Tables stay usable instead of breaking page width */
+  table {
+    max-width: 100%;
+  }
+
+  /* Dialogs / sheets */
+  [role="dialog"] {
+    max-width: calc(100vw - 20px) !important;
+  }
+
+  /* Search / form rows */
+  .mobile-scroll-x {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Property grids:
+     3 compact cards on phones */
+  .grid.grid-cols-1.sm\\:grid-cols-2.lg\\:grid-cols-4 {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  .grid.grid-cols-1.sm\\:grid-cols-2.lg\\:grid-cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  /* Cards should never force viewport wider */
+  [class*="rounded"] {
+    min-width: 0;
+  }
+
+  /* Property card images */
+  .property-card,
+  [data-property-card] {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* Smaller mobile section spacing */
+  section.py-16,
+  section.py-20,
+  section.py-24 {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+  }
+
+  /* Mobile headings */
+  h1.text-4xl,
+  h1.text-5xl,
+  h1.text-6xl {
+    font-size: clamp(1.75rem, 8vw, 2.25rem);
+    line-height: 1.1;
+  }
+
+  h2.text-4xl,
+  h2.text-5xl {
+    font-size: clamp(1.5rem, 7vw, 2rem);
+    line-height: 1.15;
+  }
+
+  /* Prevent giant desktop spacing */
+  .max-w-7xl {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  /* Safe mobile page padding */
+  .max-w-7xl.mx-auto {
     padding-left: 12px;
     padding-right: 12px;
   }
 }
 
+/* Extra-small phones */
+@media (max-width: 360px) {
 
-/* =========================================
-   TAKE ON BNB - GLOBAL RESPONSIVE FIX
-========================================= */
+  .max-w-7xl.mx-auto {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
 
-html {
-  width: 100%;
-  overflow-x: hidden;
+  .grid.grid-cols-1.sm\\:grid-cols-2.lg\\:grid-cols-4,
+  .grid.grid-cols-1.sm\\:grid-cols-2.lg\\:grid-cols-3 {
+    gap: 6px !important;
+  }
 }
+
+/* =========================================================
+   TAKEONBNB PREMIUM VISUAL SYSTEM
+   Warm Luxury Theme + Smooth Animations
+========================================================= */
+
+:root {
+  --tob-orange: #F97316;
+  --tob-orange-dark: #EA580C;
+  --tob-cream: #FFF7ED;
+  --tob-cream-2: #FFEDD5;
+  --tob-dark: #171717;
+  --tob-muted: #737373;
+  --tob-border: #FED7AA;
+}
+
+/* ---------- GLOBAL PREMIUM FEEL ---------- */
 
 body {
+  background:
+    radial-gradient(circle at 15% 0%, rgba(249, 115, 22, 0.06), transparent 28%),
+    radial-gradient(circle at 85% 15%, rgba(251, 146, 60, 0.05), transparent 25%),
+    #ffffff;
+}
+
+/* ---------- SMOOTH SCROLL ---------- */
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* ---------- PREMIUM SELECTION ---------- */
+
+::selection {
+  background: var(--tob-orange);
+  color: white;
+}
+
+/* ---------- IMAGE HOVER ---------- */
+
+img {
+  transition:
+    transform 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.4s ease;
+}
+
+/* ---------- BUTTON MOTION ---------- */
+
+button,
+a {
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    background-color 0.25s ease,
+    border-color 0.25s ease,
+    color 0.25s ease;
+}
+
+button:hover {
+  transform: translateY(-2px);
+}
+
+/* ---------- CARD HOVER ---------- */
+
+[class*="rounded-"] {
+  transition:
+    box-shadow 0.35s ease,
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ---------- FLOATING ANIMATION ---------- */
+
+@keyframes tob-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.tob-float {
+  animation: tob-float 5s ease-in-out infinite;
+}
+
+/* ---------- SOFT PULSE ---------- */
+
+@keyframes tob-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.72;
+  }
+}
+
+.tob-pulse {
+  animation: tob-pulse 3s ease-in-out infinite;
+}
+
+/* ---------- FADE UP ---------- */
+
+@keyframes tob-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tob-fade-up {
+  animation: tob-fade-up 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ---------- FADE IN ---------- */
+
+@keyframes tob-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.tob-fade-in {
+  animation: tob-fade-in 0.7s ease both;
+}
+
+/* ---------- SCALE IN ---------- */
+
+@keyframes tob-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.tob-scale-in {
+  animation: tob-scale-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ---------- ORANGE GLOW ---------- */
+
+.tob-glow {
+  box-shadow:
+    0 10px 35px rgba(249, 115, 22, 0.12),
+    0 2px 10px rgba(249, 115, 22, 0.08);
+}
+
+/* ---------- PREMIUM SEARCH ---------- */
+
+.tob-search {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(249, 115, 22, 0.16);
+  box-shadow:
+    0 20px 60px rgba(23, 23, 23, 0.08),
+    0 4px 18px rgba(249, 115, 22, 0.06);
+  backdrop-filter: blur(18px);
+}
+
+/* ---------- CREAM SECTION ---------- */
+
+.tob-cream {
+  background:
+    radial-gradient(
+      circle at 20% 20%,
+      rgba(249, 115, 22, 0.10),
+      transparent 32%
+    ),
+    linear-gradient(
+      135deg,
+      #FFF7ED 0%,
+      #FFFFFF 55%,
+      #FFF7ED 100%
+    );
+}
+
+/* ---------- ORANGE GRADIENT ---------- */
+
+.tob-orange-gradient {
+  background:
+    linear-gradient(
+      135deg,
+      #F97316 0%,
+      #FB923C 50%,
+      #EA580C 100%
+    );
+}
+
+/* ---------- PREMIUM GLASS ---------- */
+
+.tob-glass {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow:
+    0 20px 60px rgba(23, 23, 23, 0.07);
+}
+
+/* ---------- SHIMMER ---------- */
+
+@keyframes tob-shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.tob-shimmer {
+  background:
+    linear-gradient(
+      90deg,
+      #f5f5f5 25%,
+      #fafafa 37%,
+      #f5f5f5 63%
+    );
+  background-size: 1000px 100%;
+  animation: tob-shimmer 2s infinite linear;
+}
+
+/* ---------- REDUCED MOTION ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+
+/* =========================================================
+   TRUSTED PARTNERS - DARK LOGO BACKGROUND BLEND
+========================================================= */
+
+.partner-logo-clean {
+  mix-blend-mode: screen;
+  filter: contrast(1.05);
+  transition: transform 500ms ease, filter 500ms ease;
+}
+
+.partner-logo-clean:hover {
+  filter: contrast(1.15) brightness(1.08);
+}
+
+/* =========================================================
+   TAKEONBNB - LUXURY VILLAS SWAP MOOD
+========================================================= */
+
+.swap-luxury-section {
+  isolation: isolate;
+}
+
+.luxury-property-reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  animation: luxuryPropertyReveal 700ms cubic-bezier(.22,1,.36,1) forwards;
+}
+
+.luxury-property-hover {
+  transition:
+    transform 450ms cubic-bezier(.22,1,.36,1),
+    filter 450ms ease;
+}
+
+.luxury-property-hover:hover {
+  transform: translateY(-8px);
+  filter: drop-shadow(0 20px 35px rgba(216,137,0,.14));
+}
+
+@keyframes luxuryPropertyReveal {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .luxury-property-reveal {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+
+  .luxury-property-hover {
+    transition: none;
+  }
+}
+
+/* =========================================================
+   LUXURY VILLAS - TRENDING LIGHT MOOD
+========================================================= */
+
+.luxury-light-section {
+  background: #ffffff;
+}
+
+.luxury-light-reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  animation: luxuryLightReveal 650ms cubic-bezier(.22,1,.36,1) forwards;
+}
+
+.luxury-light-card {
+  transition:
+    transform 350ms cubic-bezier(.22,1,.36,1),
+    filter 350ms ease;
+}
+
+.luxury-light-card:hover {
+  transform: translateY(-5px);
+  filter: drop-shadow(0 12px 24px rgba(0,0,0,.08));
+}
+
+@keyframes luxuryLightReveal {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .luxury-light-reveal {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+
+  .luxury-light-card {
+    transition: none;
+  }
+}
+
+/* =========================================================
+   TAKEONBNB - TRUSTED PARTNERS TRENDING LIGHT MOOD
+========================================================= */
+
+.trusted-partners-section {
+  background:
+    radial-gradient(circle at 10% 20%, rgba(249, 115, 22, 0.055), transparent 28%),
+    radial-gradient(circle at 90% 80%, rgba(251, 146, 60, 0.045), transparent 30%),
+    #fffaf5;
+}
+
+.trusted-orb {
+  position: absolute;
+  width: 260px;
+  height: 260px;
+  border-radius: 9999px;
+  background: rgba(249, 115, 22, 0.06);
+  filter: blur(80px);
+  pointer-events: none;
+}
+
+.trusted-orb-left {
+  left: -140px;
+  top: 20%;
+}
+
+.trusted-orb-right {
+  right: -140px;
+  bottom: 5%;
+}
+
+/* Slider */
+
+.trusted-partners-track {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.trusted-partners-track::-webkit-scrollbar {
+  display: none;
+}
+
+/* Card */
+
+.trusted-partner-card {
+  position: relative;
+  flex: 0 0 305px;
+  min-height: 220px;
+  padding: 28px 24px 22px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid #f0e4d8;
+  border-radius: 28px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.98),
+      rgba(255, 248, 241, 0.95)
+    );
+
+  box-shadow:
+    0 8px 30px rgba(23, 23, 23, 0.045);
+
+  opacity: 0;
+  transform: translateY(22px);
+
+  animation:
+    trustedPartnerReveal
+    700ms cubic-bezier(.22,1,.36,1)
+    forwards;
+
+  transition:
+    transform 450ms cubic-bezier(.22,1,.36,1),
+    box-shadow 450ms ease,
+    border-color 450ms ease;
+}
+
+.trusted-partner-card:hover {
+  transform: translateY(-9px) scale(1.015);
+
+  border-color: rgba(249, 115, 22, 0.35);
+
+  box-shadow:
+    0 20px 45px rgba(23, 23, 23, 0.09),
+    0 5px 20px rgba(249, 115, 22, 0.08);
+}
+
+/* Logo container automatically adjusts */
+
+.trusted-logo-wrap {
   width: 100%;
-  min-width: 0;
-  overflow-x: hidden;
+  height: 105px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  overflow: hidden;
 }
 
-#root {
-  width: 100%;
-  min-width: 0;
-  overflow-x: hidden;
-}
+/* Logo */
 
-img,
-video,
-iframe,
-canvas,
-svg {
-  max-width: 100%;
-}
+.trusted-partner-logo {
+  display: block;
 
-img,
-video {
+  width: auto;
   height: auto;
+
+  max-width: 88%;
+  max-height: 82px;
+
+  object-fit: contain;
+
+  mix-blend-mode: multiply;
+
+  filter:
+    saturate(0.95)
+    contrast(1.03);
+
+  transition:
+    transform 500ms cubic-bezier(.22,1,.36,1),
+    filter 500ms ease;
 }
 
-/* Prevent flex/grid overflow */
-* {
-  box-sizing: border-box;
+.trusted-partner-card:hover .trusted-partner-logo {
+  transform: scale(1.08);
+
+  filter:
+    saturate(1.05)
+    contrast(1.06);
 }
 
-@media (max-width: 1023px) {
+/* Orange animated line */
 
-  body {
-    overflow-x: hidden;
-  }
+.trusted-card-line {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
 
-  .container {
-    width: 100%;
-    max-width: 100%;
-  }
+  width: 0;
+  height: 3px;
 
-  [class*="grid-cols-"] {
-    min-width: 0;
-  }
+  border-radius: 999px;
 
-  [class*="flex"] {
-    min-width: 0;
-  }
+  background: #F97316;
 
-  /* Prevent cards from overflowing */
-  .rounded-xl,
-  .rounded-2xl,
-  .rounded-3xl {
-    max-width: 100%;
-  }
+  transform: translateX(-50%);
 
-  /* Tables */
-  table {
-    max-width: 100%;
-  }
-
+  transition:
+    width 450ms cubic-bezier(.22,1,.36,1);
 }
 
-/* MOBILE */
+.trusted-partner-card:hover .trusted-card-line {
+  width: 55%;
+}
+
+/* Arrows */
+
+.trusted-arrow {
+  position: absolute;
+  top: 50%;
+
+  z-index: 5;
+
+  width: 44px;
+  height: 44px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid #ead9ca;
+  border-radius: 9999px;
+
+  background: rgba(255,255,255,0.95);
+
+  color: #F97316;
+
+  box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+
+  transform: translateY(-50%);
+
+  transition:
+    transform 250ms ease,
+    background 250ms ease,
+    box-shadow 250ms ease;
+}
+
+.trusted-arrow span {
+  font-size: 30px;
+  line-height: 1;
+  margin-top: -3px;
+}
+
+.trusted-arrow:hover {
+  background: #fff4eb;
+
+  box-shadow:
+    0 12px 30px rgba(249, 115, 22, 0.14);
+
+  transform:
+    translateY(-50%)
+    scale(1.08);
+}
+
+.trusted-arrow-left {
+  left: -20px;
+}
+
+.trusted-arrow-right {
+  right: -20px;
+}
+
+/* Dots */
+
+.trusted-dot {
+  width: 7px;
+  height: 7px;
+
+  border: 0;
+  border-radius: 9999px;
+
+  background: #ded6cf;
+
+  transition:
+    width 350ms ease,
+    background 350ms ease,
+    transform 350ms ease;
+}
+
+.trusted-dot-active {
+  width: 28px;
+  background: #F97316;
+}
+
+/* Entrance */
+
+@keyframes trustedPartnerReveal {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Mobile */
+
 @media (max-width: 767px) {
-
-  body {
-    padding-bottom: 80px;
+  .trusted-partner-card {
+    flex-basis: 280px;
+    min-height: 205px;
+    border-radius: 24px;
   }
 
-  .container {
-    width: 100%;
-    max-width: 100%;
-    padding-left: 12px !important;
-    padding-right: 12px !important;
+  .trusted-logo-wrap {
+    height: 92px;
   }
 
-  /* Large text responsive */
-  .text-6xl {
-    font-size: 2.5rem !important;
-    line-height: 1.1 !important;
+  .trusted-partner-logo {
+    max-height: 70px;
   }
 
-  .text-5xl {
-    font-size: 2.25rem !important;
-    line-height: 1.15 !important;
+  .trusted-arrow {
+    width: 38px;
+    height: 38px;
   }
 
-  .text-4xl {
-    font-size: 1.875rem !important;
-    line-height: 1.2 !important;
+  .trusted-arrow-left {
+    left: -8px;
   }
 
-  /* Large padding fix */
-  .px-16,
-  .px-20,
-  .px-24 {
-    padding-left: 1rem !important;
-    padding-right: 1rem !important;
+  .trusted-arrow-right {
+    right: -8px;
   }
-
-  .py-16,
-  .py-20,
-  .py-24 {
-    padding-top: 2rem !important;
-    padding-bottom: 2rem !important;
-  }
-
 }
 
-/* SMALL MOBILE */
-@media (max-width: 480px) {
+/* Reduced motion */
 
-  body {
-    font-size: 14px;
+@media (prefers-reduced-motion: reduce) {
+  .trusted-partner-card {
+    opacity: 1;
+    transform: none;
+    animation: none;
   }
 
-  button {
-    max-width: 100%;
+  .trusted-partner-card,
+  .trusted-partner-logo,
+  .trusted-arrow,
+  .trusted-card-line {
+    transition: none;
   }
-
 }
+
+
+/* =========================================================
+   MOUNTAIN VILLAS - TRENDING SLIDER
+========================================================= */
+
+.mountain-trending-section {
+  background: #ffffff;
+}
+
+.mountain-villas-track {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  scroll-snap-type: x proximity;
+}
+
+.mountain-villas-track::-webkit-scrollbar {
+  display: none;
+}
+
+.mountain-trending-card {
+  flex: 0 0 305px;
+  scroll-snap-align: start;
+  transition:
+    transform 350ms cubic-bezier(.22,1,.36,1),
+    filter 350ms ease;
+}
+
+.mountain-trending-card:hover {
+  transform: translateY(-6px);
+  filter: drop-shadow(0 14px 28px rgba(0,0,0,.08));
+}
+
+.mountain-slider-arrow {
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid #eadfd5;
+  border-radius: 9999px;
+
+  background: #ffffff;
+  color: #F97316;
+
+  font-size: 27px;
+  line-height: 1;
+
+  box-shadow: 0 5px 18px rgba(0,0,0,.06);
+
+  transition:
+    transform 250ms ease,
+    background 250ms ease,
+    box-shadow 250ms ease;
+}
+
+.mountain-slider-arrow:hover {
+  background: #fff7f0;
+  transform: scale(1.08);
+  box-shadow: 0 10px 25px rgba(249,115,22,.13);
+}
+
+@media (max-width: 767px) {
+  .mountain-trending-card {
+    flex-basis: 285px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mountain-trending-card,
+  .mountain-slider-arrow {
+    transition: none;
+  }
+}
+
 

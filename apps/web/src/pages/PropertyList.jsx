@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { Search, SlidersHorizontal, Home, RefreshCw } from "lucide-react";
+﻿import React, { useEffect, useState } from "react";
+import { Search, SlidersHorizontal, Home, RefreshCw, X, Check } from "lucide-react";
 import PropertyCard from "@/components/PropertyCard";
 import PropertyCardSkeleton from "@/components/PropertyCardSkeleton";
 import api from "@/lib/api";
@@ -10,6 +10,15 @@ const PropertyList = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [error, setError] = useState("");
+
+  // FILTERS
+  const [showFilters, setShowFilters] = useState(false);
+  const [priceRange, setPriceRange] = useState("all");
+  const [propertyTypes, setPropertyTypes] = useState([]);
+  const [minGuests, setMinGuests] = useState(0);
+  const [amenities, setAmenities] = useState([]);
+  const [minRating, setMinRating] = useState(0);
+  const [sortBy, setSortBy] = useState("recommended");
 
   // Load properties directly from database API
   const loadProperties = async () => {
@@ -66,16 +75,11 @@ const PropertyList = () => {
     loadProperties();
   }, []);
 
-  // Search properties
+  // Search + Filters + Sorting
   useEffect(() => {
     const query = search.toLowerCase().trim();
 
-    if (!query) {
-      setFilteredProperties(properties);
-      return;
-    }
-
-    const filtered = properties.filter((property) => {
+    let filtered = properties.filter((property) => {
       const title = String(property?.title || "").toLowerCase();
 
       const location =
@@ -91,15 +95,141 @@ const PropertyList = () => {
         property?.propertyType || property?.type || ""
       ).toLowerCase();
 
-      return (
+      // Search
+      const matchesSearch =
+        !query ||
         title.includes(query) ||
         String(location).toLowerCase().includes(query) ||
-        propertyType.includes(query)
+        propertyType.includes(query);
+
+      // Price
+      const price = Number(
+        property?.pricePerNight ||
+        property?.price ||
+        property?.nightlyPrice ||
+        0
+      );
+
+      let matchesPrice = true;
+
+      if (priceRange === "under2000") {
+        matchesPrice = price < 2000;
+      } else if (priceRange === "2000to5000") {
+        matchesPrice = price >= 2000 && price <= 5000;
+      } else if (priceRange === "5000to10000") {
+        matchesPrice = price > 5000 && price <= 10000;
+      } else if (priceRange === "over10000") {
+        matchesPrice = price > 10000;
+      }
+
+      // Property type
+      const matchesType =
+        propertyTypes.length === 0 ||
+        propertyTypes.some(
+          (type) => propertyType === type.toLowerCase()
+        );
+
+      // Guests
+      const guests = Number(
+        property?.maxGuests ||
+        property?.guests ||
+        property?.capacity ||
+        0
+      );
+
+      const matchesGuests =
+        minGuests === 0 || guests >= minGuests;
+
+      // Amenities
+      const propertyAmenities = Array.isArray(property?.amenities)
+        ? property.amenities
+            .map((item) =>
+              typeof item === "string"
+                ? item.toLowerCase()
+                : String(
+                    item?.name ||
+                    item?.title ||
+                    item?.label ||
+                    ""
+                  ).toLowerCase()
+            )
+        : [];
+
+      const matchesAmenities =
+        amenities.length === 0 ||
+        amenities.every((requiredAmenity) => {
+          const name = requiredAmenity.toLowerCase();
+
+          return (
+            propertyAmenities.some((a) => a.includes(name)) ||
+            (name === "pool" && (property?.pool || property?.hasPool)) ||
+            (name === "parking" &&
+              (property?.parking ||
+                property?.freeParking ||
+                property?.hasParking)) ||
+            (name === "bonfire" &&
+              (property?.bonfire || property?.hasBonfire)) ||
+            (name === "garden" &&
+              (property?.garden || property?.hasGarden)) ||
+            (name === "wifi" &&
+              (property?.wifi || property?.hasWifi)) ||
+            (name === "ac" &&
+              (property?.ac || property?.hasAC))
+          );
+        });
+
+      // Rating
+      const rating = Number(property?.rating || 0);
+
+      const matchesRating =
+        !minRating || rating >= minRating;
+
+      return (
+        matchesSearch &&
+        matchesPrice &&
+        matchesType &&
+        matchesGuests &&
+        matchesAmenities &&
+        matchesRating
       );
     });
 
+    // Sorting
+    if (sortBy === "priceLow") {
+      filtered.sort(
+        (a, b) =>
+          Number(a?.pricePerNight || a?.price || 0) -
+          Number(b?.pricePerNight || b?.price || 0)
+      );
+    }
+
+    if (sortBy === "priceHigh") {
+      filtered.sort(
+        (a, b) =>
+          Number(b?.pricePerNight || b?.price || 0) -
+          Number(a?.pricePerNight || a?.price || 0)
+      );
+    }
+
+    if (sortBy === "rating") {
+      filtered.sort(
+        (a, b) =>
+          Number(b?.rating || 0) -
+          Number(a?.rating || 0)
+      );
+    }
+
     setFilteredProperties(filtered);
-  }, [search, properties]);
+  }, [
+    search,
+    properties,
+    priceRange,
+    propertyTypes,
+    minGuests,
+    amenities,
+    minRating,
+    sortBy,
+  ]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -132,18 +262,336 @@ const PropertyList = () => {
             </div>
 
             <button
-              type="button"
-              className="h-14 px-6 rounded-xl border border-border bg-background flex items-center justify-center gap-2 font-semibold hover:bg-muted transition-colors"
-            >
-              <SlidersHorizontal className="w-5 h-5" />
-              Filters
-            </button>
+  type="button"
+  onClick={() => setShowFilters(true)}
+  className="h-14 px-6 rounded-xl border border-border bg-background flex items-center justify-center gap-2 font-semibold hover:bg-muted transition-colors"
+>
+  <SlidersHorizontal className="w-5 h-5" />
+  Filters
+  {(priceRange !== "all" ||
+    propertyTypes.length > 0 ||
+    minGuests > 0 ||
+    amenities.length > 0 ||
+    minRating > 0) && (
+    <span className="ml-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs text-primary-foreground">
+      {[
+        priceRange !== "all",
+        propertyTypes.length > 0,
+        minGuests > 0,
+        amenities.length > 0,
+        minRating > 0,
+      ].filter(Boolean).length}
+    </span>
+  )}
+</button>
 
           </div>
 
         </div>
       </section>
 
+      {/* FILTER DRAWER */}
+      {showFilters && (
+        <div className="fixed inset-0 z-[100]">
+          {/* BACKDROP */}
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
+            onClick={() => setShowFilters(false)}
+          />
+
+          {/* DRAWER */}
+          <div className="absolute right-0 top-0 h-full w-full max-w-md overflow-y-auto bg-white shadow-2xl">
+            {/* HEADER */}
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-6 py-5">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">
+                  Filters
+                </h2>
+                <p className="mt-1 text-sm text-gray-500">
+                  Find your perfect stay
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowFilters(false)}
+                className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-gray-100"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-7 px-6 py-6">
+
+              {/* PRICE */}
+              <div>
+                <h3 className="mb-3 font-semibold text-gray-900">
+                  Price per night
+                </h3>
+
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    ["under2000", "Under ₹2,000"],
+                    ["2000to5000", "₹2,000 – ₹5,000"],
+                    ["5000to10000", "₹5,000 – ₹10,000"],
+                    ["over10000", "₹10,000+"],
+                  ].map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() =>
+                        setPriceRange(
+                          priceRange === value ? "all" : value
+                        )
+                      }
+                      className={`rounded-xl border px-3 py-3 text-sm font-medium transition ${
+                        priceRange === value
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-gray-200 hover:border-gray-400"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* PROPERTY TYPE */}
+              <div>
+                <h3 className="mb-3 font-semibold text-gray-900">
+                  Property type
+                </h3>
+
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    "Villa",
+                    "Apartment",
+                    "House",
+                    "Cottage",
+                    "Farmhouse",
+                    "Resort",
+                  ].map((type) => {
+                    const selected = propertyTypes.includes(type);
+
+                    return (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() =>
+                          setPropertyTypes((current) =>
+                            selected
+                              ? current.filter((item) => item !== type)
+                              : [...current, type]
+                          )
+                        }
+                        className={`flex items-center gap-2 rounded-xl border px-3 py-3 text-left text-sm font-medium transition ${
+                          selected
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-gray-200 hover:border-gray-400"
+                        }`}
+                      >
+                        <span
+                          className={`flex h-5 w-5 items-center justify-center rounded border ${
+                            selected
+                              ? "border-primary bg-primary text-white"
+                              : "border-gray-300"
+                          }`}
+                        >
+                          {selected && (
+                            <Check className="h-3.5 w-3.5" />
+                          )}
+                        </span>
+                        {type}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* GUESTS */}
+              <div>
+                <h3 className="mb-3 font-semibold text-gray-900">
+                  Guests
+                </h3>
+
+                <div className="flex items-center justify-between rounded-xl border border-gray-200 px-4 py-3">
+                  <div>
+                    <p className="text-sm font-semibold">
+                      Minimum guests
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Property can accommodate
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setMinGuests((value) => Math.max(0, value - 1))
+                      }
+                      className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-300 text-lg hover:bg-gray-100"
+                    >
+                      −
+                    </button>
+
+                    <span className="w-6 text-center font-bold">
+                      {minGuests || "Any"}
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setMinGuests((value) => Math.min(20, value + 1))
+                      }
+                      className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-300 text-lg hover:bg-gray-100"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* AMENITIES */}
+              <div>
+                <h3 className="mb-3 font-semibold text-gray-900">
+                  Amenities
+                </h3>
+
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    "Pool",
+                    "Parking",
+                    "WiFi",
+                    "Bonfire",
+                    "Garden",
+                    "AC",
+                  ].map((amenity) => {
+                    const selected = amenities.includes(amenity);
+
+                    return (
+                      <button
+                        key={amenity}
+                        type="button"
+                        onClick={() =>
+                          setAmenities((current) =>
+                            selected
+                              ? current.filter((item) => item !== amenity)
+                              : [...current, amenity]
+                          )
+                        }
+                        className={`flex items-center gap-2 rounded-xl border px-3 py-3 text-left text-sm font-medium transition ${
+                          selected
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-gray-200 hover:border-gray-400"
+                        }`}
+                      >
+                        <span
+                          className={`flex h-5 w-5 items-center justify-center rounded border ${
+                            selected
+                              ? "border-primary bg-primary text-white"
+                              : "border-gray-300"
+                          }`}
+                        >
+                          {selected && (
+                            <Check className="h-3.5 w-3.5" />
+                          )}
+                        </span>
+                        {amenity}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* RATING */}
+              <div>
+                <h3 className="mb-3 font-semibold text-gray-900">
+                  Guest rating
+                </h3>
+
+                <div className="grid grid-cols-3 gap-2">
+                  {[4.5, 4, 3].map((rating) => (
+                    <button
+                      key={rating}
+                      type="button"
+                      onClick={() =>
+                        setMinRating(
+                          minRating === rating ? 0 : rating
+                        )
+                      }
+                      className={`rounded-xl border px-3 py-3 text-sm font-semibold transition ${
+                        minRating === rating
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-gray-200 hover:border-gray-400"
+                      }`}
+                    >
+                      ★ {rating}+
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* SORT */}
+              <div>
+                <h3 className="mb-3 font-semibold text-gray-900">
+                  Sort by
+                </h3>
+
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="h-12 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm font-medium outline-none focus:border-primary"
+                >
+                  <option value="recommended">
+                    Recommended
+                  </option>
+                  <option value="priceLow">
+                    Price: Low to High
+                  </option>
+                  <option value="priceHigh">
+                    Price: High to Low
+                  </option>
+                  <option value="rating">
+                    Rating: High to Low
+                  </option>
+                </select>
+              </div>
+
+            </div>
+
+            {/* FOOTER */}
+            <div className="sticky bottom-0 border-t bg-white px-6 py-4">
+              <div className="flex items-center justify-between gap-3">
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPriceRange("all");
+                    setPropertyTypes([]);
+                    setMinGuests(0);
+                    setAmenities([]);
+                    setMinRating(0);
+                    setSortBy("recommended");
+                  }}
+                  className="px-3 py-3 text-sm font-semibold text-gray-600 underline hover:text-gray-900"
+                >
+                  Clear all
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowFilters(false)}
+                  className="flex-1 rounded-xl bg-primary px-5 py-3 font-bold text-primary-foreground shadow-sm hover:bg-primary/90"
+                >
+                  Show {filteredProperties.length} properties
+                </button>
+
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {/* PROPERTIES */}
       <section className="max-w-7xl mx-auto px-4 py-12">
 
@@ -152,10 +600,6 @@ const PropertyList = () => {
             <h2 className="text-2xl font-bold">
               Available Properties
             </h2>
-
-            <p className="text-muted-foreground mt-1">
-              {filteredProperties.length} properties found
-            </p>
           </div>
         )}
 
@@ -249,3 +693,8 @@ const PropertyList = () => {
 };
 
 export default PropertyList;
+
+
+
+
+

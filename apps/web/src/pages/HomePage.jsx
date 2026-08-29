@@ -1,9 +1,10 @@
-import React, { lazy, Suspense } from "react";
+﻿import React, { lazy, Suspense } from "react";
 import { Helmet } from "react-helmet";
 
+import TrustedPartners from "@/components/TrustedPartners.jsx";
 import HeroBanner from "@/components/HeroBanner.jsx";
+import MobileHomeOptimized from "@/components/MobileHomeOptimized.jsx";
 
-// Lazy loaded sections
 const FeaturedDestinations = lazy(() =>
   import("@/components/FeaturedDestinations.jsx")
 );
@@ -24,10 +25,6 @@ const MountainVillas = lazy(() =>
   import("@/components/MountainVillas.jsx")
 );
 
-const PropertyCategories = lazy(() =>
-  import("@/components/PropertyCategories.jsx")
-);
-
 const WhyChooseTakeOnBnB = lazy(() =>
   import("@/components/WhyChooseTakeOnBnB.jsx")
 );
@@ -42,76 +39,85 @@ const FAQ = lazy(() =>
 
 const SectionLoader = () => (
   <div className="w-full min-h-[150px] flex items-center justify-center">
-    <div className="text-gray-400 text-sm">
-      Loading...
-    </div>
+    <div className="text-gray-400 text-sm">Loading...</div>
   </div>
 );
 
 const HomePage = () => {
   return (
-    <div className="flex flex-col min-h-screen">
-      <Helmet>
-        <title>Take on BnB - Luxury Vacation Rentals</title>
+    <div className="min-h-screen">
 
-        <meta
-          name="description"
-          content="Discover and book luxury vacation rentals, villas, cottages and unique stays with Take on BnB."
-        />
+      {/* MOBILE HOME */}
+      <div className="block md:hidden">
+        <MobileHomeOptimized />
+      </div>
 
-        <link
-          rel="preconnect"
-          href="https://images.unsplash.com"
-        />
-      </Helmet>
+      {/* DESKTOP HOME */}
+      <div className="hidden md:flex md:flex-col md:min-h-screen">
 
-      {/* Hero Section */}
-      <HeroBanner />
+        <Helmet>
+          <title>Take on BnB - Luxury Vacation Rentals</title>
 
-      {/* Featured Destinations */}
-      <Suspense fallback={<SectionLoader />}>
-        <FeaturedDestinations />
-      </Suspense>
+          <meta
+            name="description"
+            content="Discover and book luxury vacation rentals, villas, cottages and unique stays with Take on BnB."
+          />
 
-      {/* All Trending Properties */}
-      <Suspense fallback={<SectionLoader />}>
-        <TrendingProperties />
-      </Suspense>
+          <link
+            rel="preconnect"
+            href="https://images.unsplash.com"
+          />
+        </Helmet>
 
-      {/* Luxury Villas */}
-      <Suspense fallback={<SectionLoader />}>
-        <LuxuryVillas />
-      </Suspense>
+        {/* Hero Section */}
+        <HeroBanner />
 
-      {/* Pool Villas */}
-      <Suspense fallback={<SectionLoader />}>
-        <PoolVillas />
-      </Suspense>
+        {/* Featured Destinations */}
+        <Suspense fallback={<SectionLoader />}>
+          <FeaturedDestinations />
+        </Suspense>
 
-      {/* Browse by Category */}
-      <Suspense fallback={<SectionLoader />}>
-        <PropertyCategories />
-      </Suspense>
+        {/* Trending Properties */}
+        <Suspense fallback={<SectionLoader />}>
+          <TrendingProperties />
+        </Suspense>
 
-      {/* Mountain Escapes */}
-      <Suspense fallback={<SectionLoader />}>
-        <MountainVillas />
-      </Suspense>
+        {/* Luxury Villas */}
+        <Suspense fallback={<SectionLoader />}>
+          <LuxuryVillas />
+        </Suspense>
 
-      {/* Why Choose Us */}
-      <Suspense fallback={<SectionLoader />}>
-        <WhyChooseTakeOnBnB />
-      </Suspense>
+        {/* Pool Villas */}
+        <Suspense fallback={<SectionLoader />}>
+          <PoolVillas />
+        </Suspense>
 
-      {/* Testimonials */}
-      <Suspense fallback={<SectionLoader />}>
-        <Testimonials />
-      </Suspense>
+        {/* Mountain Escapes */}
+        <Suspense fallback={<SectionLoader />}>
+          <MountainVillas />
+        </Suspense>
 
-      {/* FAQ */}
-      <Suspense fallback={<SectionLoader />}>
-        <FAQ />
-      </Suspense>
+        {/* Trusted Partners */}
+        <section className="py-8">
+          <TrustedPartners />
+        </section>
+
+        {/* Why Choose Us */}
+        <Suspense fallback={<SectionLoader />}>
+          <WhyChooseTakeOnBnB />
+        </Suspense>
+
+        {/* Testimonials */}
+        <Suspense fallback={<SectionLoader />}>
+          <Testimonials />
+        </Suspense>
+
+        {/* FAQ */}
+        <Suspense fallback={<SectionLoader />}>
+          <FAQ />
+        </Suspense>
+
+      </div>
     </div>
   );
 };
