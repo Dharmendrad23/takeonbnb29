@@ -153,7 +153,7 @@ router.get("/", async (req, res) => {
 
     const properties = await Property.find(query)
       .sort({ createdAt: -1 })
-      .limit(100)
+      .limit(10000)
       .lean()
       .exec();
 
