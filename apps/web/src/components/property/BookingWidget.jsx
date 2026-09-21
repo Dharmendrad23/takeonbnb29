@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,8 @@ import {
   BadgePercent,
 } from 'lucide-react';
 import { differenceInDays } from 'date-fns';
+import { useAuth } from '@/contexts/AuthContext';
+import api from '@/lib/api';
 
 export const BookingWidget = ({ property }) => {
   const navigate = useNavigate();
@@ -29,8 +31,8 @@ export const BookingWidget = ({ property }) => {
   let nights = 0;
 
   if (checkIn && checkOut) {
-    const start = new Date(checkIn);
-    const end = new Date(checkOut);
+    const start = new Date(checkIn + 'T00:00:00');
+    const end = new Date(checkOut + 'T00:00:00');
 
     nights = differenceInDays(end, start);
 
@@ -41,8 +43,17 @@ export const BookingWidget = ({ property }) => {
 
   const basePrice = nights * pricePerNight;
 
-  // You can later connect these values with backend/property settings
-  const cleaningFee = nights > 0 ? 1500 : 0;
+  // Cleaning fee is currently zero
+  const cleaningFee = 0;
+
+  // Checkout must be at least one day after check-in
+  const minCheckoutDate = checkIn
+    ? (() => {
+        const date = new Date(checkIn + 'T00:00:00');
+        date.setDate(date.getDate() + 1);
+        return date.toISOString().split('T')[0];
+      })()
+    : today;
 
   const serviceFee =
     nights > 0
@@ -59,18 +70,25 @@ export const BookingWidget = ({ property }) => {
 
     setCheckIn(selectedDate);
 
-    // If checkout is before or equal to check-in, reset it
     if (
       checkOut &&
-      new Date(checkOut) <= new Date(selectedDate)
+      new Date(checkOut + 'T00:00:00') <=
+        new Date(selectedDate + 'T00:00:00')
     ) {
       setCheckOut('');
     }
   };
 
-  const handleReserve = () => {
+  const { currentUser, isAuthenticated } = useAuth();
+
+  const handleReserve = async () => {
     if (!propertyId) {
       alert('Property information is missing.');
+      return;
+    }
+
+    if (!isAuthenticated || !currentUser?.id) {
+      alert('Please login as a guest before booking.');
       return;
     }
 
@@ -85,49 +103,136 @@ export const BookingWidget = ({ property }) => {
     }
 
     if (nights <= 0) {
-      alert(
-        'Checkout date must be after the check-in date.'
-      );
+      alert('Checkout date must be after the check-in date.');
       return;
     }
 
     setIsReserving(true);
 
-    const bookingData = {
-      propertyId,
+    try {
+      const bookingPayload = {
+        propertyId,
+        guestId: currentUser.id,
 
-      property: {
-        id: propertyId,
-        title: property?.title || '',
-        location: property?.location || '',
-        coverImage:
-          property?.coverImage ||
-          property?.photos?.[0] ||
+        guestFullName:
+          currentUser.name ||
+          currentUser.fullName ||
           '',
+
+        guestEmail:
+          currentUser.email ||
+          '',
+
+        guestMobileNumber:
+          currentUser.phone ||
+          currentUser.mobileNumber ||
+          '',
+
+        propertyName:
+          property?.title ||
+          '',
+
+        checkInDate: checkIn,
+        checkOutDate: checkOut,
+
+        guestCount: Number(guests),
+
+        totalPrice: Number(total),
+        totalAmount: Number(total),
+
+        specialRequests: '',
+
+        status: 'pending',
+        bookingStatus: 'pending',
+        paymentStatus: 'pending',
+        paymentMethod: 'cashfree',
+      };
+
+      console.log('[BOOKING CREATE] Payload:', bookingPayload);
+
+      const response = await api.post('/bookings', bookingPayload);
+
+      const createdBooking =
+        response?.data?.data ||
+        response?.data?.booking ||
+        response?.data;
+
+      const createdBookingId =
+        createdBooking?._id ||
+        createdBooking?.id;
+
+      if (!createdBookingId) {
+        console.error(
+          '[BOOKING CREATE] Invalid response:',
+          response?.data
+        );
+        throw new Error(
+          'Booking was created but booking ID was not returned.'
+        );
+      }
+
+      console.log(
+        '[BOOKING CREATED]',
+        createdBookingId
+      );
+
+      const bookingData = {
+        bookingId: String(createdBookingId),
+
+        ...createdBooking,
+
+        propertyId,
+
+        property: {
+          id: propertyId,
+          title: property?.title || '',
+          location: property?.location || '',
+          coverImage:
+            property?.coverImage ||
+            property?.photos?.[0] ||
+            '',
+          pricePerNight,
+        },
+
+        checkInDate: checkIn,
+        checkOutDate: checkOut,
+
+        guests,
+
+        nights,
+
         pricePerNight,
-      },
 
-      checkInDate: checkIn,
-      checkOutDate: checkOut,
+        basePrice,
 
-      guests,
+        cleaningFee,
 
-      nights,
+        serviceFee,
 
-      pricePerNight,
+        totalPrice: total,
+        totalAmount: total,
+      };
 
-      basePrice,
+      navigate(`/checkout/${createdBookingId}`, {
+        state: {
+          booking: bookingData,
+        },
+      });
+    } catch (error) {
+      console.error(
+        '[BOOKING CREATE ERROR]',
+        error?.response?.data || error
+      );
 
-      cleaningFee,
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Unable to create booking. Please try again.';
 
-      serviceFee,
-
-      totalPrice: total,
-    };
-
-    navigate(`/checkout/${propertyId}`, {
-      state: bookingData,
-    });
+      alert(message);
+    } finally {
+      setIsReserving(false);
+    }
   };
 
   return (
@@ -174,14 +279,13 @@ export const BookingWidget = ({ property }) => {
         <div className="flex justify-between items-baseline mb-6">
 
           <div className="text-2xl font-bold text-foreground">
-
-            ₹{pricePerNight.toLocaleString('en-IN')}
+            <span>{String.fromCharCode(8377)}</span>
+            {pricePerNight.toLocaleString('en-IN')}
 
             <span className="text-base font-normal text-muted-foreground">
               {' '}
               / night
             </span>
-
           </div>
 
           <div className="flex items-center gap-1 text-sm font-semibold">
@@ -192,7 +296,8 @@ export const BookingWidget = ({ property }) => {
 
             {reviewCount > 0 && (
               <span className="text-muted-foreground font-normal">
-                · {reviewCount} bookings
+                {' · '}
+                {reviewCount} bookings
               </span>
             )}
 
@@ -290,10 +395,8 @@ export const BookingWidget = ({ property }) => {
                   outline-none
                 "
                 value={checkOut}
-                onChange={(e) =>
-                  setCheckOut(e.target.value)
-                }
-                min={checkIn || today}
+                onChange={(e) => setCheckOut(e.target.value)}
+                min={minCheckoutDate}
               />
 
             </div>
@@ -409,12 +512,15 @@ export const BookingWidget = ({ property }) => {
             <div className="flex justify-between">
 
               <span className="underline">
-                ₹{pricePerNight.toLocaleString('en-IN')} ×{' '}
+                <span>{String.fromCharCode(8377)}</span>
+                {pricePerNight.toLocaleString('en-IN')}
+                {' × '}
                 {nights} night{nights > 1 ? 's' : ''}
               </span>
 
               <span>
-                ₹{basePrice.toLocaleString('en-IN')}
+                <span>{String.fromCharCode(8377)}</span>
+                {basePrice.toLocaleString('en-IN')}
               </span>
 
             </div>
@@ -426,7 +532,8 @@ export const BookingWidget = ({ property }) => {
               </span>
 
               <span>
-                ₹{cleaningFee.toLocaleString('en-IN')}
+                <span>{String.fromCharCode(8377)}</span>
+                {cleaningFee.toLocaleString('en-IN')}
               </span>
 
             </div>
@@ -438,7 +545,8 @@ export const BookingWidget = ({ property }) => {
               </span>
 
               <span>
-                ₹{serviceFee.toLocaleString('en-IN')}
+                <span>{String.fromCharCode(8377)}</span>
+                {serviceFee.toLocaleString('en-IN')}
               </span>
 
             </div>
@@ -452,7 +560,8 @@ export const BookingWidget = ({ property }) => {
               </span>
 
               <span>
-                ₹{total.toLocaleString('en-IN')}
+                <span>{String.fromCharCode(8377)}</span>
+                {total.toLocaleString('en-IN')}
               </span>
 
             </div>
@@ -465,3 +574,5 @@ export const BookingWidget = ({ property }) => {
     </Card>
   );
 };
+
+

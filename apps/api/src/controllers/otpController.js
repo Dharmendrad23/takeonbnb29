@@ -1,86 +1,147 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import twilio from "twilio";
 import User from "../models/User.js";
-import OtpSession from "../models/OtpSession.js";
-import { sendEmail } from "../utils/mailer.js";
 
 const JWT_SECRET = process.env.JWT_SECRET;
-const OTP_EXPIRY_MINUTES = 5;
-const MAX_ATTEMPTS = 5;
 
-const generateOtpCode = () => Math.floor(100000 + Math.random() * 900000).toString();
+const twilioClient =
+  process.env.TWILIO_ACCOUNT_SID &&
+  process.env.TWILIO_AUTH_TOKEN
+    ? twilio(
+        process.env.TWILIO_ACCOUNT_SID,
+        process.env.TWILIO_AUTH_TOKEN
+      )
+    : null;
 
-const sendOtpMail = async (email, code) => {
-  await sendEmail({
-    to: email,
-    subject: "Your TakeOnBnB verification code",
-    text: `Your verification code is ${code}. It expires in ${OTP_EXPIRY_MINUTES} minutes. Do not share this code with anyone.`,
-  });
+const VERIFY_SERVICE_SID = process.env.TWILIO_VERIFY_SERVICE_SID;
+
+const normalizePhone = (phone) => {
+  if (!phone) return "";
+  return String(phone).trim().replace(/\s+/g, "");
 };
 
-export const requestLoginOtp = async (req, res) => {
-  try {
-    const { email } = req.body;
-    if (!email) {
-      return res.status(400).json({ success: false, message: "Email is required" });
-    }
-
-    const user = await User.findOne({ email: email.toLowerCase().trim() });
-    if (!user) {
-      return res.status(404).json({ success: false, message: "No account found with this email" });
-    }
-
-    const otpCode = generateOtpCode();
-    const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60000);
-
-    const session = await OtpSession.create({ email: user.email, otpCode, expiresAt });
-    await sendOtpMail(user.email, otpCode);
-
-    res.json({ success: true, otpId: session._id });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: err.message });
+const checkTwilioConfig = () => {
+  if (!twilioClient || !VERIFY_SERVICE_SID) {
+    throw new Error(
+      "Twilio Verify is not configured. Check TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN and TWILIO_VERIFY_SERVICE_SID."
+    );
   }
 };
 
+// ===============================
+// LOGIN - REQUEST SMS OTP
+// ===============================
+export const requestLoginOtp = async (req, res) => {
+  try {
+    const phone = normalizePhone(req.body.phone);
+
+    if (!phone) {
+      return res.status(400).json({
+        success: false,
+        message: "Phone number is required",
+      });
+    }
+
+    checkTwilioConfig();
+
+    const user = await User.findOne({ phone });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "No account found with this phone number",
+      });
+    }
+
+    const verification = await twilioClient.verify.v2
+      .services(VERIFY_SERVICE_SID)
+      .verifications.create({
+        to: phone,
+        channel: "sms",
+      });
+
+    console.log("Twilio Login OTP:", phone, verification.status);
+
+    return res.json({
+      success: true,
+      message: "OTP sent successfully",
+      status: verification.status,
+      phone,
+    });
+  } catch (err) {
+    console.error("Login OTP Error:", err);
+
+    return res.status(500).json({
+      success: false,
+      message: err.message || "Failed to send OTP",
+    });
+  }
+};
+
+// ===============================
+// LOGIN - VERIFY SMS OTP
+// ===============================
 export const verifyLoginOtp = async (req, res) => {
   try {
-    const { otpId, code } = req.body;
-    if (!otpId || !code) {
-      return res.status(400).json({ success: false, message: "otpId and code are required" });
+    const phone = normalizePhone(req.body.phone);
+    const code = String(req.body.code || "").trim();
+
+    if (!phone || !code) {
+      return res.status(400).json({
+        success: false,
+        message: "Phone number and OTP code are required",
+      });
     }
 
-    const session = await OtpSession.findById(otpId);
-    if (!session) {
-      return res.status(404).json({ success: false, message: "OTP session not found" });
-    }
-    if (session.isVerified) {
-      return res.status(400).json({ success: false, message: "OTP already used" });
-    }
-    if (new Date() > session.expiresAt) {
-      return res.status(400).json({ success: false, message: "OTP has expired. Please request a new one." });
-    }
-    if (session.attempts >= MAX_ATTEMPTS) {
-      return res.status(400).json({ success: false, message: "Too many attempts. Please request a new OTP." });
-    }
-    if (session.otpCode !== code) {
-      session.attempts += 1;
-      await session.save();
-      return res.status(400).json({ success: false, message: "Invalid OTP code" });
+    checkTwilioConfig();
+
+    const verificationCheck = await twilioClient.verify.v2
+      .services(VERIFY_SERVICE_SID)
+      .verificationChecks.create({
+        to: phone,
+        code,
+      });
+
+    console.log(
+      "Twilio Login Verification:",
+      phone,
+      verificationCheck.status
+    );
+
+    if (verificationCheck.status !== "approved") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired OTP",
+      });
     }
 
-    session.isVerified = true;
-    await session.save();
+    const user = await User.findOne({ phone });
 
-    const user = await User.findOne({ email: session.email });
     if (!user) {
-      return res.status(404).json({ success: false, message: "Account no longer exists" });
+      return res.status(404).json({
+        success: false,
+        message: "Account not found",
+      });
     }
 
-    const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: "7d" });
+    user.isVerified = true;
+    await user.save();
 
-    res.json({
+    const token = jwt.sign(
+      {
+        id: user._id,
+        role: user.role,
+      },
+      JWT_SECRET,
+      {
+        expiresIn: "7d",
+      }
+    );
+
+    return res.json({
       success: true,
+      message: "Login successful",
       token,
       user: {
         ...user.toObject(),
@@ -88,83 +149,158 @@ export const verifyLoginOtp = async (req, res) => {
       },
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: err.message });
+    console.error("Verify Login OTP Error:", err);
+
+    return res.status(400).json({
+      success: false,
+      message: err.message || "OTP verification failed",
+    });
   }
 };
 
+// ===============================
+// SIGNUP - REQUEST SMS OTP
+// ===============================
 export const requestSignupOtp = async (req, res) => {
   try {
-    const { email } = req.body;
-    if (!email) {
-      return res.status(400).json({ success: false, message: "Email is required" });
+    const phone = normalizePhone(req.body.phone);
+
+    if (!phone) {
+      return res.status(400).json({
+        success: false,
+        message: "Phone number is required",
+      });
     }
 
-    const existing = await User.findOne({ email: email.toLowerCase().trim() });
+    checkTwilioConfig();
+
+    const existing = await User.findOne({ phone });
+
     if (existing) {
-      return res.status(400).json({ success: false, message: "Email already registered" });
+      return res.status(400).json({
+        success: false,
+        message: "Phone number already registered",
+      });
     }
 
-    const otpCode = generateOtpCode();
-    const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60000);
+    const verification = await twilioClient.verify.v2
+      .services(VERIFY_SERVICE_SID)
+      .verifications.create({
+        to: phone,
+        channel: "sms",
+      });
 
-    const session = await OtpSession.create({ email: email.toLowerCase().trim(), otpCode, expiresAt });
-    await sendOtpMail(email, otpCode);
+    console.log("Twilio Signup OTP:", phone, verification.status);
 
-    res.json({ success: true, otpId: session._id });
+    return res.json({
+      success: true,
+      message: "OTP sent successfully",
+      status: verification.status,
+      phone,
+    });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: err.message });
+    console.error("Signup OTP Error:", err);
+
+    return res.status(500).json({
+      success: false,
+      message: err.message || "Failed to send OTP",
+    });
   }
 };
 
+// ===============================
+// SIGNUP - VERIFY SMS OTP
+// ===============================
 export const verifySignupOtp = async (req, res) => {
   try {
-    const { otpId, code, name, password, role } = req.body;
-    if (!otpId || !code || !name || !password) {
-      return res.status(400).json({ success: false, message: "otpId, code, name and password are required" });
+    const {
+      phone: rawPhone,
+      code,
+      name,
+      password,
+      role,
+      email,
+    } = req.body;
+
+    const phone = normalizePhone(rawPhone);
+
+    if (!phone || !code || !name || !password || !email) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Phone, OTP code, name, email and password are required",
+      });
     }
 
-    const session = await OtpSession.findById(otpId);
-    if (!session) {
-      return res.status(404).json({ success: false, message: "OTP session not found" });
-    }
-    if (session.isVerified) {
-      return res.status(400).json({ success: false, message: "OTP already used" });
-    }
-    if (new Date() > session.expiresAt) {
-      return res.status(400).json({ success: false, message: "OTP has expired. Please request a new one." });
-    }
-    if (session.attempts >= MAX_ATTEMPTS) {
-      return res.status(400).json({ success: false, message: "Too many attempts. Please request a new OTP." });
-    }
-    if (session.otpCode !== code) {
-      session.attempts += 1;
-      await session.save();
-      return res.status(400).json({ success: false, message: "Invalid OTP code" });
+    checkTwilioConfig();
+
+    const verificationCheck = await twilioClient.verify.v2
+      .services(VERIFY_SERVICE_SID)
+      .verificationChecks.create({
+        to: phone,
+        code: String(code).trim(),
+      });
+
+    console.log(
+      "Twilio Signup Verification:",
+      phone,
+      verificationCheck.status
+    );
+
+    if (verificationCheck.status !== "approved") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired OTP",
+      });
     }
 
-    const existing = await User.findOne({ email: session.email });
-    if (existing) {
-      return res.status(400).json({ success: false, message: "Email already registered" });
+    const existingPhone = await User.findOne({ phone });
+
+    if (existingPhone) {
+      return res.status(400).json({
+        success: false,
+        message: "Phone number already registered",
+      });
     }
 
-    session.isVerified = true;
-    await session.save();
+    const normalizedEmail = email.toLowerCase().trim();
+
+    const existingEmail = await User.findOne({
+      email: normalizedEmail,
+    });
+
+    if (existingEmail) {
+      return res.status(400).json({
+        success: false,
+        message: "Email already registered",
+      });
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+
     const user = await User.create({
-      name,
-      email: session.email,
+      name: name.trim(),
+      email: normalizedEmail,
       password: hashedPassword,
+      phone,
       role: role || "guest",
       isVerified: true,
     });
 
-    const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: "7d" });
+    const token = jwt.sign(
+      {
+        id: user._id,
+        role: user.role,
+      },
+      JWT_SECRET,
+      {
+        expiresIn: "7d",
+      }
+    );
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
+      message: "Signup successful",
       token,
       user: {
         ...user.toObject(),
@@ -172,7 +308,11 @@ export const verifySignupOtp = async (req, res) => {
       },
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: err.message });
+    console.error("Verify Signup OTP Error:", err);
+
+    return res.status(400).json({
+      success: false,
+      message: err.message || "OTP verification failed",
+    });
   }
 };
