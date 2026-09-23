@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import {
   useNavigate,
@@ -20,12 +20,18 @@ import {
   CreditCard,
   ArrowLeft,
   Loader2,
+  Star,
+  UserCheck,
+  BriefcaseBusiness,
+  ChevronRight,
 } from 'lucide-react';
 
 import api from '@/lib/api.js';
 
+const RUPEE = String.fromCharCode(0x20b9);
+
 const formatINR = (amount) =>
-  `₹${Number(amount || 0).toLocaleString('en-IN')}`;
+  `${RUPEE}${Number(amount || 0).toLocaleString('en-IN')}`;
 
 const FALLBACK_IMAGE =
   'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=2070&auto=format&fit=crop';
@@ -64,11 +70,58 @@ const getImageUrl = (property) => {
   return FALLBACK_IMAGE;
 };
 
+const formatDate = (value) => {
+  if (!value) return 'Not selected';
+
+  const date = new Date(`${value}T00:00:00`);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+};
+
+const getRating = (property) => {
+  const value =
+    property?.rating ??
+    property?.averageRating ??
+    property?.reviews?.averageRating;
+
+  if (value === undefined || value === null || value === '') {
+    return null;
+  }
+
+  const number = Number(value);
+
+  return Number.isFinite(number)
+    ? number.toFixed(2)
+    : null;
+};
+
+const getReviewCount = (property) => {
+  const value =
+    property?.reviewCount ??
+    property?.reviewsCount ??
+    property?.reviews?.length;
+
+  if (value === undefined || value === null) {
+    return null;
+  }
+
+  return Number(value) || 0;
+};
+
 const CheckoutPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const { id, propertyId: routePropertyId } = useParams();
+  const { id, propertyId: routePropertyId } =
+    useParams();
 
   const [searchParams] = useSearchParams();
 
@@ -88,6 +141,9 @@ const CheckoutPage = () => {
   const [isCopied, setIsCopied] =
     useState(false);
 
+  const [isWorkTrip, setIsWorkTrip] =
+    useState(false);
+
   const [property, setProperty] =
     useState(null);
 
@@ -98,12 +154,8 @@ const CheckoutPage = () => {
     useState('');
 
   /*
-    BOOKING DATA
-
-    Priority:
-    1. Data coming from BookingWidget
-    2. URL search params
-  */
+   * BOOKING DATA
+   */
 
   const checkIn =
     bookingData.checkInDate ||
@@ -119,14 +171,14 @@ const CheckoutPage = () => {
 
   const guests = Number(
     bookingData.guestCount ||
-    bookingData.guests ||
-    searchParams.get('guests') ||
-    1
+      bookingData.guests ||
+      searchParams.get('guests') ||
+      1
   );
 
   /*
-    LOAD PROPERTY
-  */
+   * LOAD PROPERTY
+   */
 
   useEffect(() => {
     const loadProperty = async () => {
@@ -149,17 +201,6 @@ const CheckoutPage = () => {
           response.data
         );
 
-        /*
-          Supports both:
-
-          {
-            success: true,
-            data: property
-          }
-
-          AND direct property response
-        */
-
         const propertyData =
           response?.data?.data ||
           response?.data?.property ||
@@ -174,7 +215,7 @@ const CheckoutPage = () => {
 
         setError(
           err?.response?.data?.message ||
-          'Unable to load this property.'
+            'Unable to load this property.'
         );
       } finally {
         setLoading(false);
@@ -185,8 +226,8 @@ const CheckoutPage = () => {
   }, [propertyId]);
 
   /*
-    CALCULATE NIGHTS
-  */
+   * CALCULATE NIGHTS
+   */
 
   const nights = useMemo(() => {
     if (bookingData.nights) {
@@ -206,14 +247,11 @@ const CheckoutPage = () => {
     );
 
     const difference =
-      end.getTime() -
-      start.getTime();
+      end.getTime() - start.getTime();
 
-    const calculatedNights =
-      Math.ceil(
-        difference /
-        (1000 * 60 * 60 * 24)
-      );
+    const calculatedNights = Math.ceil(
+      difference / (1000 * 60 * 60 * 24)
+    );
 
     return calculatedNights > 0
       ? calculatedNights
@@ -225,20 +263,21 @@ const CheckoutPage = () => {
   ]);
 
   /*
-    PRICE CALCULATION
-  */
+   * PRICE CALCULATION
+   *
+   * Internal pricing:
+   * 6% margin + 5% GST
+   *
+   * These are not shown as separate customer-facing
+   * fee lines.
+   */
 
   const pricePerNight = Number(
     bookingData.pricePerNight ||
-    property?.pricePerNight ||
-    property?.price ||
-    0
+      property?.pricePerNight ||
+      property?.price ||
+      0
   );
-
-  const cleaningFee =
-    bookingData.cleaningFee !== undefined
-      ? Number(bookingData.cleaningFee)
-      : 1500;
 
   const subtotal =
     bookingData.basePrice !== undefined
@@ -248,20 +287,42 @@ const CheckoutPage = () => {
   const serviceFee =
     bookingData.serviceFee !== undefined
       ? Number(bookingData.serviceFee)
-      : Math.round(
-          subtotal * 0.12
-        );
+      : Math.round(subtotal * 0.05);
+
+  const gst =
+    subtotal > 0
+      ? Math.round(subtotal * 0.05)
+      : 0;
+
+  const calculatedTotal =
+    subtotal + serviceFee + gst;
 
   const totalAmount =
     bookingData.totalPrice !== undefined
       ? Number(bookingData.totalPrice)
-      : subtotal +
-        cleaningFee +
-        serviceFee;
+      : calculatedTotal;
 
   /*
-    BANK DETAILS
-  */
+   * OPTIONAL DISCOUNT
+   *
+   * Only display if real booking data contains
+   * a discount.
+   */
+
+  const discount = Number(
+    bookingData.discount ||
+      bookingData.discountAmount ||
+      0
+  );
+
+  const displayTotal =
+    discount > 0
+      ? Math.max(0, totalAmount - discount)
+      : totalAmount;
+
+  /*
+   * BANK DETAILS
+   */
 
   const bankDetails = [
     {
@@ -295,8 +356,8 @@ const CheckoutPage = () => {
       .join('\n');
 
   /*
-    COPY PAYMENT DETAILS
-  */
+   * COPY PAYMENT DETAILS
+   */
 
   const handleCopyPaymentDetails =
     async () => {
@@ -323,15 +384,41 @@ const CheckoutPage = () => {
     };
 
   /*
-    LOADING
-  */
+   * PROPERTY META
+   */
+
+  const propertyImage =
+    getImageUrl(property);
+
+  const propertyTitle =
+    property?.title ||
+    property?.name ||
+    'Your stay';
+
+  const propertyLocation =
+    property?.location ||
+    property?.city ||
+    property?.destination ||
+    'India';
+
+  const rating = getRating(property);
+  const reviewCount =
+    getReviewCount(property);
+
+  const isSuperhost =
+    property?.isSuperhost ||
+    property?.superhost ||
+    property?.host?.isSuperhost;
+
+  /*
+   * LOADING
+   */
 
   if (loading) {
     return (
-      <div className="min-h-[85vh] flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-background px-4">
         <div className="flex items-center gap-3 text-muted-foreground">
           <Loader2 className="w-6 h-6 animate-spin" />
-
           <span>
             Loading your booking...
           </span>
@@ -341,12 +428,12 @@ const CheckoutPage = () => {
   }
 
   /*
-    ERROR
-  */
+   * ERROR
+   */
 
   if (error || !property) {
     return (
-      <div className="min-h-[85vh] flex items-center justify-center px-4">
+      <div className="min-h-screen flex items-center justify-center bg-background px-4">
         <div className="max-w-md w-full bg-card border border-border rounded-3xl p-8 text-center shadow-sm">
           <h1 className="text-xl font-bold mb-3">
             Property not found
@@ -364,7 +451,6 @@ const CheckoutPage = () => {
             className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-5 py-3 rounded-xl font-semibold"
           >
             <ArrowLeft className="w-4 h-4" />
-
             Back to properties
           </button>
         </div>
@@ -372,395 +458,597 @@ const CheckoutPage = () => {
     );
   }
 
-  const propertyImage =
-    getImageUrl(property);
-
   return (
-    <div className="min-h-[85vh] bg-muted/20 py-12 px-4">
-
+    <>
       <Helmet>
         <title>
-          Checkout |{' '}
-          {property.title ||
-            property.name}{' '}
-          | Take On BnB
+          Confirm & Pay | {propertyTitle} | Take On BnB
         </title>
       </Helmet>
 
-      <div className="max-w-5xl mx-auto">
+      <div className="min-h-screen bg-background pb-28 lg:pb-12">
 
-        {/* BACK BUTTON */}
+        {/* HEADER */}
 
-        <button
-          onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-primary mb-6"
-        >
-          <ArrowLeft className="w-4 h-4" />
+        <header className="sticky top-0 z-30 bg-background/95 backdrop-blur border-b border-border">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-4">
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="w-10 h-10 rounded-full border border-border flex items-center justify-center hover:bg-muted transition"
+              aria-label="Go back"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
 
-          Back to property
-        </button>
+            <h1 className="text-xl sm:text-2xl font-extrabold text-foreground">
+              Confirm and pay
+            </h1>
+          </div>
+        </header>
 
-        <h1 className="text-3xl font-extrabold text-foreground mb-8">
-          Confirm your booking
-        </h1>
+        <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 lg:py-10">
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
-          {/* LEFT SIDE */}
+            {/* LEFT */}
 
-          <div className="lg:col-span-7 space-y-8">
+            <div className="lg:col-span-7 space-y-6">
 
-            {/* TRIP DETAILS */}
+              {/* PROPERTY CARD */}
 
-            <div className="bg-card rounded-3xl p-6 border border-border shadow-sm">
+              <section className="border-b border-border pb-6">
 
-              <h2 className="text-xl font-bold text-foreground mb-4">
-                Trip Details
-              </h2>
+                <div className="flex gap-4">
 
-              <div className="grid sm:grid-cols-2 gap-6">
-
-                <div className="space-y-1">
-
-                  <span className="text-sm font-semibold text-muted-foreground flex items-center gap-1.5">
-                    <Calendar className="w-4 h-4" />
-                    Dates
-                  </span>
-
-                  <p className="text-foreground font-medium">
-                    {checkIn ||
-                      'Select check-in date'}
-
-                    {' - '}
-
-                    {checkOut ||
-                      'Select check-out date'}
-                  </p>
-
-                  <p className="text-sm text-muted-foreground">
-                    {nights} night
-                    {nights !== 1 ? 's' : ''}
-                  </p>
-
-                </div>
-
-                <div className="space-y-1">
-
-                  <span className="text-sm font-semibold text-muted-foreground flex items-center gap-1.5">
-                    <Users className="w-4 h-4" />
-                    Guests
-                  </span>
-
-                  <p className="text-foreground font-medium">
-                    {guests} guest
-                    {guests !== 1
-                      ? 's'
-                      : ''}
-                  </p>
-
-                </div>
-
-              </div>
-
-            </div>
-
-            {/* PAYMENT METHOD */}
-
-            <div className="bg-card rounded-3xl p-6 border border-border shadow-sm">
-
-              <h2 className="text-xl font-bold text-foreground mb-4">
-                Payment method
-              </h2>
-
-              <div className="grid gap-3 md:grid-cols-2 mb-6">
-
-                {/* ONLINE PAYMENT */}
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    setSelectedPaymentMethod(
-                      'stripe'
-                    )
-                  }
-                  className={`rounded-2xl border p-4 text-left transition-all ${
-                    selectedPaymentMethod ===
-                    'stripe'
-                      ? 'border-primary bg-primary/5 shadow-sm'
-                      : 'border-border hover:border-primary/60'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 mb-2">
-
-                    <CreditCard className="w-4 h-4 text-primary" />
-
-                    <span className="font-semibold text-foreground">
-                      Online Payment
-                    </span>
-
-                  </div>
-
-                  <p className="text-sm text-muted-foreground">
-                    Pay securely using available
-                    online payment methods.
-                  </p>
-                </button>
-
-                {/* BANK / UPI */}
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    setSelectedPaymentMethod(
-                      'bank'
-                    )
-                  }
-                  className={`rounded-2xl border p-4 text-left transition-all ${
-                    selectedPaymentMethod ===
-                    'bank'
-                      ? 'border-primary bg-primary/5 shadow-sm'
-                      : 'border-border hover:border-primary/60'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 mb-2">
-
-                    <Landmark className="w-4 h-4 text-primary" />
-
-                    <span className="font-semibold text-foreground">
-                      Bank / UPI Transfer
-                    </span>
-
-                  </div>
-
-                  <p className="text-sm text-muted-foreground">
-                    Transfer payment and share
-                    payment proof.
-                  </p>
-                </button>
-
-              </div>
-
-              {/* ONLINE PAYMENT */}
-
-              {selectedPaymentMethod ===
-              'stripe' ? (
-                <>
-                  <p className="text-muted-foreground mb-6 text-sm">
-                    Complete your payment securely
-                    to confirm this booking.
-                  </p>
-
-                  <CheckoutButton
-                    amount={totalAmount}
-                    productName={`Booking: ${
-                      property.title ||
-                      property.name
-                    }`}
+                  <img
+                    src={propertyImage}
+                    alt={propertyTitle}
+                    className="w-28 h-28 sm:w-36 sm:h-36 rounded-2xl object-cover shrink-0"
+                    onError={(event) => {
+                      event.currentTarget.src =
+                        FALLBACK_IMAGE;
+                    }}
                   />
 
-                  <div className="mt-4 flex items-center justify-center gap-2 text-sm font-medium text-emerald-600">
+                  <div className="min-w-0 flex-1">
 
-                    <ShieldCheck className="w-4 h-4" />
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Entire home
+                    </p>
 
-                    SSL Secured Payment
+                    <h2 className="text-xl sm:text-2xl font-semibold leading-tight text-foreground">
+                      {propertyTitle}
+                    </h2>
+
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mt-4 text-sm text-muted-foreground">
+
+                      {rating && (
+                        <span className="inline-flex items-center gap-1 text-foreground font-medium">
+                          <Star className="w-4 h-4 fill-current" />
+                          {rating}
+                          {reviewCount !== null && (
+                            <span>
+                              ({reviewCount})
+                            </span>
+                          )}
+                        </span>
+                      )}
+
+                      {isSuperhost && (
+                        <span className="inline-flex items-center gap-1">
+                          <UserCheck className="w-4 h-4" />
+                          Superhost
+                        </span>
+                      )}
+
+                      <span className="inline-flex items-center gap-1">
+                        <MapPin className="w-4 h-4" />
+                        {propertyLocation}
+                      </span>
+
+                    </div>
 
                   </div>
-                </>
-              ) : (
+                </div>
+              </section>
 
-                /* BANK / UPI */
+              {/* CANCELLATION */}
 
-                <div className="rounded-2xl border border-border bg-muted/30 p-4 space-y-4">
+              <section className="border-b border-border pb-6">
 
-                  <p className="text-sm text-muted-foreground">
-                    Transfer{' '}
+                <div className="flex items-start justify-between gap-6">
 
-                    <strong>
-                      {formatINR(
-                        totalAmount
-                      )}
-                    </strong>
+                  <div>
+                    <h3 className="text-lg sm:text-xl font-bold text-foreground">
+                      Cancellation policy
+                    </h3>
 
-                    {' '}to the account below and
-                    share the payment screenshot
-                    for booking confirmation.
-                  </p>
+                    <p className="mt-2 text-sm sm:text-base text-muted-foreground leading-relaxed">
+                      Review the property's cancellation
+                      policy before completing payment.
+                    </p>
+                  </div>
 
-                  <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="hidden sm:flex w-12 h-12 rounded-full bg-muted items-center justify-center shrink-0">
+                    <Calendar className="w-6 h-6 text-foreground" />
+                  </div>
 
-                    {bankDetails.map(
-                      (detail) => (
-                        <div
-                          key={detail.label}
-                          className="rounded-xl border border-border bg-background/80 p-3"
-                        >
-                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                            {detail.label}
-                          </p>
+                </div>
 
-                          <p className="mt-1 font-medium text-foreground break-all">
-                            {detail.value}
-                          </p>
-                        </div>
-                      )
-                    )}
+                <button
+                  type="button"
+                  onClick={() =>
+                    navigate(
+                      `/property/${propertyId}`
+                    )
+                  }
+                  className="mt-4 text-sm font-semibold underline underline-offset-4 hover:text-primary"
+                >
+                  View property details
+                </button>
+
+              </section>
+
+              {/* YOUR TRIP */}
+
+              <section className="border-b border-border pb-6">
+
+                <div className="flex items-center justify-between mb-6">
+
+                  <h2 className="text-2xl font-bold text-foreground">
+                    Your trip
+                  </h2>
+
+                </div>
+
+                <div className="space-y-7">
+
+                  {/* DATES */}
+
+                  <div className="flex items-start justify-between gap-4">
+
+                    <div>
+                      <p className="font-bold text-base">
+                        Dates
+                      </p>
+
+                      <p className="mt-2 text-muted-foreground">
+                        {formatDate(checkIn)}
+                        {' - '}
+                        {formatDate(checkOut)}
+                      </p>
+
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {nights} night
+                        {nights !== 1
+                          ? 's'
+                          : ''}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => navigate(-1)}
+                      className="font-semibold underline underline-offset-4"
+                    >
+                      Edit
+                    </button>
+
+                  </div>
+
+                  {/* GUESTS */}
+
+                  <div className="flex items-start justify-between gap-4">
+
+                    <div>
+                      <p className="font-bold text-base">
+                        Guests
+                      </p>
+
+                      <p className="mt-2 text-muted-foreground">
+                        {guests} guest
+                        {guests !== 1
+                          ? 's'
+                          : ''}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => navigate(-1)}
+                      className="font-semibold underline underline-offset-4"
+                    >
+                      Edit
+                    </button>
+
+                  </div>
+
+                </div>
+              </section>
+
+              {/* WORK TRIP */}
+
+              <section className="border-b border-border pb-6">
+
+                <div className="flex items-center justify-between gap-4">
+
+                  <div className="flex items-center gap-4">
+
+                    <div className="w-11 h-11 rounded-full bg-muted flex items-center justify-center">
+                      <BriefcaseBusiness className="w-5 h-5" />
+                    </div>
+
+                    <div>
+                      <h3 className="font-bold text-base sm:text-lg">
+                        Is this a work trip?
+                      </h3>
+
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Help us personalize your booking.
+                      </p>
+                    </div>
 
                   </div>
 
                   <button
                     type="button"
-                    onClick={
-                      handleCopyPaymentDetails
+                    role="switch"
+                    aria-checked={isWorkTrip}
+                    onClick={() =>
+                      setIsWorkTrip(
+                        (current) => !current
+                      )
                     }
-                    className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-sm font-semibold text-foreground transition hover:border-primary hover:text-primary"
+                    className={`relative w-14 h-8 rounded-full transition ${
+                      isWorkTrip
+                        ? 'bg-primary'
+                        : 'bg-muted-foreground/30'
+                    }`}
                   >
-                    {isCopied ? (
-                      <CheckCircle2 className="w-4 h-4" />
-                    ) : (
-                      <Copy className="w-4 h-4" />
-                    )}
-
-                    {isCopied
-                      ? 'Copied'
-                      : 'Copy payment details'}
+                    <span
+                      className={`absolute top-1 w-6 h-6 rounded-full bg-white shadow-sm transition-all ${
+                        isWorkTrip
+                          ? 'left-7'
+                          : 'left-1'
+                      }`}
+                    />
                   </button>
 
                 </div>
-              )}
+              </section>
 
-            </div>
+              {/* PAYMENT METHOD */}
 
-          </div>
+              <section className="pt-1">
 
-          {/* RIGHT SIDE - PROPERTY */}
+                <h2 className="text-2xl font-bold text-foreground mb-5">
+                  Payment method
+                </h2>
 
-          <div className="lg:col-span-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 
-            <div className="bg-card rounded-3xl border border-border shadow-sm overflow-hidden sticky top-24">
+                  {/* ONLINE */}
 
-              <div className="flex gap-4 p-6 border-b border-border">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSelectedPaymentMethod(
+                        'stripe'
+                      )
+                    }
+                    className={`rounded-2xl border p-5 text-left transition ${
+                      selectedPaymentMethod ===
+                      'stripe'
+                        ? 'border-primary ring-1 ring-primary bg-primary/5'
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
 
-                <img
-                  src={propertyImage}
-                  alt={
-                    property.title ||
-                    property.name ||
-                    'Property'
-                  }
-                  className="w-24 h-24 rounded-xl object-cover"
-                  onError={(e) => {
-                    e.currentTarget.src =
-                      FALLBACK_IMAGE;
-                  }}
-                />
+                      <CreditCard className="w-5 h-5 text-primary" />
 
-                <div>
+                      <span className="font-bold">
+                        Online Payment
+                      </span>
 
-                  <h3 className="font-bold text-foreground text-lg leading-tight mb-1">
-                    {property.title ||
-                      property.name}
-                  </h3>
+                    </div>
 
-                  <span className="text-muted-foreground text-sm flex items-center font-medium">
-                    <MapPin className="w-3.5 h-3.5 mr-1" />
+                    <p className="mt-3 text-sm text-muted-foreground">
+                      Pay securely using available
+                      online payment methods.
+                    </p>
 
-                    {property.location ||
-                      property.city ||
-                      'India'}
-                  </span>
+                  </button>
+
+                  {/* BANK */}
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSelectedPaymentMethod(
+                        'bank'
+                      )
+                    }
+                    className={`rounded-2xl border p-5 text-left transition ${
+                      selectedPaymentMethod ===
+                      'bank'
+                        ? 'border-primary ring-1 ring-primary bg-primary/5'
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+
+                      <Landmark className="w-5 h-5 text-primary" />
+
+                      <span className="font-bold">
+                        Bank / UPI Transfer
+                      </span>
+
+                    </div>
+
+                    <p className="mt-3 text-sm text-muted-foreground">
+                      Transfer payment and share
+                      payment proof.
+                    </p>
+
+                  </button>
 
                 </div>
 
-              </div>
+                {/* ONLINE PAYMENT */}
 
-              {/* PRICE DETAILS */}
+                {selectedPaymentMethod ===
+                'stripe' ? (
+                  <div className="mt-5">
 
-              <div className="p-6">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-5">
+                      <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                      Secure encrypted payment
+                    </div>
 
-                <h3 className="font-bold text-foreground mb-4">
-                  Price details
-                </h3>
+                    <CheckoutButton
+                      amount={displayTotal}
+                      productName={`Booking: ${propertyTitle}`}
+                    />
 
-                <div className="space-y-3 text-sm mb-6">
+                    <div className="mt-4 flex items-center justify-center gap-2 text-sm text-emerald-600 font-medium">
+                      <ShieldCheck className="w-4 h-4" />
+                      SSL Secured Payment
+                    </div>
 
-                  <div className="flex justify-between">
+                  </div>
+                ) : (
+                  /* BANK / UPI */
 
-                    <span className="text-muted-foreground">
-                      {formatINR(
-                        pricePerNight
+                  <div className="mt-5 rounded-2xl border border-border bg-muted/30 p-5 space-y-5">
+
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      Transfer{' '}
+                      <strong className="text-foreground">
+                        {formatINR(displayTotal)}
+                      </strong>{' '}
+                      to the account below and share
+                      the payment screenshot for booking
+                      confirmation.
+                    </p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+                      {bankDetails.map(
+                        (detail) => (
+                          <div
+                            key={detail.label}
+                            className="rounded-xl border border-border bg-background p-4"
+                          >
+                            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                              {detail.label}
+                            </p>
+
+                            <p className="mt-1 font-medium break-all">
+                              {detail.value}
+                            </p>
+                          </div>
+                        )
                       )}
 
-                      {' '}× {nights} night
-                      {nights !== 1
-                        ? 's'
-                        : ''}
-                    </span>
+                    </div>
 
-                    <span className="font-medium text-foreground">
-                      {formatINR(subtotal)}
-                    </span>
+                    <button
+                      type="button"
+                      onClick={
+                        handleCopyPaymentDetails
+                      }
+                      className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-5 py-2.5 text-sm font-semibold hover:border-primary hover:text-primary transition"
+                    >
+                      {isCopied ? (
+                        <CheckCircle2 className="w-4 h-4" />
+                      ) : (
+                        <Copy className="w-4 h-4" />
+                      )}
+
+                      {isCopied
+                        ? 'Copied'
+                        : 'Copy payment details'}
+                    </button>
+
+                  </div>
+                )}
+
+              </section>
+
+            </div>
+
+            {/* RIGHT / TOTAL */}
+
+            <aside className="lg:col-span-5">
+
+              <div className="lg:sticky lg:top-24">
+
+                <section className="rounded-3xl border border-border bg-card shadow-sm overflow-hidden">
+
+                  {/* PROPERTY SUMMARY */}
+
+                  <div className="p-5 border-b border-border">
+
+                    <div className="flex gap-4">
+
+                      <img
+                        src={propertyImage}
+                        alt={propertyTitle}
+                        className="w-24 h-24 rounded-xl object-cover shrink-0"
+                        onError={(event) => {
+                          event.currentTarget.src =
+                            FALLBACK_IMAGE;
+                        }}
+                      />
+
+                      <div className="min-w-0">
+
+                        <p className="text-sm text-muted-foreground mb-1">
+                          Entire home
+                        </p>
+
+                        <h3 className="font-bold text-lg leading-tight">
+                          {propertyTitle}
+                        </h3>
+
+                        <p className="mt-2 text-sm text-muted-foreground flex items-center gap-1">
+                          <MapPin className="w-3.5 h-3.5" />
+                          {propertyLocation}
+                        </p>
+
+                      </div>
+
+                    </div>
 
                   </div>
 
-                  {cleaningFee > 0 && (
-                    <div className="flex justify-between">
+                  {/* TOTAL */}
 
-                      <span className="text-muted-foreground">
-                        Cleaning fee
-                      </span>
+                  <div className="p-5 sm:p-6">
 
-                      <span className="font-medium text-foreground">
-                        {formatINR(
-                          cleaningFee
-                        )}
+                    <h2 className="text-2xl font-bold mb-6">
+                      Your total
+                    </h2>
+
+                    <div className="space-y-4">
+
+                      <div className="flex items-start justify-between gap-6">
+
+                        <span className="text-muted-foreground">
+                          {formatINR(pricePerNight)} x {nights} night
+                          {nights !== 1 ? 's' : ''}
+                        </span>
+
+                        <span className="font-medium text-right">
+                          {formatINR(subtotal)}
+                        </span>
+
+                      </div>
+
+                      <div className="flex items-start justify-between gap-6">
+
+                        <span className="text-muted-foreground">
+                          Taxes &amp; charges
+                        </span>
+
+                        <span className="font-medium text-right">
+                          {formatINR(serviceFee + gst)}
+                        </span>
+
+                      </div>
+
+                    </div>
+
+                    <div className="my-5 border-t border-border" />
+
+                    <div className="flex items-center justify-between gap-6">
+
+                      <div>
+                        <p className="font-bold text-lg">
+                          Total
+                        </p>
+                      </div>
+
+                      <span className="font-extrabold text-xl">
+                        {formatINR(displayTotal)}
                       </span>
 
                     </div>
-                  )}
 
-                  {serviceFee > 0 && (
-                    <div className="flex justify-between">
+                  </div>
 
-                      <span className="text-muted-foreground">
-                        Take On BnB service fee
-                      </span>
+                </section>
 
-                      <span className="font-medium text-foreground">
-                        {formatINR(
-                          serviceFee
-                        )}
-                      </span>
+                {/* SECURITY NOTE */}
 
-                    </div>
-                  )}
+                <div className="mt-4 px-2 flex items-start gap-3 text-sm text-muted-foreground">
 
-                </div>
+                  <ShieldCheck className="w-5 h-5 shrink-0 text-emerald-600" />
 
-                <div className="flex justify-between items-center pt-4 border-t border-border">
-
-                  <span className="font-extrabold text-foreground text-lg">
-                    Total
-                  </span>
-
-                  <span className="font-extrabold text-foreground text-xl">
-                    {formatINR(
-                      totalAmount
-                    )}
-                  </span>
+                  <p>
+                    Your payment information is
+                    handled securely through the
+                    selected payment method.
+                  </p>
 
                 </div>
 
               </div>
 
+            </aside>
+
+          </div>
+        </main>
+
+        {/* MOBILE STICKY PAY BAR */}
+
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-background border-t border-border p-3 lg:hidden">
+
+          <div className="max-w-6xl mx-auto flex items-center gap-4">
+
+            <div className="flex-1 min-w-0">
+
+              <p className="text-xs text-muted-foreground">
+                Total
+              </p>
+
+              <p className="font-extrabold text-lg">
+                {formatINR(displayTotal)}
+              </p>
+
             </div>
+
+            {selectedPaymentMethod ===
+            'stripe' ? (
+              <div className="w-[58%]">
+                <CheckoutButton
+                  amount={displayTotal}
+                  productName={`Booking: ${propertyTitle}`}
+                />
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  window.scrollTo({
+                    top: document.body.scrollHeight,
+                    behavior: 'smooth',
+                  });
+                }}
+                className="flex-1 max-w-[220px] bg-primary text-primary-foreground rounded-xl py-3 px-5 font-bold"
+              >
+                Payment details
+              </button>
+            )}
 
           </div>
 
         </div>
 
       </div>
-
-    </div>
+    </>
   );
 };
 
