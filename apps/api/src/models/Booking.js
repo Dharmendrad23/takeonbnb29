@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+﻿import mongoose from "mongoose";
 
 const bookingSchema = new mongoose.Schema(
   {
@@ -55,6 +55,40 @@ const bookingSchema = new mongoose.Schema(
       min: 1,
     },
 
+    /* =========================================
+       PRICING
+    ========================================= */
+
+    pricePerNight: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+
+    nights: {
+      type: Number,
+      required: true,
+      min: 1,
+    },
+
+    basePrice: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+
+    internalMargin: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    gst: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
     totalPrice: {
       type: Number,
       required: true,
@@ -63,9 +97,13 @@ const bookingSchema = new mongoose.Schema(
 
     totalAmount: {
       type: Number,
-      default: 0,
+      required: true,
       min: 0,
     },
+
+    /* =========================================
+       BOOKING
+    ========================================= */
 
     specialRequests: {
       type: String,
@@ -95,10 +133,15 @@ const bookingSchema = new mongoose.Schema(
       default: "pending",
     },
 
+    /* =========================================
+       PAYMENT
+    ========================================= */
+
     paymentStatus: {
       type: String,
       enum: [
         "pending",
+        "processing",
         "paid",
         "failed",
         "refunded",
@@ -109,6 +152,7 @@ const bookingSchema = new mongoose.Schema(
     paymentMethod: {
       type: String,
       default: "",
+      trim: true,
     },
 
     transactionId: {
@@ -122,6 +166,63 @@ const bookingSchema = new mongoose.Schema(
       default: "",
       trim: true,
     },
+
+    /* =========================================
+       RAZORPAY PAYMENT
+    ========================================= */
+    // RAZORPAY PAYMENT
+    razorpayOrderId: {
+      type: String,
+      default: "",
+      trim: true,
+      index: true,
+    },
+
+    razorpayPaymentId: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    razorpaySignature: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    razorpayPaymentStatus: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    razorpayPaymentMethod: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    razorpayOrderAmount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    razorpayCurrency: {
+      type: String,
+      default: "INR",
+      trim: true,
+    },
+
+    paidAt: {
+      type: Date,
+      default: null,
+    },
+
+    paymentVerifiedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,
@@ -129,3 +230,7 @@ const bookingSchema = new mongoose.Schema(
 );
 
 export default mongoose.model("Booking", bookingSchema);
+
+
+
+

@@ -42,17 +42,18 @@ export const BookingWidget = ({ property }) => {
   const basePrice = nights * pricePerNight;
 
   // You can later connect these values with backend/property settings
-  const cleaningFee = nights > 0 ? 1500 : 0;
 
   const serviceFee =
     nights > 0
-      ? Math.round(basePrice * 0.12)
+      ? Math.round(basePrice * 0.05)
       : 0;
+
+  const gst = nights > 0 ? Math.round(basePrice * 0.05) : 0;
 
   const total =
     basePrice +
-    cleaningFee +
-    serviceFee;
+    serviceFee +
+    gst;
 
   const handleCheckInChange = (e) => {
     const selectedDate = e.target.value;
@@ -117,11 +118,8 @@ export const BookingWidget = ({ property }) => {
       pricePerNight,
 
       basePrice,
-
-      cleaningFee,
-
       serviceFee,
-
+      gst,
       totalPrice: total,
     };
 
@@ -409,7 +407,7 @@ export const BookingWidget = ({ property }) => {
             <div className="flex justify-between">
 
               <span className="underline">
-                ₹{pricePerNight.toLocaleString('en-IN')} ×{' '}
+                ₹{pricePerNight.toLocaleString('en-IN')} x{' '}
                 {nights} night{nights > 1 ? 's' : ''}
               </span>
 
@@ -419,36 +417,12 @@ export const BookingWidget = ({ property }) => {
 
             </div>
 
-            <div className="flex justify-between">
-
-              <span className="underline">
-                Cleaning fee
-              </span>
-
-              <span>
-                ₹{cleaningFee.toLocaleString('en-IN')}
-              </span>
-
-            </div>
-
-            <div className="flex justify-between">
-
-              <span className="underline">
-                TakeOnBnB service fee
-              </span>
-
-              <span>
-                ₹{serviceFee.toLocaleString('en-IN')}
-              </span>
-
-            </div>
-
             <hr className="border-border my-4" />
 
             <div className="flex justify-between font-bold text-lg">
 
               <span>
-                Total before taxes
+                Total
               </span>
 
               <span>
