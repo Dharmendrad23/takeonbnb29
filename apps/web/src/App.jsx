@@ -41,6 +41,7 @@ import HostRegisterPage from "@/pages/HostRegisterPage.jsx";
 import HostAuthPage from "@/pages/HostAuthPage.jsx";
 
 import DestinationPage from "@/pages/DestinationPage.jsx";
+import DestinationsPage from "@/pages/DestinationsPage.jsx";
 import SearchPage from "@/pages/SearchPage.jsx";
 
 import AboutUsPage from "@/pages/AboutUsPage.jsx";
@@ -305,6 +306,15 @@ function App() {
                     </AppLayout>
                   }
                 />
+                <Route
+                  path="/destinations"
+                  element={
+                    <AppLayout>
+                      <DestinationsPage />
+                    </AppLayout>
+                  }
+                />
+
 
                 <Route
                   path="/destination/:location"
@@ -770,3 +780,6 @@ function App() {
 }
 
 export default App;
+
+
+

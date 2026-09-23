@@ -1,61 +1,35 @@
-﻿import React, { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
-import { Search, MapPin, ChevronDown, Minus, Plus } from "lucide-react";
-import { format } from "date-fns";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import api from "@/lib/api.js";
+﻿import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Search, MapPin } from 'lucide-react';
+import { format } from 'date-fns';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import api from '@/lib/api.js';
 
-const SearchBar = ({ className = "" }) => {
+const SearchBar = ({ className = '' }) => {
   const navigate = useNavigate();
 
-  const [location, setLocation] = useState("");
+  const [location, setLocation] = useState('');
   const [checkIn, setCheckIn] = useState(null);
   const [checkOut, setCheckOut] = useState(null);
-
-  const [adults, setAdults] = useState(0);
-  const [children, setChildren] = useState(0);
-  const [infants, setInfants] = useState(0);
-  const [pets, setPets] = useState(0);
+  const [guests, setGuests] = useState(1);
 
   const [cities, setCities] = useState([]);
   const [filteredCities, setFilteredCities] = useState([]);
   const [showLocation, setShowLocation] = useState(false);
-  const [showGuests, setShowGuests] = useState(false);
 
   const locationRef = useRef(null);
-  const guestsRef = useRef(null);
 
-  /* =========================
-     GET LOCATIONS
-  ========================= */
-
+  /* GET LOCATIONS */
   useEffect(() => {
     const getCities = async () => {
       try {
-        const { data } = await api.get("/properties");
+        const { data } = await api.get('/properties');
 
         const counts = {};
 
-        const properties = Array.isArray(data)
-          ? data
-          : Array.isArray(data?.properties)
-            ? data.properties
-            : Array.isArray(data?.items)
-              ? data.items
-              : Array.isArray(data?.data)
-                ? data.data
-                : [];
-
-        properties.forEach((property) => {
-          const city =
-            typeof property?.location === "string"
-              ? property.location.trim()
-              : property?.location?.city?.trim?.() || "";
+        (data || []).forEach((property) => {
+          const city = property.location?.trim();
 
           if (city) {
             counts[city] = (counts[city] || 0) + 1;
@@ -72,17 +46,14 @@ const SearchBar = ({ className = "" }) => {
         setCities(result);
         setFilteredCities(result);
       } catch (error) {
-        console.error("Failed to fetch locations:", error);
+        console.error('Failed to fetch locations:', error);
       }
     };
 
     getCities();
   }, []);
 
-  /* =========================
-     FILTER LOCATIONS
-  ========================= */
-
+  /* FILTER LOCATIONS */
   useEffect(() => {
     if (!location.trim()) {
       setFilteredCities(cities);
@@ -98,10 +69,7 @@ const SearchBar = ({ className = "" }) => {
     );
   }, [location, cities]);
 
-  /* =========================
-     CLOSE DROPDOWNS
-  ========================= */
-
+  /* CLOSE LOCATION DROPDOWN */
   useEffect(() => {
     const handleClick = (event) => {
       if (
@@ -110,157 +78,83 @@ const SearchBar = ({ className = "" }) => {
       ) {
         setShowLocation(false);
       }
-
-      if (
-        guestsRef.current &&
-        !guestsRef.current.contains(event.target)
-      ) {
-        setShowGuests(false);
-      }
     };
 
-    document.addEventListener("mousedown", handleClick);
+    document.addEventListener('mousedown', handleClick);
 
     return () => {
-      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener('mousedown', handleClick);
     };
   }, []);
 
-  /* =========================
-     TOTAL GUESTS
-  ========================= */
-
-  const totalGuests =
-    adults + children + infants + pets;
-
-  /* =========================
-     SEARCH
-  ========================= */
-
+  /* SAME SEARCH PATH */
   const handleSearch = () => {
     const params = new URLSearchParams();
 
-    if (location.trim()) {
-      params.append("location", location.trim());
+    if (location) {
+      params.append('location', location);
     }
 
     if (checkIn) {
-      params.append("checkIn", checkIn.toISOString());
+      params.append('checkIn', checkIn.toISOString());
     }
 
     if (checkOut) {
-      params.append("checkOut", checkOut.toISOString());
+      params.append('checkOut', checkOut.toISOString());
     }
 
-    if (totalGuests > 0) {
-      params.append("guests", totalGuests.toString());
+    if (guests > 1) {
+      params.append('guests', guests.toString());
     }
 
     navigate(`/search?${params.toString()}`);
   };
 
-  /* =========================
-     GUEST ROW
-  ========================= */
-
-  const GuestRow = ({
-    title,
-    subtitle,
-    value,
-    setValue,
-    showDivider = true,
-    pet = false,
-  }) => (
-    <div
-      className={`py-5 ${
-        showDivider ? "border-b border-gray-200" : ""
-      }`}
-    >
-      <div className="flex items-center justify-between gap-6">
-        <div className="min-w-0">
-          <p className="text-[16px] font-semibold text-gray-900">
-            {title}
-          </p>
-
-          {pet ? (
-            <button
-              type="button"
-              className="text-sm text-gray-400 underline font-medium hover:text-gray-600 transition"
-            >
-              Bringing a service animal?
-            </button>
-          ) : (
-            <p className="text-sm text-gray-500 mt-0.5">
-              {subtitle}
-            </p>
-          )}
-        </div>
-
-        <div className="flex items-center gap-3 shrink-0">
-          <button
-            type="button"
-            disabled={value === 0}
-            onClick={() =>
-              setValue((current) => Math.max(0, current - 1))
-            }
-            className="
-              w-8
-              h-8
-              rounded-full
-              border
-              border-gray-200
-              bg-gray-100
-              flex
-              items-center
-              justify-center
-              text-gray-500
-              disabled:opacity-40
-              disabled:cursor-not-allowed
-              hover:border-gray-400
-              hover:bg-gray-200
-              transition
-            "
-          >
-            <Minus className="w-4 h-4" />
-          </button>
-
-          <span className="w-4 text-center text-[16px] text-gray-900">
-            {value}
-          </span>
-
-          <button
-            type="button"
-            onClick={() =>
-              setValue((current) => current + 1)
-            }
-            className="
-              w-8
-              h-8
-              rounded-full
-              border
-              border-gray-200
-              bg-gray-100
-              flex
-              items-center
-              justify-center
-              text-gray-900
-              hover:border-gray-400
-              hover:bg-gray-200
-              transition
-            "
-          >
-            <Plus className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
   return (
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     <div className={`w-full ${className}`}>
+
+      {/* ==============================
+          AIRBNB STYLE SEARCH BAR
+      =============================== */}
+
+
+
+
+        
+
+
+
+  
+
+
+
+
+
+
+
+
+
       <div
         className="
-          relative
           w-full
           max-w-[850px]
           h-[66px]
@@ -276,19 +170,16 @@ const SearchBar = ({ className = "" }) => {
         "
       >
 
-        {/* =========================
+        {/* ==========================
             WHERE
-        ========================= */}
+        =========================== */}
 
         <div
           ref={locationRef}
           className="relative flex-1 h-full min-w-0"
         >
           <div
-            onClick={() => {
-              setShowLocation(true);
-              setShowGuests(false);
-            }}
+            onClick={() => setShowLocation(true)}
             className="
               h-full
               px-6
@@ -312,12 +203,8 @@ const SearchBar = ({ className = "" }) => {
               onChange={(e) => {
                 setLocation(e.target.value);
                 setShowLocation(true);
-                setShowGuests(false);
               }}
-              onFocus={() => {
-                setShowLocation(true);
-                setShowGuests(false);
-              }}
+              onFocus={() => setShowLocation(true)}
               className="
                 w-full
                 mt-0.5
@@ -333,7 +220,7 @@ const SearchBar = ({ className = "" }) => {
             />
           </div>
 
-          {/* LOCATION DROPDOWN */}
+          {/* LOCATION LIST */}
 
           {showLocation && (
             <div
@@ -352,13 +239,8 @@ const SearchBar = ({ className = "" }) => {
                 overflow-hidden
               "
             >
-              <div className="px-5 pt-5 pb-2">
-                <p className="text-sm font-medium text-gray-700">
-                  Suggested destinations
-                </p>
-              </div>
+              <div className="max-h-[330px] overflow-y-auto py-2">
 
-              <div className="max-h-[380px] overflow-y-auto py-2">
                 {filteredCities.length > 0 ? (
                   filteredCities.map((city) => (
                     <button
@@ -377,22 +259,20 @@ const SearchBar = ({ className = "" }) => {
                         gap-4
                         text-left
                         hover:bg-gray-100
-                        transition
                       "
                     >
                       <div
                         className="
-                          w-11
-                          h-11
+                          w-10
+                          h-10
                           rounded-xl
                           bg-gray-100
                           flex
                           items-center
                           justify-center
-                          shrink-0
                         "
                       >
-                        <MapPin className="w-5 h-5 text-primary" />
+                        <MapPin className="w-5 h-5 text-gray-700" />
                       </div>
 
                       <div>
@@ -411,6 +291,7 @@ const SearchBar = ({ className = "" }) => {
                     No locations found
                   </div>
                 )}
+
               </div>
             </div>
           )}
@@ -418,21 +299,20 @@ const SearchBar = ({ className = "" }) => {
 
         {/* DIVIDER */}
 
-        <div className="w-px h-8 bg-gray-200 shrink-0" />
+        <div className="w-px h-8 bg-gray-300" />
 
-        {/* =========================
+        {/* ==========================
             WHEN
-        ========================= */}
+        =========================== */}
 
         <div className="flex-1 h-full min-w-0">
+
           <Popover>
+
             <PopoverTrigger asChild>
+
               <button
                 type="button"
-                onClick={() => {
-                  setShowLocation(false);
-                  setShowGuests(false);
-                }}
                 className="
                   w-full
                   h-full
@@ -452,158 +332,101 @@ const SearchBar = ({ className = "" }) => {
 
                 <span className="text-sm text-gray-500 mt-0.5 truncate">
                   {checkIn && checkOut
-                    ? `${format(checkIn, "MMM d")} – ${format(
-                        checkOut,
-                        "MMM d"
-                      )}`
+                    ? `${format(checkIn, 'MMM d')} â€“ ${format(checkOut, 'MMM d')}`
                     : checkIn
-                      ? format(checkIn, "MMM d")
-                      : "Add dates"}
+                    ? format(checkIn, 'MMM d')
+                    : 'Add dates'}
                 </span>
               </button>
+
             </PopoverTrigger>
 
             <PopoverContent
-              className="w-auto p-5 rounded-3xl"
+              className="w-auto p-4 rounded-2xl"
               align="center"
             >
-              <p className="text-sm font-semibold mb-3">
-                Select your stay
-              </p>
 
-              <Calendar
-                mode="range"
-                selected={{
-                  from: checkIn || undefined,
-                  to: checkOut || undefined,
-                }}
-                onSelect={(range) => {
-                  setCheckIn(range?.from || null);
-                  setCheckOut(range?.to || null);
-                }}
-                numberOfMonths={2}
-                disabled={(date) => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+              <div>
+  <p className="text-sm font-semibold mb-3">
+    Select your stay
+  </p>
 
-  if (date < today) {
-    return true;
-  }
+  <Calendar
+    mode="range"
+    selected={{
+      from: checkIn,
+      to: checkOut,
+    }}
+    onSelect={(range) => {
+      setCheckIn(range?.from || undefined)
+      setCheckOut(range?.to || undefined)
+    }}
+    numberOfMonths={1}
+    disabled={(date) =>
+      checkIn && !checkOut
+        ? date < checkIn
+        : false
+    }
+    className="rounded-xl"
+  />
+</div>
 
-  if (checkIn && !checkOut && date < checkIn) {
-    return true;
-  }
-
-  return false;
-}}
-                className="rounded-xl"
-              />
             </PopoverContent>
+
           </Popover>
+
         </div>
 
         {/* DIVIDER */}
 
-        <div className="w-px h-8 bg-gray-200 shrink-0" />
+        <div className="w-px h-8 bg-gray-300" />
 
-        {/* =========================
+        {/* ==========================
             WHO
-        ========================= */}
+        =========================== */}
 
         <div
-          ref={guestsRef}
-          className="relative flex-1 h-full min-w-0"
+          className="
+            flex-1
+            h-full
+            min-w-0
+            px-6
+            rounded-full
+            flex
+            flex-col
+            justify-center
+            hover:bg-gray-100
+          "
         >
-          <button
-            type="button"
-            onClick={() => {
-              setShowGuests((current) => !current);
-              setShowLocation(false);
-            }}
+          <span className="text-[11px] font-bold text-gray-900">
+            Who
+          </span>
+
+          <input
+            type="number"
+            min="1"
+            value={guests}
+            onChange={(e) =>
+              setGuests(parseInt(e.target.value, 10) || 1)
+            }
             className="
               w-full
-              h-full
-              px-6
-              rounded-full
-              flex
-              flex-col
-              justify-center
-              text-left
-              hover:bg-gray-100
-              transition
+              mt-0.5
+              p-0
+              bg-transparent
+              border-0
+              outline-none
+              focus:ring-0
+              text-sm
+              text-gray-700
             "
-          >
-            <span className="text-[11px] font-bold text-gray-900">
-              Who
-            </span>
-
-            <span className="text-sm text-gray-500 mt-0.5 truncate">
-              {totalGuests > 0
-                ? `${totalGuests} ${
-                    totalGuests === 1 ? "guest" : "guests"
-                  }`
-                : "Add guests"}
-            </span>
-          </button>
-
-          {/* =========================
-              GUEST POPUP
-          ========================= */}
-
-          {showGuests && (
-            <div
-              className="
-                absolute
-                right-0
-                top-[72px]
-                z-[9999]
-                w-[420px]
-                max-w-[calc(100vw-24px)]
-                bg-white
-                rounded-3xl
-                border
-                border-gray-100
-                shadow-[0_8px_30px_rgba(0,0,0,0.16)]
-                px-7
-                py-2
-              "
-            >
-              <GuestRow
-                title="Adults"
-                subtitle="Ages 13 or above"
-                value={adults}
-                setValue={setAdults}
-              />
-
-              <GuestRow
-                title="Children"
-                subtitle="Ages 2–12"
-                value={children}
-                setValue={setChildren}
-              />
-
-              <GuestRow
-                title="Infants"
-                subtitle="Under 2"
-                value={infants}
-                setValue={setInfants}
-              />
-
-              <GuestRow
-                title="Pets"
-                subtitle=""
-                value={pets}
-                setValue={setPets}
-                pet
-                showDivider={false}
-              />
-            </div>
-          )}
+            placeholder="Add guests"
+          />
         </div>
 
-        {/* =========================
-            SEARCH
-        ========================= */}
+        {/* ==========================
+            SEARCH BUTTON
+        =========================== */}
 
         <button
           type="button"
@@ -613,8 +436,8 @@ const SearchBar = ({ className = "" }) => {
             h-[54px]
             min-w-[54px]
             rounded-full
-            bg-primary
-            hover:bg-primary/90
+            bg-[#F97316]
+            hover:bg-[#EA580C]
             text-white
             flex
             items-center

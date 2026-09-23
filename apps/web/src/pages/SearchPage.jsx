@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { useLocation, useNavigate } from 'react-router-dom';
-import SearchEngine from '@/components/SearchEngine.jsx';
 import SearchModifier from '@/components/SearchModifier.jsx';
 import SearchResults from '@/components/SearchResults.jsx';
 import { motion, AnimatePresence } from 'framer-motion';
 
+import SearchBar from "@/components/SearchBar";
 const SearchPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -90,7 +90,7 @@ const SearchPage = () => {
               >
                 <div className="w-full max-w-4xl">
                   <h1 className="text-3xl font-bold text-foreground text-center mb-6">Where to next?</h1>
-                  <SearchEngine 
+                  <SearchBar 
                     onSearch={handleSearch} 
                     initialData={searchCriteria} 
                     onCancel={searchCriteria ? handleCancelEdit : undefined}
@@ -122,7 +122,7 @@ const SearchPage = () => {
           ) : (
             isEditing && !searchCriteria && (
               <div className="text-center py-20 opacity-50 mt-10">
-                <SearchEngine className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+                <SearchBar className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
                 <p className="text-xl font-medium text-muted-foreground">Enter a destination to start searching</p>
               </div>
             )
@@ -135,3 +135,6 @@ const SearchPage = () => {
 };
 
 export default SearchPage;
+
+
+

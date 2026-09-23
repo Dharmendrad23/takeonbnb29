@@ -1,7 +1,9 @@
-﻿import React, { useEffect, useState } from "react";
+﻿import React, { useState, useEffect } from "react";
 import useEmblaCarousel from "embla-carousel-react";
+import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Home } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import PropertyCard from "./PropertyCard";
 import PropertyCardSkeleton from "./PropertyCardSkeleton";
 import api from "@/lib/api.js";
@@ -10,7 +12,6 @@ export default function TrendingProperties() {
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: false,
     align: "start",
-    containScroll: "trimSnaps",
   });
 
   const [properties, setProperties] = useState([]);
@@ -19,7 +20,7 @@ export default function TrendingProperties() {
   useEffect(() => {
     let mounted = true;
 
-    const loadProperties = async () => {
+    async function loadProperties() {
       try {
         setLoading(true);
 
@@ -31,6 +32,7 @@ export default function TrendingProperties() {
 
         const result = response.data;
 
+        // API response ko safely array mein convert karo
         let propertyList = [];
 
         if (Array.isArray(result)) {
@@ -41,19 +43,46 @@ export default function TrendingProperties() {
           propertyList = result.items;
         } else if (Array.isArray(result?.data)) {
           propertyList = result.data;
+        } else {
+          console.warn(
+            "Unexpected property API response:",
+            result
+          );
+
+          propertyList = [];
         }
 
+        // Approved properties only
         const approvedProperties = propertyList.filter(
           (property) =>
-            String(property?.status || "approved").toLowerCase() ===
-            "approved"
+            String(
+              property?.status || "approved"
+            ).toLowerCase() === "approved"
+        );
+
+        console.log(
+          "API Properties:",
+          propertyList
+        );
+
+        console.log(
+          "Total Properties:",
+          propertyList.length
+        );
+
+        console.log(
+          "Approved Properties:",
+          approvedProperties.length
         );
 
         if (mounted) {
           setProperties(approvedProperties);
         }
       } catch (error) {
-        console.error("Property loading error:", error);
+        console.error(
+          "Property loading error:",
+          error
+        );
 
         if (mounted) {
           setProperties([]);
@@ -63,7 +92,7 @@ export default function TrendingProperties() {
           setLoading(false);
         }
       }
-    };
+    }
 
     loadProperties();
 
@@ -73,121 +102,102 @@ export default function TrendingProperties() {
   }, []);
 
   return (
-    <section className="py-12 md:py-16">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+    <section className="py-16 md:py-24">
+      <div className="max-w-7xl mx-auto px-4">
 
-        {/* SECTION HEADER */}
-        <div className="mb-7 flex items-end justify-between gap-4">
+        <div className="flex items-center justify-between mb-10">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+            <h2 className="text-3xl md:text-4xl font-bold">
               Trending Properties
             </h2>
 
-            <p className="mt-1.5 text-sm text-gray-500 sm:text-base">
+            <p className="text-muted-foreground mt-2">
               Discover amazing stays and unique experiences
             </p>
           </div>
 
-          {/* DESKTOP ARROWS */}
-          {!loading && properties.length > 1 && (
-            <div className="hidden shrink-0 items-center gap-2 sm:flex">
-              <button
-                type="button"
-                onClick={() => emblaApi?.scrollPrev()}
-                className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow-md"
-                aria-label="Previous properties"
+          {properties.length > 1 && (
+            <div className="hidden md:flex gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() =>
+                  emblaApi?.scrollPrev()
+                }
               >
-                <ChevronLeft className="h-5 w-5" />
-              </button>
+                <ChevronLeft />
+              </Button>
 
-              <button
-                type="button"
-                onClick={() => emblaApi?.scrollNext()}
-                className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow-md"
-                aria-label="Next properties"
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() =>
+                  emblaApi?.scrollNext()
+                }
               >
-                <ChevronRight className="h-5 w-5" />
-              </button>
+                <ChevronRight />
+              </Button>
             </div>
           )}
         </div>
 
-        {/* LOADING */}
-        {loading && (
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, index) => (
-              <PropertyCardSkeleton key={index} />
-            ))}
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {Array.from({ length: 4 }).map(
+              (_, i) => (
+                <PropertyCardSkeleton key={i} />
+              )
+            )}
           </div>
-        )}
-
-        {/* EMPTY */}
-        {!loading && properties.length === 0 && (
-          <div className="py-16 text-center">
+        ) : properties.length === 0 ? (
+          <div className="text-center py-20">
             <Home
-              className="mx-auto mb-4 text-gray-400"
-              size={48}
+              className="mx-auto mb-4 text-primary"
+              size={50}
             />
 
-            <h3 className="text-xl font-bold text-gray-900">
+            <h2 className="text-2xl font-bold mb-2">
               No Properties Found
-            </h3>
+            </h2>
 
-            <p className="mt-2 text-sm text-gray-500">
+            <p className="text-muted-foreground">
               Approved properties will appear here.
             </p>
           </div>
-        )}
-
-        {/* PROPERTY CAROUSEL */}
-        {!loading && properties.length > 0 && (
+        ) : (
           <div
+            className="embla overflow-hidden"
             ref={emblaRef}
-            className="overflow-hidden"
           >
-            <div className="flex gap-4 sm:gap-5">
-
+            <div className="embla__container flex gap-6">
               {properties.map((property, index) => (
-                <div
-                  key={property?._id || property?.id || index}
-                  className="
-                    min-w-0
-                    flex-[0_0_86%]
-                    sm:flex-[0_0_47%]
-                    lg:flex-[0_0_23.5%]
-                  "
+                <motion.div
+                  key={
+                    property?._id ||
+                    property?.id ||
+                    index
+                  }
+                  className="embla__slide flex-[0_0_31%] min-w-0 sm:flex-[0_0_45%] lg:flex-[0_0_30%]"
+                  initial={{
+                    opacity: 0,
+                    y: 20,
+                  }}
+                  animate={{
+                    opacity: 1,
+                    y: 0,
+                  }}
+                  transition={{
+                    duration: 0.3,
+                  }}
                 >
-                  <PropertyCard property={property} />
-                </div>
+                  <PropertyCard
+                    property={property}
+                  />
+                </motion.div>
               ))}
-
             </div>
           </div>
         )}
-
-        {/* MOBILE ARROWS */}
-        {!loading && properties.length > 1 && (
-          <div className="mt-5 flex justify-center gap-2 sm:hidden">
-            <button
-              type="button"
-              onClick={() => emblaApi?.scrollPrev()}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white shadow-sm"
-              aria-label="Previous properties"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => emblaApi?.scrollNext()}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white shadow-sm"
-              aria-label="Next properties"
-            >
-              <ChevronRight className="h-5 w-5" />
-            </button>
-          </div>
-        )}
-
       </div>
     </section>
   );

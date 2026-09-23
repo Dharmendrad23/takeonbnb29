@@ -162,7 +162,7 @@
 
 
 
-//             src="https://horizons-cdn.hostinger.com/2ceef933-42f9-4bf3-b184-5d8c655ff5d5/0cbd9e7f2fa675b1aaff550ff98f8777.jpg"
+//             src="https://res.cloudinary.com/bfmmvn4z/image/upload/v1787853687/bnb_logo_black_no_bg.png"
 
 
 
@@ -715,7 +715,7 @@ const Header = () => {
         {/* LOGO */}
         <Link to="/" className="flex items-center group">
           <img
-            src="https://horizons-cdn.hostinger.com/2ceef933-42f9-4bf3-b184-5d8c655ff5d5/0cbd9e7f2fa675b1aaff550ff98f8777.jpg"
+            src="https://res.cloudinary.com/bfmmvn4z/image/upload/v1787853687/bnb_logo_black_no_bg.png"
             alt="Take on BnB"
             className="h-[70px] md:h-[50px] w-auto object-contain transition-transform group-hover:scale-105"
           />
