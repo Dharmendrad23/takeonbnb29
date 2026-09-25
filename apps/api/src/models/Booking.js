@@ -178,6 +178,20 @@ const bookingSchema = new mongoose.Schema(
       index: true,
     },
 
+    razorpayPaymentLinkId: {
+      type: String,
+      default: "",
+      trim: true,
+      index: true,
+    },
+
+    razorpayPaymentLinkReferenceId: {
+      type: String,
+      default: "",
+      trim: true,
+      index: true,
+    },
+
     razorpayPaymentId: {
       type: String,
       default: "",
@@ -230,6 +244,7 @@ const bookingSchema = new mongoose.Schema(
 );
 
 export default mongoose.model("Booking", bookingSchema);
+
 
 
 

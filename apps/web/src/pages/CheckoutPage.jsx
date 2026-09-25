@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import {
   useNavigate,
@@ -136,7 +136,7 @@ const CheckoutPage = () => {
   const [
     selectedPaymentMethod,
     setSelectedPaymentMethod,
-  ] = useState('stripe');
+  ] = useState('razorpay');
 
   const [isCopied, setIsCopied] =
     useState(false);
@@ -324,64 +324,9 @@ const CheckoutPage = () => {
    * BANK DETAILS
    */
 
-  const bankDetails = [
-    {
-      label: 'Bank Name',
-      value: 'KKBK',
-    },
-    {
-      label: 'Account Holder',
-      value: 'TakeOn BnB',
-    },
-    {
-      label: 'Account Number',
-      value: '9749885381',
-    },
-    {
-      label: 'IFSC Code',
-      value: 'KKBK00051175',
-    },
-    {
-      label: 'UPI ID',
-      value: 'takeonbnb@upi',
-    },
-  ];
-
-  const paymentDetailsText =
-    bankDetails
-      .map(
-        ({ label, value }) =>
-          `${label}: ${value}`
-      )
-      .join('\n');
-
   /*
    * COPY PAYMENT DETAILS
    */
-
-  const handleCopyPaymentDetails =
-    async () => {
-      try {
-        if (
-          navigator?.clipboard?.writeText
-        ) {
-          await navigator.clipboard.writeText(
-            paymentDetailsText
-          );
-        }
-
-        setIsCopied(true);
-
-        window.setTimeout(() => {
-          setIsCopied(false);
-        }, 2000);
-      } catch (copyError) {
-        console.error(
-          'Failed to copy payment details:',
-          copyError
-        );
-      }
-    };
 
   /*
    * PROPERTY META
@@ -733,13 +678,10 @@ const CheckoutPage = () => {
                   <button
                     type="button"
                     onClick={() =>
-                      setSelectedPaymentMethod(
-                        'stripe'
-                      )
+                      setSelectedPaymentMethod('razorpay')
                     }
                     className={`rounded-2xl border p-5 text-left transition ${
-                      selectedPaymentMethod ===
-                      'stripe'
+                      selectedPaymentMethod === 'razorpay'
                         ? 'border-primary ring-1 ring-primary bg-primary/5'
                         : 'border-border hover:border-primary/50'
                     }`}
@@ -761,45 +703,12 @@ const CheckoutPage = () => {
 
                   </button>
 
-                  {/* BANK */}
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setSelectedPaymentMethod(
-                        'bank'
-                      )
-                    }
-                    className={`rounded-2xl border p-5 text-left transition ${
-                      selectedPaymentMethod ===
-                      'bank'
-                        ? 'border-primary ring-1 ring-primary bg-primary/5'
-                        : 'border-border hover:border-primary/50'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-
-                      <Landmark className="w-5 h-5 text-primary" />
-
-                      <span className="font-bold">
-                        Bank / UPI Transfer
-                      </span>
-
-                    </div>
-
-                    <p className="mt-3 text-sm text-muted-foreground">
-                      Transfer payment and share
-                      payment proof.
-                    </p>
-
-                  </button>
 
                 </div>
 
                 {/* ONLINE PAYMENT */}
 
-                {selectedPaymentMethod ===
-                'stripe' ? (
+                {selectedPaymentMethod === 'razorpay' ? (
                   <div className="mt-5">
 
                     <div className="flex items-center gap-2 text-sm text-muted-foreground mb-5">
@@ -809,7 +718,16 @@ const CheckoutPage = () => {
 
                     <CheckoutButton
                       amount={displayTotal}
-                      productName={`Booking: ${propertyTitle}`}
+                      bookingData={{
+                        propertyId,
+                        checkInDate: checkIn,
+                        checkOutDate: checkOut,
+                        guests,
+                        property: {
+                          title: propertyTitle,
+                        },
+                        totalPrice: displayTotal,
+                      }}
                     />
 
                     <div className="mt-4 flex items-center justify-center gap-2 text-sm text-emerald-600 font-medium">
@@ -1020,13 +938,21 @@ const CheckoutPage = () => {
 
             </div>
 
-            {selectedPaymentMethod ===
-            'stripe' ? (
+            {selectedPaymentMethod === 'razorpay' ? (
               <div className="w-[58%]">
                 <CheckoutButton
-                  amount={displayTotal}
-                  productName={`Booking: ${propertyTitle}`}
-                />
+                      amount={displayTotal}
+                      bookingData={{
+                        propertyId,
+                        checkInDate: checkIn,
+                        checkOutDate: checkOut,
+                        guests,
+                        property: {
+                          title: propertyTitle,
+                        },
+                        totalPrice: displayTotal,
+                      }}
+                    />
               </div>
             ) : (
               <button
@@ -1053,3 +979,8 @@ const CheckoutPage = () => {
 };
 
 export default CheckoutPage;
+
+
+
+
+

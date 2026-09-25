@@ -24,6 +24,7 @@
     "jsonwebtoken": "^9.0.3",
     "leaflet": "^1.9.4",
     "nodemailer": "^9.0.3",
+    "razorpay": "^2.9.8",
     "react-leaflet": "^4.2.1",
     "swiper": "^14.0.7",
     "twilio": "^6.1.1"

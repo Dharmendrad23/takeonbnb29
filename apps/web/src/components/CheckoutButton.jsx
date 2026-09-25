@@ -1,217 +1,230 @@
 ﻿import React, { useState } from "react";
 import { Loader2, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
-
 import apiServerClient from "@/lib/apiServerClient.js";
+import { toast } from "sonner";
 import { formatCurrencyINR } from "@/lib/bookingUtils.js";
 
-const loadRazorpayScript = () => {
-  return new Promise((resolve) => {
-    if (window.Razorpay) {
-      resolve(true);
+const CheckoutButton = ({
+  amount: propAmount,
+  bookingData,
+  className = "",
+}) => {
+  const [isProcessing, setIsProcessing] =
+    useState(false);
+
+  const amount = Number(
+    propAmount ??
+      bookingData?.totalPrice ??
+      bookingData?.totalAmount ??
+      bookingData?.amount ??
+      0
+  );
+
+  const handleCheckout = async () => {
+    if (isProcessing) return;
+
+    if (!bookingData?.propertyId) {
+      toast.error(
+        "Property information is missing."
+      );
       return;
     }
 
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
-
-    document.body.appendChild(script);
-  });
-};
-
-const CheckoutButton = ({ bookingData, className = "" }) => {
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  const handleCheckout = async () => {
-    if (!bookingData) {
-      toast.error("Booking information is missing");
+    if (
+      !bookingData?.checkInDate ||
+      !bookingData?.checkOutDate
+    ) {
+      toast.error(
+        "Please select valid check-in and check-out dates."
+      );
       return;
     }
 
     setIsProcessing(true);
 
     try {
-      const scriptLoaded = await loadRazorpayScript();
-
-      if (!scriptLoaded) {
-        throw new Error("Razorpay checkout could not be loaded");
-      }
-
-      const response = await apiServerClient.fetch(
-        "/razorpay/create-order",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            propertyId: bookingData.propertyId,
-            checkInDate: bookingData.checkInDate,
-            checkOutDate: bookingData.checkOutDate,
-            guestCount: bookingData.guests,
-            guestFullName: bookingData.guestFullName || "",
-            guestEmail: bookingData.guestEmail || "",
-            guestMobileNumber:
-              bookingData.guestMobileNumber || "",
-            specialRequests:
-              bookingData.specialRequests || "",
-          }),
-        }
+      console.log(
+        "[PAYMENT] Creating Razorpay hosted Payment Link..."
       );
 
-      const data = await response.json();
+      const response =
+        await apiServerClient.fetch(
+          "/razorpay/create-payment-link",
+          {
+            method: "POST",
 
-      if (!response.ok || !data.success) {
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+
+            body: JSON.stringify({
+              propertyId:
+                bookingData.propertyId,
+
+              checkInDate:
+                bookingData.checkInDate,
+
+              checkOutDate:
+                bookingData.checkOutDate,
+
+              guestCount: Number(
+                bookingData.guests ??
+                  bookingData.guestCount ??
+                  1
+              ),
+
+              guestFullName:
+                bookingData.guestFullName ||
+                "",
+
+              guestEmail:
+                bookingData.guestEmail ||
+                "",
+
+              guestMobileNumber:
+                bookingData.guestMobileNumber ||
+                "",
+
+              specialRequests:
+                bookingData.specialRequests ||
+                "",
+            }),
+          }
+        );
+
+      const data =
+        await response
+          .json()
+          .catch(() => ({}));
+
+      console.log(
+        "[PAYMENT] Payment Link response:",
+        data
+      );
+
+      if (response.status === 401) {
+        toast.error(
+          "Please login before making a payment."
+        );
+
+        setIsProcessing(false);
+
+        setTimeout(() => {
+          window.location.href =
+            `/guest/login?redirect=${encodeURIComponent(
+              window.location.pathname
+            )}`;
+        }, 700);
+
+        return;
+      }
+
+      if (!response.ok) {
         throw new Error(
-          data.message || "Unable to create payment order"
+          data?.message ||
+            data?.error ||
+            "Unable to create payment link."
         );
       }
 
-      const options = {
-        key: data.razorpayKeyId,
-        amount: Math.round(Number(data.amount) * 100),
-        currency: data.currency || "INR",
-        name: "TakeOnBnB",
-        description:
-          bookingData.property?.title || "Property Booking",
-        order_id: data.razorpayOrderId,
+      if (!data.bookingId) {
+        throw new Error(
+          "Booking ID missing."
+        );
+      }
 
-        prefill: {
-          name: data.customer?.name || "",
-          email: data.customer?.email || "",
-          contact: data.customer?.phone || "",
-        },
+      if (!data.paymentUrl) {
+        throw new Error(
+          "Razorpay payment link missing."
+        );
+      }
 
-        notes: {
-          bookingId: data.bookingId,
-        },
+      if (
+        !Number(data.amount) ||
+        Number(data.amount) <= 0
+      ) {
+        throw new Error(
+          "Invalid payment amount."
+        );
+      }
 
-        theme: {
-          color: "#F59E0B",
-        },
+      console.log(
+        "[PAYMENT] Redirecting to Razorpay:",
+        {
+          bookingId:
+            data.bookingId,
 
-        handler: async function (paymentResponse) {
-          try {
-            const verifyResponse =
-              await apiServerClient.fetch(
-                "/razorpay/verify",
-                {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify(paymentResponse),
-                }
-              );
+          paymentLinkId:
+            data.paymentLinkId,
 
-            const verifyData =
-              await verifyResponse.json();
+          amount:
+            data.amount,
 
-            if (
-              !verifyResponse.ok ||
-              !verifyData.success
-            ) {
-              throw new Error(
-                verifyData.message ||
-                  "Payment verification failed"
-              );
-            }
-
-            toast.success(
-              "Payment successful! Booking confirmed."
-            );
-
-            window.location.href =
-              `/booking-confirmation/${verifyData.bookingId}`;
-          } catch (error) {
-            console.error(
-              "Payment verification error:",
-              error
-            );
-
-            toast.error(
-              error.message ||
-                "Payment completed but verification failed. Please contact support."
-            );
-
-            setIsProcessing(false);
-          }
-        },
-
-        modal: {
-          ondismiss: function () {
-            setIsProcessing(false);
-            toast.info("Payment window closed");
-          },
-        },
-      };
-
-      const razorpay = new window.Razorpay(options);
-
-      razorpay.on(
-        "payment.failed",
-        function (response) {
-          console.error(
-            "Razorpay payment failed:",
-            response.error
-          );
-
-          toast.error(
-            response.error?.description ||
-              "Payment failed"
-          );
-
-          setIsProcessing(false);
+          paymentUrl:
+            data.paymentUrl,
         }
       );
 
-      razorpay.open();
+      /*
+       * No Razorpay iframe.
+       * No checkout.js.
+       * No popup/watchdog/CSS hack.
+       *
+       * Browser goes directly to Razorpay's
+       * hosted checkout page.
+       */
+      window.location.assign(
+        data.paymentUrl
+      );
     } catch (error) {
       console.error(
-        "Razorpay checkout error:",
+        "[PAYMENT] Checkout error:",
         error
       );
 
       toast.error(
-        error.message ||
-          "Unable to start payment"
+        error?.message ||
+          "Unable to start payment."
       );
 
       setIsProcessing(false);
     }
   };
 
-  const amount =
-    bookingData?.totalPrice ||
-    bookingData?.totalAmount ||
-    0;
-
   return (
-    <Button
-      type="button"
-      onClick={handleCheckout}
-      disabled={isProcessing || !bookingData}
-      className={`w-full ${className}`}
-    >
-      {isProcessing ? (
-        <>
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          Processing...
-        </>
-      ) : (
-        <>
-          <CreditCard className="mr-2 h-4 w-4" />
-          Pay {formatCurrencyINR(amount)}
-        </>
-      )}
-    </Button>
+    <div className="space-y-4 w-full">
+      <Button
+        type="button"
+        onClick={handleCheckout}
+        disabled={
+          isProcessing ||
+          amount <= 0
+        }
+        className={`w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-14 text-lg rounded-xl transition-all shadow-md hover:shadow-brand active:scale-[0.98] ${className}`}
+      >
+        {isProcessing ? (
+          <>
+            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+            Opening Secure Payment...
+          </>
+        ) : (
+          <>
+            <CreditCard className="w-5 h-5 mr-2" />
+            Pay {formatCurrencyINR(amount)}
+          </>
+        )}
+      </Button>
+
+      <div className="flex flex-wrap items-center justify-center gap-4 text-sm font-medium text-muted-foreground pt-2">
+        <span>UPI</span>
+        <span>Credit/Debit Cards</span>
+        <span>Net Banking</span>
+        <span>Wallets</span>
+      </div>
+    </div>
   );
 };
 
 export default CheckoutButton;
-
-

@@ -11,6 +11,7 @@ import adminRouter from "./admin.js";
 import whatsappRouter from "./whatsapp.js";
 import notificationsRouter from "./notifications.js";
 import stripeRouter from "./stripe.js";
+import razorpayRouter from "./razorpay.js";
 import userRouter from "./userRoutes.js";
 
 export default () => {
@@ -82,6 +83,11 @@ export default () => {
   ========================================= */
 
   appRouter.use("/stripe", stripeRouter);
+  appRouter.use("/razorpay", razorpayRouter);
 
   return appRouter;
 };
+
+
+
+

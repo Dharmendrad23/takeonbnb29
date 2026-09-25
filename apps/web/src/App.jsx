@@ -35,6 +35,7 @@ import PropertyList from "@/pages/PropertyList.jsx";
 import PropertyDetailPage from "@/pages/PropertyDetailPage.jsx";
 
 import LoginPage from "@/pages/LoginPage.jsx";
+import GuestLoginPage from "@/pages/GuestLoginPage.jsx";
 import SignupPage from "@/pages/SignupPage.jsx";
 
 import HostRegisterPage from "@/pages/HostRegisterPage.jsx";
@@ -327,7 +328,15 @@ function App() {
 
                 {/* ===============================
                     AUTH
-                =============================== */}
+                =============================== */}                <Route
+                  path="/guest/login"
+                  element={
+                    <AppLayout>
+                      <GuestLoginPage />
+                    </AppLayout>
+                  }
+                />
+
 
                 <Route
                   path="/login"
@@ -715,6 +724,11 @@ function App() {
                   />
 
                   <Route
+                    path="properties/edit/:id"
+                    element={<EditPropertyPage />}
+                  />
+
+                  <Route
                     path="properties/pending"
                     element={<AdminPropertyApprovalPage />}
                   />
@@ -780,6 +794,13 @@ function App() {
 }
 
 export default App;
+
+
+
+
+
+
+
 
 
 

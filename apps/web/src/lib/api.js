@@ -1,8 +1,12 @@
-import axios from "axios";
+﻿import axios from "axios";
 
 const PRODUCTION_API_URL = "https://takeonbnb29.onrender.com";
 
 export const getApiBaseUrl = () => {
+  if (import.meta.env.DEV) {
+    return "http://localhost:3001";
+  }
+
   const configuredUrl = import.meta.env.VITE_API_URL;
 
   if (
@@ -154,3 +158,6 @@ api.interceptors.response.use(
 );
 
 export default api;
+
+
+

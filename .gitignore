@@ -5,3 +5,11 @@ dist/
 .env.local
 # Local Netlify folder
 .netlify
+
+# Hostinger deployment build
+apps/web/takeonbnb-latest/
+
+
+# Environment secrets
+apps/api/.env
+

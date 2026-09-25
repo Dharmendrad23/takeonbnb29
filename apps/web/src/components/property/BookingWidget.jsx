@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -43,17 +43,11 @@ export const BookingWidget = ({ property }) => {
 
   // You can later connect these values with backend/property settings
 
-  const serviceFee =
-    nights > 0
-      ? Math.round(basePrice * 0.05)
-      : 0;
+  const serviceFee = nights > 0 ? Math.round(basePrice * 0.06) : 0;
 
   const gst = nights > 0 ? Math.round(basePrice * 0.05) : 0;
 
-  const total =
-    basePrice +
-    serviceFee +
-    gst;
+  const total = basePrice + serviceFee + gst;
 
   const handleCheckInChange = (e) => {
     const selectedDate = e.target.value;
@@ -173,7 +167,7 @@ export const BookingWidget = ({ property }) => {
 
           <div className="text-2xl font-bold text-foreground">
 
-            ₹{pricePerNight.toLocaleString('en-IN')}
+            {String.fromCharCode(0x20B9)}{pricePerNight.toLocaleString('en-IN')}
 
             <span className="text-base font-normal text-muted-foreground">
               {' '}
@@ -190,7 +184,7 @@ export const BookingWidget = ({ property }) => {
 
             {reviewCount > 0 && (
               <span className="text-muted-foreground font-normal">
-                · {reviewCount} bookings
+                Â· {reviewCount} bookings
               </span>
             )}
 
@@ -407,12 +401,12 @@ export const BookingWidget = ({ property }) => {
             <div className="flex justify-between">
 
               <span className="underline">
-                ₹{pricePerNight.toLocaleString('en-IN')} x{' '}
+                {String.fromCharCode(0x20B9)}{pricePerNight.toLocaleString('en-IN')} x{' '}
                 {nights} night{nights > 1 ? 's' : ''}
               </span>
 
               <span>
-                ₹{basePrice.toLocaleString('en-IN')}
+                {String.fromCharCode(0x20B9)}{basePrice.toLocaleString('en-IN')}
               </span>
 
             </div>
@@ -426,7 +420,7 @@ export const BookingWidget = ({ property }) => {
               </span>
 
               <span>
-                ₹{total.toLocaleString('en-IN')}
+                {String.fromCharCode(0x20B9)}{total.toLocaleString('en-IN')}
               </span>
 
             </div>
@@ -439,3 +433,5 @@ export const BookingWidget = ({ property }) => {
     </Card>
   );
 };
+
+

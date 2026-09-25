@@ -1,4 +1,8 @@
-﻿import crypto from "crypto";
+﻿import razorpay, {
+  createRazorpayPaymentLink as createRazorpayPaymentLinkService,
+  fetchRazorpayPaymentLink,
+} from "../services/razorpayService.js";
+import crypto from "crypto";
 import mongoose from "mongoose";
 
 import Booking from "../models/Booking.js";
@@ -194,18 +198,61 @@ export const createRazorpayPaymentOrder =
          AVAILABILITY CHECK
       ========================================= */
 
+      // Release abandoned Razorpay booking holds after 15 minutes.
+      const pendingHoldCutoff = new Date(
+        Date.now() - 15 * 60 * 1000
+      );
+
+      await Booking.updateMany(
+        {
+          propertyId,
+          status: "pending",
+          paymentStatus: {
+            $in: ["pending", "processing"],
+          },
+          createdAt: {
+            $lt: pendingHoldCutoff,
+          },
+        },
+        {
+          $set: {
+            status: "cancelled",
+            bookingStatus: "cancelled",
+            paymentStatus: "failed",
+          },
+        }
+      );
+
+      // Only confirmed bookings and fresh payment holds block dates.
       const conflictingBooking =
         await Booking.findOne({
           propertyId,
-          status: {
-            $in: ["pending", "confirmed"],
-          },
-          checkInDate: {
-            $lt: checkOut,
-          },
-          checkOutDate: {
-            $gt: checkIn,
-          },
+          $or: [
+            {
+              status: "confirmed",
+              checkInDate: {
+                $lt: checkOut,
+              },
+              checkOutDate: {
+                $gt: checkIn,
+              },
+            },
+            {
+              status: "pending",
+              paymentStatus: {
+                $in: ["pending", "processing"],
+              },
+              createdAt: {
+                $gte: pendingHoldCutoff,
+              },
+              checkInDate: {
+                $lt: checkOut,
+              },
+              checkOutDate: {
+                $gt: checkIn,
+              },
+            },
+          ],
         });
 
       if (conflictingBooking) {
@@ -719,5 +766,401 @@ export const getRazorpayPaymentStatus =
           error.message ||
           "Unable to fetch payment status",
       });
+    }
+  };
+
+/* =========================================
+   RAZORPAY HOSTED PAYMENT LINK
+========================================= */
+
+export const createRazorpayPaymentLink = async (
+  req,
+  res
+) => {
+  try {
+    let responsePayload = null;
+    let responseStatus = 200;
+
+    const proxyRes = {
+      status(code) {
+        responseStatus = code;
+        return this;
+      },
+
+      json(payload) {
+        responsePayload = payload;
+        return this;
+      },
+    };
+
+    // Reuse the already-tested booking creation,
+    // pricing and availability logic.
+    await createRazorpayPaymentOrder(req, proxyRes);
+
+    if (
+      responseStatus >= 400 ||
+      !responsePayload?.success
+    ) {
+      return res
+        .status(responseStatus || 500)
+        .json(
+          responsePayload || {
+            success: false,
+            message: "Unable to create booking",
+          }
+        );
+    }
+
+    const bookingId =
+      responsePayload.bookingId;
+
+    const booking =
+      await Booking.findById(bookingId);
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: "Booking not found",
+      });
+    }
+
+    const callbackUrl =
+      process.env.RAZORPAY_CALLBACK_URL;
+
+    if (!callbackUrl) {
+      await Booking.findByIdAndUpdate(
+        booking._id,
+        {
+          status: "cancelled",
+          bookingStatus: "cancelled",
+          paymentStatus: "failed",
+        }
+      );
+
+      return res.status(500).json({
+        success: false,
+        message:
+          "RAZORPAY_CALLBACK_URL is not configured",
+      });
+    }
+
+    const referenceId =
+      `TOB_${String(booking._id)}`;
+
+    const paymentLink =
+      await createRazorpayPaymentLinkService({
+        amount: booking.totalAmount,
+        referenceId,
+        description:
+          `${booking.propertyName || "TakeOnBnB Booking"} - ${booking.guestFullName}`,
+        customer: {
+          name: booking.guestFullName,
+          email: booking.guestEmail,
+          contact: booking.guestMobileNumber,
+        },
+        notes: {
+          bookingId: String(booking._id),
+          propertyId: String(booking.propertyId),
+          guestId: String(booking.guestId),
+        },
+        callbackUrl,
+      });
+
+    booking.razorpayPaymentLinkId =
+      paymentLink.id;
+
+    booking.razorpayPaymentLinkReferenceId =
+      referenceId;
+
+    booking.paymentMethod =
+      "razorpay";
+
+    booking.paymentStatus =
+      "processing";
+
+    await booking.save();
+
+    return res.status(201).json({
+      success: true,
+
+      bookingId:
+        String(booking._id),
+
+      paymentLinkId:
+        paymentLink.id,
+
+      paymentUrl:
+        paymentLink.short_url,
+
+      amount:
+        booking.totalAmount,
+
+      currency: "INR",
+
+      pricing: {
+        basePrice:
+          booking.basePrice,
+
+        internalMargin:
+          booking.internalMargin,
+
+        gst:
+          booking.gst,
+
+        totalAmount:
+          booking.totalAmount,
+      },
+
+      status:
+        paymentLink.status,
+    });
+  } catch (error) {
+    console.error(
+      "[Razorpay] Payment Link creation error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        error.message ||
+        "Unable to create Razorpay payment link",
+    });
+  }
+};
+
+
+/* =========================================
+   RAZORPAY PAYMENT LINK CALLBACK
+========================================= */
+
+export const razorpayPaymentLinkCallback =
+  async (req, res) => {
+    const frontendUrl =
+      process.env.FRONTEND_URL ||
+      "http://localhost:3000";
+
+    try {
+      const {
+        razorpay_payment_link_id,
+        razorpay_payment_link_reference_id,
+        razorpay_payment_link_status,
+        razorpay_payment_id,
+        razorpay_signature,
+      } = req.query;
+
+      if (
+        !razorpay_payment_link_id ||
+        !razorpay_payment_link_reference_id ||
+        !razorpay_payment_link_status ||
+        !razorpay_payment_id ||
+        !razorpay_signature
+      ) {
+        return res.redirect(
+          `${frontendUrl}/payment-failed?reason=missing_payment_details`
+        );
+      }
+
+      const signaturePayload =
+        [
+          razorpay_payment_link_id,
+          razorpay_payment_link_reference_id,
+          razorpay_payment_link_status,
+          razorpay_payment_id,
+        ].join("|");
+
+      const generatedSignature =
+        crypto
+          .createHmac(
+            "sha256",
+            process.env.RAZORPAY_KEY_SECRET
+          )
+          .update(signaturePayload)
+          .digest("hex");
+
+      const expected =
+        Buffer.from(generatedSignature, "utf8");
+
+      const received =
+        Buffer.from(
+          String(razorpay_signature),
+          "utf8"
+        );
+
+      if (
+        expected.length !== received.length ||
+        !crypto.timingSafeEqual(
+          expected,
+          received
+        )
+      ) {
+        console.error(
+          "[Razorpay] Invalid payment link signature"
+        );
+
+        return res.redirect(
+          `${frontendUrl}/payment-failed?reason=invalid_signature`
+        );
+      }
+
+      const paymentLink =
+        await fetchRazorpayPaymentLink(
+          razorpay_payment_link_id
+        );
+
+      const booking =
+        await Booking.findOne({
+          $or: [
+            {
+              razorpayPaymentLinkId:
+                razorpay_payment_link_id,
+            },
+            {
+              razorpayPaymentLinkReferenceId:
+                razorpay_payment_link_reference_id,
+            },
+          ],
+        });
+
+      if (!booking) {
+        return res.redirect(
+          `${frontendUrl}/payment-failed?reason=booking_not_found`
+        );
+      }
+
+      const expectedReference =
+        `TOB_${String(booking._id)}`;
+
+      if (
+        String(
+          razorpay_payment_link_reference_id
+        ) !== expectedReference
+      ) {
+        return res.redirect(
+          `${frontendUrl}/payment-failed?reason=invalid_reference`
+        );
+      }
+
+      if (
+        paymentLink.status !== "paid" ||
+        razorpay_payment_link_status !== "paid"
+      ) {
+        return res.redirect(
+          `${frontendUrl}/booking-confirmation/${booking._id}?payment=pending`
+        );
+      }
+
+      const expectedAmount =
+        Math.round(
+          Number(booking.totalAmount) * 100
+        );
+
+      if (
+        Number(paymentLink.amount) !==
+        expectedAmount
+      ) {
+        console.error(
+          "[Razorpay] Payment link amount mismatch",
+          {
+            expectedAmount,
+            receivedAmount:
+              paymentLink.amount,
+          }
+        );
+
+        return res.redirect(
+          `${frontendUrl}/payment-failed?reason=amount_mismatch`
+        );
+      }
+
+      if (
+        paymentLink.currency !== "INR"
+      ) {
+        return res.redirect(
+          `${frontendUrl}/payment-failed?reason=invalid_currency`
+        );
+      }
+
+      const payment =
+        await fetchRazorpayPayment(
+          razorpay_payment_id
+        );
+
+      const paymentAmount =
+        Number(payment.amount) / 100;
+
+      if (
+        paymentAmount !==
+        Number(booking.totalAmount)
+      ) {
+        return res.redirect(
+          `${frontendUrl}/payment-failed?reason=payment_amount_mismatch`
+        );
+      }
+
+      if (
+        payment.currency !== "INR" ||
+        payment.status !== "captured"
+      ) {
+        return res.redirect(
+          `${frontendUrl}/payment-failed?reason=payment_not_captured`
+        );
+      }
+
+      booking.razorpayPaymentId =
+        razorpay_payment_id;
+
+      booking.razorpaySignature =
+        razorpay_signature;
+
+      booking.razorpayPaymentStatus =
+        payment.status;
+
+      booking.razorpayPaymentMethod =
+        payment.method || "";
+
+      booking.paymentStatus =
+        "paid";
+
+      booking.status =
+        "confirmed";
+
+      booking.bookingStatus =
+        "confirmed";
+
+      booking.transactionId =
+        razorpay_payment_id;
+
+      booking.paidAt =
+        new Date();
+
+      booking.paymentVerifiedAt =
+        new Date();
+
+      await booking.save();
+
+      console.log(
+        "[Razorpay] Payment Link payment confirmed:",
+        {
+          bookingId:
+            String(booking._id),
+
+          paymentId:
+            razorpay_payment_id,
+        }
+      );
+
+      return res.redirect(
+        `${frontendUrl}/booking-confirmation/${booking._id}?payment=success`
+      );
+    } catch (error) {
+      console.error(
+        "[Razorpay] Payment Link callback error:",
+        error
+      );
+
+      return res.redirect(
+        `${frontendUrl}/payment-failed?reason=verification_error`
+      );
     }
   };
