@@ -1,92 +1,49 @@
 ﻿import Razorpay from "razorpay";
 
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
+const getRazorpay = () => {
+  const keyId = process.env.RAZORPAY_KEY_ID;
+  const keySecret = process.env.RAZORPAY_KEY_SECRET;
 
-export const createRazorpayOrder = async ({
-  amount,
-  receipt,
-  notes = {},
-}) => {
-  if (!process.env.RAZORPAY_KEY_ID) {
-    throw new Error("RAZORPAY_KEY_ID is not configured");
+  if (!keyId || !keySecret) {
+    throw new Error("Razorpay credentials are not configured");
   }
 
-  if (!process.env.RAZORPAY_KEY_SECRET) {
-    throw new Error("RAZORPAY_KEY_SECRET is not configured");
-  }
-
-  const order = await razorpay.orders.create({
-    amount: Math.round(Number(amount) * 100),
-    currency: "INR",
-    receipt: String(receipt),
-    notes,
+  return new Razorpay({
+    key_id: keyId,
+    key_secret: keySecret,
   });
-
-  return order;
 };
 
-export const createRazorpayPaymentLink = async ({
-  amount,
-  referenceId,
-  description,
-  customer = {},
-  notes = {},
-  callbackUrl,
-}) => {
-  if (!process.env.RAZORPAY_KEY_ID) {
-    throw new Error("RAZORPAY_KEY_ID is not configured");
-  }
-
-  if (!process.env.RAZORPAY_KEY_SECRET) {
-    throw new Error("RAZORPAY_KEY_SECRET is not configured");
-  }
-
-  if (!callbackUrl) {
-    throw new Error(
-      "RAZORPAY_CALLBACK_URL is not configured"
-    );
-  }
-
-  const paymentLink =
-    await razorpay.paymentLink.create({
-      amount: Math.round(Number(amount) * 100),
-      currency: "INR",
-      accept_partial: false,
-      reference_id: String(referenceId),
-      description: String(description || "TakeOnBnB Booking"),
-      customer: {
-        name: String(customer.name || ""),
-        email: String(customer.email || ""),
-        contact: String(customer.contact || ""),
-      },
-      notify: {
-        sms: false,
-        email: false,
-      },
-      reminder_enable: false,
-      notes,
-      callback_url: callbackUrl,
-      callback_method: "get",
-    });
-
-  return paymentLink;
+export const createRazorpayOrder = async (options) => {
+  return getRazorpay().orders.create(options);
 };
 
 export const fetchRazorpayOrder = async (orderId) => {
-  return razorpay.orders.fetch(orderId);
+  return getRazorpay().orders.fetch(orderId);
+};
+
+export const createRazorpayPaymentLink = async (options) => {
+  return getRazorpay().paymentLink.create(options);
+};
+
+export const fetchRazorpayPaymentLink = async (paymentLinkId) => {
+  return getRazorpay().paymentLink.fetch(paymentLinkId);
 };
 
 export const fetchRazorpayPayment = async (paymentId) => {
-  return razorpay.payments.fetch(paymentId);
+  return getRazorpay().payments.fetch(paymentId);
 };
 
-export const fetchRazorpayPaymentLink = async (
-  paymentLinkId
-) => {
-  return razorpay.paymentLink.fetch(paymentLinkId);
+export default {
+  orders: {
+    create: createRazorpayOrder,
+    fetch: fetchRazorpayOrder,
+  },
+  paymentLink: {
+    create: createRazorpayPaymentLink,
+    fetch: fetchRazorpayPaymentLink,
+  },
+  payments: {
+    fetch: fetchRazorpayPayment,
+  },
 };
-
-export default razorpay;
