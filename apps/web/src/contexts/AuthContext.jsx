@@ -1,4 +1,4 @@
-import React, {
+﻿import React, {
   createContext,
   useContext,
   useState,
@@ -295,145 +295,112 @@ export const AuthProvider = ({
   ========================================= */
 
   const signup = async (
-    email,
-    password,
-    name,
-    role = 'guest'
+    emailOrData,
+    passwordArg,
+    nameArg,
+    roleArg = "guest"
   ) => {
     try {
-      const normalizedEmail =
-        String(email || '')
-          .trim()
-          .toLowerCase();
+      const isObjectPayload =
+        emailOrData &&
+        typeof emailOrData === "object";
 
-      const response =
-        await fetch(
-          buildApiUrl(
-            '/api/auth/register'
-          ),
-          {
-            method: 'POST',
+      const payload = isObjectPayload
+        ? emailOrData
+        : {
+            email: emailOrData,
+            password: passwordArg,
+            name: nameArg,
+            role: roleArg,
+          };
 
-            headers: {
-              'Content-Type':
-                'application/json',
-            },
+      const normalizedEmail = String(
+        payload.email || ""
+      )
+        .trim()
+        .toLowerCase();
 
-            body: JSON.stringify({
-              email:
-                normalizedEmail,
+      const normalizedName = String(
+        payload.name || ""
+      ).trim();
 
-              password,
+      const normalizedPhone = String(
+        payload.phone || ""
+      ).trim();
 
-              name:
-                String(name || '')
-                  .trim(),
+      const password = String(
+        payload.password || ""
+      );
 
-              role:
-                role || 'guest',
-            }),
-          }
-        );
+      const role = payload.role || "guest";
 
-      const data =
-        await response.json();
+      if (!normalizedName) {
+        throw new Error("Full name is required");
+      }
+
+      if (!normalizedEmail) {
+        throw new Error("Email is required");
+      }
+
+      if (!password) {
+        throw new Error("Password is required");
+      }
+
+      const response = await fetch(
+        buildApiUrl("/api/auth/register"),
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: normalizedEmail,
+            phone: normalizedPhone,
+            password,
+            name: normalizedName,
+            role,
+          }),
+        }
+      );
+
+      const data = await response.json();
 
       if (!response.ok) {
         throw new Error(
           data.message ||
           data.error ||
-          'Failed to create account.'
+          "Failed to create account."
         );
       }
 
-      /*
-        BACKEND RETURNS TOKEN
-        + USER DIRECTLY
-      */
-
-      if (
-        data.token &&
-        data.user
-      ) {
-        const normalizedUser =
-          saveAuthSession(
-            data.token,
-            data.user
-          );
-
-        return {
-          record:
-            normalizedUser,
-
-          token:
-            data.token,
-        };
-      }
-
-      /*
-        FALLBACK AUTO LOGIN
-      */
-
-      const loginResponse =
-        await fetch(
-          buildApiUrl(
-            '/api/auth/login'
-          ),
-          {
-            method: 'POST',
-
-            headers: {
-              'Content-Type':
-                'application/json',
-            },
-
-            body: JSON.stringify({
-              email:
-                normalizedEmail,
-
-              password,
-            }),
-          }
-        );
-
-      const loginData =
-        await loginResponse.json();
-
-      if (!loginResponse.ok) {
+      if (!data.token || !data.user) {
         throw new Error(
-          loginData.message ||
-          loginData.error ||
-          'Account created but login failed.'
+          "Account created but authentication response is incomplete."
         );
       }
 
       const normalizedUser =
         saveAuthSession(
-          loginData.token,
-          loginData.user
+          data.token,
+          data.user
         );
 
       return {
-        record:
-          normalizedUser,
-
-        token:
-          loginData.token,
+        record: normalizedUser,
+        token: data.token,
       };
-
     } catch (error) {
       console.error(
-        'Signup error:',
+        "Signup error:",
         error
       );
 
       throw new Error(
         error.message ||
-        'Failed to create account.'
+        "Failed to create account."
       );
     }
   };
-
   /* =========================================
      LOGIN WITH EMAIL
   ========================================= */
@@ -756,15 +723,63 @@ export const AuthProvider = ({
       );
     };
 
-  const requestPhoneOTP =
-    notImplemented(
-      'Phone OTP'
-    );
+  const requestPhoneOTP = async (phone) => {
+  const normalizedPhone = String(phone || "").trim();
 
-  const verifyPhoneOTP =
-    notImplemented(
-      'Phone OTP verification'
-    );
+  if (!normalizedPhone) {
+    throw new Error("Phone number is required");
+  }
+
+  const response = await fetch(buildApiUrl("/api/otp/request-login"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      phone: normalizedPhone,
+    }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok || !data.success) {
+    throw new Error(data.message || "Failed to send OTP");
+  }
+
+  return data;
+};
+
+const verifyPhoneOTP = async (phone, code) => {
+  const normalizedPhone = String(phone || "").trim();
+  const normalizedCode = String(code || "").trim();
+
+  if (!normalizedPhone || !normalizedCode) {
+    throw new Error("Phone number and OTP are required");
+  }
+
+  const response = await fetch(buildApiUrl("/api/otp/verify-login"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      phone: normalizedPhone,
+      code: normalizedCode,
+    }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok || !data.success) {
+    throw new Error(data.message || "OTP verification failed");
+  }
+
+  if (data.token && data.user) {
+    saveAuthSession(data.token, data.user);
+  }
+
+  return data;
+};
 
   const loginWithOAuth2 =
     notImplemented(

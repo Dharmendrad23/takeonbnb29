@@ -117,7 +117,11 @@ const Icon = ({ type }) => {
 export default function GuestLoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
+  const {
+  login,
+  requestPhoneOTP,
+  verifyPhoneOTP,
+} = useAuth();
 
   const params = new URLSearchParams(location.search);
   const redirectParam = params.get("redirect");
@@ -127,80 +131,200 @@ export default function GuestLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [loginMode, setLoginMode] = useState("password");
+const [phone, setPhone] = useState("");
+const [otp, setOtp] = useState("");
+const [otpSent, setOtpSent] = useState(false);
+const [otpLoading, setOtpLoading] = useState(false);
 
   const handleLogin = async (event) => {
-    event.preventDefault();
+  event.preventDefault();
 
-    setError("");
+  setError("");
 
-    const cleanEmail = email.trim().toLowerCase();
+  const cleanEmail = email.trim().toLowerCase();
 
-    if (!cleanEmail) {
-      setError("Please enter your email address.");
-      return;
+  if (!cleanEmail) {
+    setError("Please enter your email address.");
+    return;
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+    setError("Please enter a valid email address.");
+    return;
+  }
+
+  if (!password) {
+    setError("Please enter your password.");
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    const authData = await login(cleanEmail, password);
+    const user = authData?.record;
+
+    if (!user) {
+      throw new Error("Guest account could not be verified.");
     }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
-      setError("Please enter a valid email address.");
-      return;
-    }
+    if (String(user.role || "").toLowerCase() !== "guest") {
+      localStorage.removeItem("authToken");
+      localStorage.removeItem("authUser");
 
-    if (!password) {
-      setError("Please enter your password.");
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const authData = await login(cleanEmail, password);
-      const user = authData?.record;
-
-      if (!user) {
-        throw new Error("Guest account could not be verified.");
-      }
-
-      if (String(user.role || "").toLowerCase() !== "guest") {
-        localStorage.removeItem("authToken");
-        localStorage.removeItem("authUser");
-
-        throw new Error(
-          "This account is not a Guest account. Please use a Guest account to make bookings."
-        );
-      }
-
-      toast.success("Guest login successful!");
-
-      let destination = "/guest/dashboard";
-
-      if (redirectParam) {
-        try {
-          const decoded = decodeURIComponent(redirectParam);
-
-          if (decoded.startsWith("/")) {
-            destination = decoded;
-          }
-        } catch {
-          destination = "/guest/dashboard";
-        }
-      }
-
-      navigate(destination, { replace: true });
-    } catch (error) {
-      console.error("Guest login error:", error);
-
-      setError(
-        error?.message ||
-          "Invalid email or password."
+      throw new Error(
+        "This account is not a Guest account. Please use a Guest account to make bookings."
       );
-    } finally {
-      setLoading(false);
     }
-  };
 
-  return (
-    <>
-      <style>{`
+    toast.success("Guest login successful!");
+
+    let destination = "/guest/dashboard";
+
+    if (redirectParam) {
+      try {
+        const decoded = decodeURIComponent(redirectParam);
+
+        if (decoded.startsWith("/")) {
+          destination = decoded;
+        }
+      } catch {
+        destination = "/guest/dashboard";
+      }
+    }
+
+    navigate(destination, { replace: true });
+  } catch (error) {
+    console.error("Guest login error:", error);
+
+    setError(
+      error?.message ||
+        "Invalid email or password."
+    );
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+// ===============================
+// GUEST PHONE OTP LOGIN
+// ===============================
+
+const handleSendOTP = async () => {
+  setError("");
+
+  const cleanPhone = phone.trim();
+
+  if (!cleanPhone) {
+    setError("Please enter your phone number.");
+    return;
+  }
+
+  setOtpLoading(true);
+
+  try {
+    await requestPhoneOTP(cleanPhone);
+
+    setOtpSent(true);
+
+    toast.success("OTP sent successfully!");
+  } catch (error) {
+    console.error("Guest OTP error:", error);
+
+    setError(
+      error?.message ||
+        "Failed to send OTP."
+    );
+  } finally {
+    setOtpLoading(false);
+  }
+};
+
+
+const handleVerifyOTP = async () => {
+  setError("");
+
+  const cleanPhone = phone.trim();
+  const cleanOtp = otp.trim();
+
+  if (!cleanPhone) {
+    setError("Please enter your phone number.");
+    return;
+  }
+
+  if (!cleanOtp) {
+    setError("Please enter the OTP.");
+    return;
+  }
+
+  setOtpLoading(true);
+
+  try {
+    const authData = await verifyPhoneOTP(
+      cleanPhone,
+      cleanOtp
+    );
+
+    const user = authData?.user;
+
+    if (!user) {
+      throw new Error(
+        "Guest account could not be verified."
+      );
+    }
+
+    if (
+      String(user.role || "").toLowerCase() !== "guest"
+    ) {
+      localStorage.removeItem("authToken");
+      localStorage.removeItem("authUser");
+
+      throw new Error(
+        "This account is not a Guest account."
+      );
+    }
+
+    toast.success("Guest login successful!");
+
+    let destination = "/guest/dashboard";
+
+    if (redirectParam) {
+      try {
+        const decoded = decodeURIComponent(
+          redirectParam
+        );
+
+        if (decoded.startsWith("/")) {
+          destination = decoded;
+        }
+      } catch {
+        destination = "/guest/dashboard";
+      }
+    }
+
+    navigate(destination, {
+      replace: true,
+    });
+  } catch (error) {
+    console.error(
+      "Guest OTP verification error:",
+      error
+    );
+
+    setError(
+      error?.message ||
+        "Invalid OTP."
+    );
+  } finally {
+    setOtpLoading(false);
+  }
+};
+
+return (
+  <>
+    <style>{`
         * {
           box-sizing: border-box;
         }
@@ -882,6 +1006,135 @@ export default function GuestLoginPage() {
                   <Icon type="arrow" />
                 )}
               </button>
+              <div
+  style={{
+    textAlign: "center",
+    marginTop: "14px",
+    marginBottom: "8px",
+    color: "#999",
+    fontSize: "11px",
+  }}
+>
+  OR
+</div>
+
+{loginMode === "password" ? (
+  <button
+    type="button"
+    onClick={() => {
+      setLoginMode("otp");
+      setError("");
+    }}
+    style={{
+      width: "100%",
+      height: "45px",
+      borderRadius: "12px",
+      border: "1px solid #ddd7d1",
+      background: "#fff",
+      color: "#f97316",
+      fontSize: "13px",
+      fontWeight: 700,
+      cursor: "pointer",
+    }}
+  >
+    Login with Phone OTP
+  </button>
+) : (
+  <div>
+    <div className="field">
+      <label className="label">
+        Phone Number
+      </label>
+
+      <div className="input">
+        <input
+          type="tel"
+          value={phone}
+          onChange={(event) => {
+            setPhone(event.target.value);
+            setError("");
+          }}
+          placeholder="+91 9876543210"
+          disabled={otpLoading}
+        />
+      </div>
+    </div>
+
+    {!otpSent ? (
+      <button
+        type="button"
+        className="continue"
+        onClick={handleSendOTP}
+        disabled={otpLoading || !phone.trim()}
+      >
+        {otpLoading
+          ? "Sending OTP..."
+          : "Send OTP"}
+      </button>
+    ) : (
+      <>
+        <div className="field">
+          <label className="label">
+            Enter OTP
+          </label>
+
+          <div className="input">
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={6}
+              value={otp}
+              onChange={(event) => {
+                setOtp(
+                  event.target.value.replace(/\D/g, "")
+                );
+                setError("");
+              }}
+              placeholder="Enter 6-digit OTP"
+              disabled={otpLoading}
+            />
+          </div>
+        </div>
+
+        <button
+          type="button"
+          className="continue"
+          onClick={handleVerifyOTP}
+          disabled={
+            otpLoading ||
+            !otp.trim()
+          }
+        >
+          {otpLoading
+            ? "Verifying..."
+            : "Verify OTP"}
+        </button>
+      </>
+    )}
+
+    <button
+      type="button"
+      onClick={() => {
+        setLoginMode("password");
+        setOtpSent(false);
+        setOtp("");
+        setPhone("");
+        setError("");
+      }}
+      style={{
+        width: "100%",
+        marginTop: "10px",
+        border: "0",
+        background: "transparent",
+        color: "#777",
+        fontSize: "11px",
+        cursor: "pointer",
+      }}
+    >
+      ← Back to Email Login
+    </button>
+  </div>
+)}
 
             </form>
 
